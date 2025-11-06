@@ -12,27 +12,12 @@ import random
 from typing import Dict, List, Optional
 from dotenv import load_dotenv
 from openai import OpenAI
+from pymongo import MongoClient
+from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 
 
 class CandidateGenerator:
     """Generates job candidate profiles using OpenAI."""
-    
-    # List of famous movie characters for usernames
-    MOVIE_CHARACTERS = [
-        "luke_skywalker", "darth_vader", "indiana_jones", "james_bond",
-        "ellen_ripley", "neo_anderson", "tony_stark", "bruce_wayne",
-        "sarah_connor", "marty_mcfly", "john_mcclane", "princess_leia",
-        "han_solo", "hermione_granger", "harry_potter", "frodo_baggins",
-        "aragorn_son", "gandalf_grey", "morpheus_matrix", "trinity_matrix",
-        "forrest_gump", "vito_corleone", "michael_corleone", "clarice_starling",
-        "maximus_decimus", "william_wallace", "jack_sparrow", "elizabeth_swann",
-        "ethan_hunt", "jason_bourne", "lara_croft", "rick_deckard",
-        "doc_brown", "biff_tannen", "katniss_everdeen", "peeta_mellark",
-        "imperator_furiosa", "mad_max", "john_wick", "natasha_romanoff",
-        "peter_parker", "wade_wilson", "logan_howlett", "charles_xavier",
-        "t800_terminator", "john_connor", "kyle_reese", "dana_scully",
-        "fox_mulder", "clarice_starling", "hannibal_lecter", "norman_bates"
-    ]
     
     def __init__(self, api_key: str):
         """Initialize the generator with OpenAI API key."""
@@ -41,18 +26,53 @@ class CandidateGenerator:
         self.used_emails = set()
         self.used_github = set()
     
-    def generate_username(self) -> str:
-        """Generate a unique movie character username."""
-        available = [u for u in self.MOVIE_CHARACTERS if u not in self.used_usernames]
-        if not available:
-            # Fallback: add numbers to existing usernames
-            base = random.choice(self.MOVIE_CHARACTERS)
-            username = f"{base}_{random.randint(100, 999)}"
-        else:
-            username = random.choice(available)
+    def generate_username(self, firstname: str, lastname: str, skills: List[str] = None) -> str:
+        """
+        Generate a unique username based on the candidate's name or skills.
         
-        self.used_usernames.add(username)
-        return username
+        Patterns:
+        - firstname.lastname
+        - firstname_lastname
+        - firstnamelastname
+        - first_initial + lastname
+        - firstname + skill
+        - lastname + numbers
+        """
+        firstname_clean = firstname.lower().replace(" ", "")
+        lastname_clean = lastname.lower().replace(" ", "")
+        
+        # Try different username patterns
+        patterns = [
+            f"{firstname_clean}.{lastname_clean}",
+            f"{firstname_clean}_{lastname_clean}",
+            f"{firstname_clean}{lastname_clean}",
+            f"{firstname_clean[0]}{lastname_clean}",
+            f"{firstname_clean}_{lastname_clean[0]}",
+            f"{lastname_clean}{firstname_clean[0]}",
+        ]
+        
+        # Add skill-based patterns if skills provided
+        if skills and len(skills) > 0:
+            skill_clean = skills[0].lower().replace(" ", "").replace(".", "").replace("#", "sharp")
+            patterns.extend([
+                f"{firstname_clean}_{skill_clean[:6]}",
+                f"{skill_clean[:6]}_{lastname_clean}",
+                f"{firstname_clean}{skill_clean[:4]}",
+            ])
+        
+        # Try each pattern
+        for pattern in patterns:
+            if pattern not in self.used_usernames:
+                self.used_usernames.add(pattern)
+                return pattern
+        
+        # If all patterns taken, add random numbers
+        base = f"{firstname_clean}_{lastname_clean}"
+        while True:
+            username = f"{base}{random.randint(10, 99)}"
+            if username not in self.used_usernames:
+                self.used_usernames.add(username)
+                return username
     
     def generate_password(self) -> str:
         """Generate a random plaintext password."""
@@ -122,17 +142,22 @@ Return ONLY valid JSON, no markdown formatting or code blocks."""
             
             ai_data = json.loads(content)
             
+            # Extract name and skills first to generate username
+            firstname = ai_data.get("firstname", "John")
+            lastname = ai_data.get("lastname", "Doe")
+            skills = ai_data.get("skills", [])
+            
             # Build complete candidate profile
             candidate = {
-                "firstname": ai_data.get("firstname", "John"),
-                "lastname": ai_data.get("lastname", "Doe"),
-                "username": self.generate_username(),
+                "firstname": firstname,
+                "lastname": lastname,
+                "username": self.generate_username(firstname, lastname, skills),
                 "password": self.generate_password(),
                 "application": ai_data.get("application", "General Position"),
                 "phone_number": self.generate_phone(),
                 "email": self.generate_email(),
                 "github_account": self.generate_github(),
-                "skills": ai_data.get("skills", []),
+                "skills": skills,
                 "experience_years": ai_data.get("experience_years", 0),
                 "education": ai_data.get("education", "Bachelor's Degree"),
                 "bio": ai_data.get("bio", ""),
@@ -153,16 +178,20 @@ Return ONLY valid JSON, no markdown formatting or code blocks."""
         first_names = ["Alex", "Jordan", "Taylor", "Morgan", "Casey", "Riley", "Avery", "Quinn"]
         last_names = ["Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis"]
         
+        firstname = random.choice(first_names)
+        lastname = random.choice(last_names)
+        skills = ["Python", "JavaScript", "SQL"]
+        
         return {
-            "firstname": random.choice(first_names),
-            "lastname": random.choice(last_names),
-            "username": self.generate_username(),
+            "firstname": firstname,
+            "lastname": lastname,
+            "username": self.generate_username(firstname, lastname, skills),
             "password": self.generate_password(),
             "application": description or "General Position",
             "phone_number": self.generate_phone(),
             "email": self.generate_email(),
             "github_account": self.generate_github(),
-            "skills": ["Python", "JavaScript", "SQL"],
+            "skills": skills,
             "experience_years": random.randint(0, 10),
             "education": "Bachelor's Degree",
             "bio": "Experienced professional seeking new opportunities.",
@@ -216,7 +245,7 @@ def get_yes_no_input(prompt: str) -> bool:
             print("Please enter 'yes' or 'no'")
 
 
-def save_candidates(candidates: List[Dict], filename: str = "generated_candidates.json") -> None:
+def save_candidates_to_json(candidates: List[Dict], filename: str = "generated_candidates.json") -> None:
     """Save accepted candidates to a JSON file."""
     filepath = os.path.join(os.path.dirname(__file__), filename)
     
@@ -240,6 +269,61 @@ def save_candidates(candidates: List[Dict], filename: str = "generated_candidate
     print(f"📊 Total candidates in file: {len(existing_candidates)}")
 
 
+def save_candidates_to_mongodb(candidates: List[Dict], db_url: str, db_name: str, collection_name: str = "Candidates") -> bool:
+    """Save accepted candidates to MongoDB."""
+    try:
+        # Connect to MongoDB
+        print(f"\n🔄 Connecting to MongoDB...")
+        client = MongoClient(db_url, serverSelectionTimeoutMS=5000)
+        
+        # Test the connection
+        client.admin.command('ping')
+        print(f"✅ Connected to MongoDB successfully!")
+        
+        # Get database and collection
+        db = client[db_name]
+        collection = db[collection_name]
+        
+        # Insert candidates
+        if len(candidates) == 1:
+            result = collection.insert_one(candidates[0])
+            print(f"✅ Inserted 1 candidate into MongoDB")
+            print(f"   Document ID: {result.inserted_id}")
+        else:
+            result = collection.insert_many(candidates)
+            print(f"✅ Inserted {len(result.inserted_ids)} candidates into MongoDB")
+            print(f"   Document IDs: {result.inserted_ids[:3]}{'...' if len(result.inserted_ids) > 3 else ''}")
+        
+        # Get total count
+        total_count = collection.count_documents({})
+        print(f"📊 Total candidates in MongoDB collection: {total_count}")
+        
+        client.close()
+        return True
+        
+    except (ConnectionFailure, ServerSelectionTimeoutError) as e:
+        print(f"❌ Failed to connect to MongoDB: {e}")
+        print("   Please check your database URL and ensure MongoDB is running.")
+        return False
+    except Exception as e:
+        print(f"❌ Error saving to MongoDB: {e}")
+        return False
+
+
+def save_candidates(candidates: List[Dict], db_url: Optional[str] = None, db_name: Optional[str] = None) -> None:
+    """Save accepted candidates to both JSON file and MongoDB (if configured)."""
+    # Always save to JSON as backup
+    save_candidates_to_json(candidates)
+    
+    # Save to MongoDB if database URL is provided
+    if db_url and db_name:
+        mongodb_success = save_candidates_to_mongodb(candidates, db_url, db_name)
+        if not mongodb_success:
+            print("⚠️  Candidates were saved to JSON file but not to MongoDB.")
+    else:
+        print("ℹ️  MongoDB not configured - only saved to JSON file.")
+
+
 def main():
     """Main CLI interface."""
     print("\n" + "="*60)
@@ -256,6 +340,15 @@ def main():
         print("\n❌ Error: OPENAI_API_KEY not found in .env file")
         print(f"Please add your OpenAI API key to: {env_path}")
         return
+    
+    # Load database configuration
+    db_url = os.getenv('project_db_url')
+    db_name = os.getenv('project_db_name')
+    
+    if db_url and db_name:
+        print(f"✅ MongoDB configured: {db_name}")
+    else:
+        print("⚠️  MongoDB not configured - candidates will only be saved to JSON file")
     
     # Initialize generator
     generator = CandidateGenerator(api_key)
@@ -317,7 +410,7 @@ def main():
         
         # Save accepted candidates
         if accepted_candidates:
-            save_candidates(accepted_candidates)
+            save_candidates(accepted_candidates, db_url, db_name)
         else:
             print("\n⚠️  No candidates were accepted.")
     
@@ -330,7 +423,7 @@ def main():
         display_candidate(candidate)
         
         if get_yes_no_input("\n✅ Accept this candidate?"):
-            save_candidates([candidate])
+            save_candidates([candidate], db_url, db_name)
         else:
             print("\n❌ Candidate rejected!")
     
