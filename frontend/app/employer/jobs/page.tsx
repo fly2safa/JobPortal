@@ -52,8 +52,8 @@ export default function EmployerJobsPage() {
       <div className="space-y-6">
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">My Job Postings</h1>
-            <p className="text-gray-600">Manage and track your job listings</p>
+            <h1 className="text-3xl font-bold text-white mb-2">My Job Postings</h1>
+            <p className="text-white">Manage and track your job listings</p>
           </div>
           <Link href="/employer/jobs/new">
             <Button variant="primary">

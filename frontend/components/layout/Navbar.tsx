@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/store/authStore';
-import { Briefcase, User, LogOut, Home, FileText, MessageSquare, Calendar } from 'lucide-react';
+import { User, LogOut, Home, FileText, MessageSquare, Calendar } from 'lucide-react';
 import { useState } from 'react';
 
 export function Navbar() {
@@ -26,11 +26,18 @@ export function Navbar() {
         <div className="flex justify-between h-16">
           {/* Logo */}
           <div className="flex items-center">
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                <Briefcase className="text-white" size={24} />
-              </div>
-              <span className="text-2xl font-bold text-primary">TalentNest</span>
+            <Link href="/" className="flex items-center">
+              <span className="text-2xl">
+                <span style={{ 
+                  fontFamily: 'Playfair Display, serif', 
+                  fontWeight: 700,
+                  background: 'linear-gradient(135deg, #075299 0%, #5a9ab3 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text'
+                }}>TALENT</span>
+                <span style={{ fontFamily: 'Dancing Script, cursive', fontWeight: 700 }} className="text-primary">Nest</span>
+              </span>
             </Link>
           </div>
 

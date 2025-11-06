@@ -63,8 +63,8 @@ export default function JobApplicationsPage() {
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Applications</h1>
-          <p className="text-gray-600">Review and manage applications for Senior Frontend Developer</p>
+          <h1 className="text-3xl font-bold text-white mb-2">Applications</h1>
+          <p className="text-white">Review and manage applications for Senior Frontend Developer</p>
         </div>
 
         {/* Filters */}

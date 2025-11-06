@@ -64,8 +64,8 @@ export default function NewJobPage() {
     <DashboardLayout>
       <div className="space-y-6 max-w-4xl">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Post a New Job</h1>
-          <p className="text-gray-600">Fill out the details below to create your job posting</p>
+          <h1 className="text-3xl font-bold text-white mb-2">Post a New Job</h1>
+          <p className="text-white">Fill out the details below to create your job posting</p>
         </div>
 
         {error && (

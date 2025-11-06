@@ -15,13 +15,13 @@ export default function DashboardPage() {
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
-          <p className="text-gray-600">Welcome back! Here&apos;s your job search overview.</p>
+          <h1 className="text-3xl font-bold text-white mb-2">Dashboard</h1>
+          <p className="text-white">Welcome back! Here&apos;s your job search overview.</p>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card>
+          <Card hover>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500 mb-1">Applications Sent</p>
@@ -34,7 +34,7 @@ export default function DashboardPage() {
             </div>
           </Card>
 
-          <Card>
+          <Card hover>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500 mb-1">In Review</p>
@@ -47,7 +47,7 @@ export default function DashboardPage() {
             </div>
           </Card>
 
-          <Card>
+          <Card hover>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500 mb-1">Interviews</p>
@@ -62,7 +62,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <Card>
+        <Card hover>
           <CardTitle>Quick Actions</CardTitle>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -95,12 +95,15 @@ export default function DashboardPage() {
         </Card>
 
         {/* Recent Applications */}
-        <Card>
+        <Card hover>
           <CardTitle>Recent Applications</CardTitle>
           <CardContent>
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div 
+                  key={i} 
+                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg cursor-pointer transition-all duration-200 hover:bg-white hover:shadow-md hover:scale-[1.02]"
+                >
                   <div>
                     <h4 className="font-semibold text-gray-900">Senior Frontend Developer</h4>
                     <p className="text-sm text-gray-600">TechCorp Inc. • San Francisco, CA</p>
