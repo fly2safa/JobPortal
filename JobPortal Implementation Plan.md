@@ -15,44 +15,44 @@
 ### Team Split (Parallel Work)
 
 **Team Member 1 & 2: Backend Foundation**
-- Branch: `feat/backend-setup`
-- Initialize FastAPI project structure following spec
-- Set up `app/main.py`, `app/core/config.py`, `app/core/security.py`, `app/core/logging.py`
-- Configure MongoDB connection in `app/db/init_db.py`
-- Create base models: `app/models/user.py`, `app/models/company.py`
-- Implement JWT authentication in `app/api/v1/routes/auth.py`
-- Create user registration/login endpoints
-- Add password hashing (bcrypt) and token generation
-- Set up Swagger docs at `/docs`
+- [Step 1] Branch: `feat/backend-setup`
+- [Step 2] Initialize FastAPI project structure following spec
+- [Step 3] Set up `app/main.py`, `app/core/config.py`, `app/core/security.py`, `app/core/logging.py`
+- [Step 4] Configure MongoDB connection in `app/db/init_db.py`
+- [Step 5] Create base models: `app/models/user.py`, `app/models/company.py`
+- [Step 6] Implement JWT authentication in `app/api/v1/routes/auth.py`
+- [Step 7] Create user registration/login endpoints
+- [Step 8] Add password hashing (bcrypt) and token generation
+- [Step 9] Set up Swagger docs at `/docs`
 
 **Team Member 3 & 4: Frontend Foundation**
-- Branch: `feat/frontend-setup`
-- Initialize Next.js 14 with App Router and TypeScript
-- Configure Tailwind CSS
-- Create folder structure: `app/`, `components/`, `features/`, `hooks/`, `lib/`, `store/`, `types/`
-- Build reusable components: Button, Input, Card, Modal, Navbar
-- Implement auth store (Zustand/Redux) for token management
-- Create auth pages: `/app/login/page.tsx`, `/app/register/page.tsx`
-- Set up API client in `lib/api.ts` with JWT interceptor
-- Create auth feature: `features/auth/` with login/register forms
+- [Step 1] Branch: `feat/frontend-setup`
+- [Step 2] Initialize Next.js 14 with App Router and TypeScript
+- [Step 3] Configure Tailwind CSS
+- [Step 4] Create folder structure: `app/`, `components/`, `features/`, `hooks/`, `lib/`, `store/`, `types/`
+- [Step 5] Build reusable components: Button, Input, Card, Modal, Navbar
+- [Step 6] Implement auth store (Zustand/Redux) for token management
+- [Step 7] Create auth pages: `/app/login/page.tsx`, `/app/register/page.tsx`
+- [Step 8] Set up API client in `lib/api.ts` with JWT interceptor
+- [Step 9] Create auth feature: `features/auth/` with login/register forms
 
 **Team Member 5: Database Models**
-- Branch: `feat/database-models`
-- Create all Beanie models in `app/models/`:
+- [Step 1] Branch: `feat/database-models`
+- [Step 2] Create all Beanie models in `app/models/`:
   - `job.py` (title, description, skills, location, company_id, salary, posted_date, status)
   - `application.py` (job_id, user_id, resume_id, status, applied_date, cover_letter)
   - `resume.py` (user_id, file_url, parsed_text, skills_extracted, created_date)
   - `conversation.py` (user_id, messages, created_date)
-- Register all models in `app/db/init_db.py`
-- Create indexes in `app/db/indexes.py`
+- [Step 3] Register all models in `app/db/init_db.py`
+- [Step 4] Create indexes in `app/db/indexes.py`
 
 **Team Member 6: Docker & DevOps**
-- Branch: `feat/docker-setup`
-- Create `backend/Dockerfile` (Python 3.11+, FastAPI, Uvicorn)
-- Create `frontend/Dockerfile` (Node.js, Next.js build)
-- Create `docker-compose.yml` (backend, frontend, optional local MongoDB)
-- Create `.env.example` for both backend and frontend
-- Document setup instructions in root `README.md`
+- [Step 1] Branch: `feat/docker-setup`
+- [Step 2] Create `backend/Dockerfile` (Python 3.11+, FastAPI, Uvicorn)
+- [Step 3] Create `frontend/Dockerfile` (Node.js, Next.js build)
+- [Step 4] Create `docker-compose.yml` (backend, frontend, optional local MongoDB)
+- [Step 5] Create `.env.example` for both backend and frontend
+- [Step 6] Document setup instructions in root `README.md`
 
 **Deliverables:**
 - Working auth system (register, login, JWT)
@@ -73,66 +73,66 @@
 ### Team Split (Parallel Work)
 
 **Team Member 1: Job Seeker Profile & Resume**
-- Branch: `feat/job-seeker-profile`
-- Backend:
+- [Step 1] Branch: `feat/job-seeker-profile`
+- [Step 2] Backend:
   - `app/api/v1/routes/users.py` - profile CRUD
   - `app/services/resume_parser.py` - AI resume parsing using OpenAI GPT-4o
   - `app/repositories/resume_repository.py`
   - Resume upload endpoint (parse PDF/DOCX, extract skills, experience)
-- Frontend:
+- [Step 3] Frontend:
   - `features/profile/` - profile form, resume upload component
   - `app/dashboard/profile/page.tsx`
 
 **Team Member 2: Job Search & Listings**
-- Branch: `feat/job-search`
-- Backend:
+- [Step 1] Branch: `feat/job-search`
+- [Step 2] Backend:
   - `app/api/v1/routes/jobs.py` - search, filter, get job details
   - `app/services/search_service.py` - search by title, skills, location, company
   - `app/repositories/job_repository.py`
-- Frontend:
+- [Step 3] Frontend:
   - `features/jobs/` - job card, job list, search filters
   - `app/jobs/page.tsx` - job listings with search/filter
   - `app/jobs/[id]/page.tsx` - job details page
 
 **Team Member 3: Job Application System**
-- Branch: `feat/job-applications`
-- Backend:
+- [Step 1] Branch: `feat/job-applications`
+- [Step 2] Backend:
   - `app/api/v1/routes/applications.py` - apply, view status, history
   - `app/services/application_service.py`
   - `app/repositories/application_repository.py`
-- Frontend:
+- [Step 3] Frontend:
   - `features/applications/` - application form, status tracker
   - `app/dashboard/applications/page.tsx` - application history
   - Apply button integration on job details page
 
 **Team Member 4: Employer Job Posting**
-- Branch: `feat/employer-job-posting`
-- Backend:
+- [Step 1] Branch: `feat/employer-job-posting`
+- [Step 2] Backend:
   - Extend `app/api/v1/routes/jobs.py` - create, update, delete jobs
   - Add employer-specific endpoints
-- Frontend:
+- [Step 3] Frontend:
   - `features/employer/` - job post form, job management
   - `app/employer/dashboard/page.tsx`
   - `app/employer/jobs/new/page.tsx` - create job posting
   - `app/employer/jobs/[id]/edit/page.tsx`
 
 **Team Member 5: Employer Application Review**
-- Branch: `feat/employer-applications`
-- Backend:
+- [Step 1] Branch: `feat/employer-applications`
+- [Step 2] Backend:
   - Extend `app/api/v1/routes/applications.py` - view applications per job, shortlist, reject
   - Application status updates
-- Frontend:
+- [Step 3] Frontend:
   - `features/employer/applications/` - application list, candidate cards
   - `app/employer/jobs/[id]/applications/page.tsx`
   - Shortlist/reject actions
 
 **Team Member 6: Email Notifications**
-- Branch: `feat/email-notifications`
-- Backend:
+- [Step 1] Branch: `feat/email-notifications`
+- [Step 2] Backend:
   - `app/services/email_service.py` - send emails via SMTP or SendGrid
   - `app/workers/tasks/email_tasks.py` - background email sending
   - Trigger emails on: application submitted, status change, job alert
-- Create email templates for notifications
+- [Step 3] Create email templates for notifications
 
 **Deliverables:**
 - Job seekers can create profiles, upload resumes (AI parsed), search jobs, apply
@@ -153,47 +153,47 @@
 ### Team Split (Parallel Work)
 
 **Team Member 1 & 2: AI Recommendations (Job Seeker)**
-- Branch: `feat/ai-job-recommendations`
-- Backend:
+- [Step 1] Branch: `feat/ai-job-recommendations`
+- [Step 2] Backend:
   - `app/ai/providers/openai_client.py` - OpenAI API client
   - `app/ai/chains/recommendation_chain.py` - LangChain prompt chain
   - `app/ai/rag/embeddings.py` - text-embedding-3-small for job embeddings
   - `app/ai/rag/vectorstore.py` - ChromaDB setup
   - `app/services/recommendation_service.py` - match user profile to jobs
   - `app/api/v1/routes/recommendations.py` - get personalized recommendations
-- Frontend:
+- [Step 3] Frontend:
   - `features/recommendations/` - recommendation cards
   - `app/dashboard/recommendations/page.tsx`
 
 **Team Member 3 & 4: AI Candidate Matching (Employer)**
-- Branch: `feat/ai-candidate-matching`
-- Backend:
+- [Step 1] Branch: `feat/ai-candidate-matching`
+- [Step 2] Backend:
   - Extend `app/ai/chains/` - candidate matching chain
   - `app/services/candidate_matching_service.py` - rank candidates by job requirements
   - Endpoint: `/api/v1/jobs/{job_id}/recommended-candidates`
-- Frontend:
+- [Step 3] Frontend:
   - `features/employer/candidate-recommendations/`
   - Display ranked candidates on employer job detail page
 
 **Team Member 5: AI Assistant & Cover Letter**
-- Branch: `feat/ai-assistant`
-- Backend:
+- [Step 1] Branch: `feat/ai-assistant`
+- [Step 2] Backend:
   - `app/ai/rag/loader.py`, `splitter.py`, `retriever.py`, `qa_chain.py` - RAG pipeline
   - `app/models/conversation.py` - store chat history
   - `app/api/v1/routes/assistant.py` - chat endpoint
   - Cover letter generation endpoint using GPT-4o
-- Frontend:
+- [Step 3] Frontend:
   - `features/assistant/` - chat interface
   - `app/dashboard/assistant/page.tsx`
   - Cover letter generator in application form
 
 **Team Member 6: Interview Scheduling**
-- Branch: `feat/interview-scheduling`
-- Backend:
+- [Step 1] Branch: `feat/interview-scheduling`
+- [Step 2] Backend:
   - `app/models/interview.py` - interview model (job_id, application_id, scheduled_time, status)
   - `app/api/v1/routes/interviews.py` - schedule, update, cancel
   - Email notifications for interview invites
-- Frontend:
+- [Step 3] Frontend:
   - `features/interviews/` - calendar view, interview cards
   - `app/employer/interviews/page.tsx`
   - `app/dashboard/interviews/page.tsx` (job seeker view)
@@ -219,44 +219,44 @@
 ### Team Split (Parallel Work)
 
 **Team Member 1 & 2: Testing & Bug Fixes**
-- Branch: `fix/testing-bugs`
-- Manual testing of all features
-- Fix bugs, edge cases, validation errors
-- Add input validation across all forms
-- Implement proper error handling and user feedback (toasts, error messages)
-- Test Docker deployment locally
+- [Step 1] Branch: `fix/testing-bugs`
+- [Step 2] Manual testing of all features
+- [Step 3] Fix bugs, edge cases, validation errors
+- [Step 4] Add input validation across all forms
+- [Step 5] Implement proper error handling and user feedback (toasts, error messages)
+- [Step 6] Test Docker deployment locally
 
 **Team Member 3 & 4: UI/UX Polish**
-- Branch: `feat/ui-polish`
-- Responsive design testing (mobile, tablet, desktop)
-- Consistent styling with Tailwind
-- Loading states, skeleton screens
-- Empty states for lists
-- Accessibility improvements (ARIA labels, keyboard navigation)
-- Dark mode (optional, if time permits)
+- [Step 1] Branch: `feat/ui-polish`
+- [Step 2] Responsive design testing (mobile, tablet, desktop)
+- [Step 3] Consistent styling with Tailwind
+- [Step 4] Loading states, skeleton screens
+- [Step 5] Empty states for lists
+- [Step 6] Accessibility improvements (ARIA labels, keyboard navigation)
+- [Step 7] Dark mode (optional, if time permits)
 
 **Team Member 5: Documentation**
-- Branch: `docs/diagrams-readme`
-- Create ERD diagram (MongoDB collections and relationships)
-- Create Architecture Diagram (frontend ↔ backend ↔ MongoDB ↔ OpenAI/ChromaDB)
-- Update root `README.md` with:
+- [Step 1] Branch: `docs/diagrams-readme`
+- [Step 2] Create ERD diagram (MongoDB collections and relationships)
+- [Step 3] Create Architecture Diagram (frontend ↔ backend ↔ MongoDB ↔ OpenAI/ChromaDB)
+- [Step 4] Update root `README.md` with:
   - Project overview
   - Tech stack
   - Setup instructions
   - Environment variables
   - Running with Docker
   - API documentation link
-- Create `CONTRIBUTING.md` with branch strategy and PR guidelines
+- [Step 5] Create `CONTRIBUTING.md` with branch strategy and PR guidelines
 
 **Team Member 6: Deployment Preparation**
-- Branch: `feat/deployment`
-- Set up structured logging across backend
-- Add health check endpoints (`/health`, `/ready`)
-- Optimize Docker images (multi-stage builds)
-- Prepare deployment scripts
-- Environment variable validation on startup
-- Rate limiting on critical endpoints
-- Security headers (CORS, CSP)
+- [Step 1] Branch: `feat/deployment`
+- [Step 2] Set up structured logging across backend
+- [Step 3] Add health check endpoints (`/health`, `/ready`)
+- [Step 4] Optimize Docker images (multi-stage builds)
+- [Step 5] Prepare deployment scripts
+- [Step 6] Environment variable validation on startup
+- [Step 7] Rate limiting on critical endpoints
+- [Step 8] Security headers (CORS, CSP)
 
 **Final Integration:**
 - All branches merge to `dev`
