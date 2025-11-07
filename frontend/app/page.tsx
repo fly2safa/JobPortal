@@ -16,23 +16,22 @@ export default function HomePage() {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
-              <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-                Find Your Dream Job with{' '}
-                <span className="text-yellow-300">AI-Powered</span> Matching
+              <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight" style={{ fontFamily: 'Playfair Display, serif' }}>
+                Your Gateway to Meaningful Careers and Exceptional Talent
               </h1>
               <p className="text-xl mb-8 text-blue-100">
                 Connect with top employers and discover opportunities tailored to your skills and experience.
                 TalentNest uses advanced AI to match you with your perfect role.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/jobs">
-                  <Button variant="secondary" size="lg" className="w-full sm:w-auto bg-white text-primary hover:bg-gray-100">
+                <Link href="/jobs" className="w-full sm:w-64">
+                  <Button variant="secondary" size="lg" className="w-full bg-white text-primary hover:bg-gray-100 hover:scale-105 transition-all duration-200 flex items-center justify-center">
                     <Search size={20} className="mr-2" />
                     Browse Jobs
                   </Button>
                 </Link>
-                <Link href="/register">
-                  <Button variant="outline" size="lg" className="w-full sm:w-auto border-white text-white hover:bg-white hover:text-primary">
+                <Link href="/register" className="w-full sm:w-64">
+                  <Button variant="outline" size="lg" className="w-full border-white text-white hover:bg-white hover:text-primary hover:scale-105 transition-all duration-200 flex items-center justify-center">
                     Get Started Free
                   </Button>
                 </Link>
@@ -209,13 +208,13 @@ export default function HomePage() {
             Join thousands of professionals who found their dream jobs through TalentNest.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/register?role=job_seeker">
-              <Button variant="secondary" size="lg" className="w-full sm:w-auto bg-white text-primary hover:bg-gray-100">
+            <Link href="/register?role=job_seeker" className="w-full sm:w-64">
+              <Button variant="secondary" size="lg" className="w-full bg-white text-primary hover:bg-gray-100 hover:scale-105 transition-all duration-200 flex items-center justify-center">
                 I&apos;m Looking for a Job
               </Button>
             </Link>
-            <Link href="/register?role=employer">
-              <Button variant="outline" size="lg" className="w-full sm:w-auto border-white text-white hover:bg-white hover:text-primary">
+            <Link href="/register?role=employer" className="w-full sm:w-64">
+              <Button variant="outline" size="lg" className="w-full border-white text-white hover:bg-white hover:text-primary hover:scale-105 transition-all duration-200 flex items-center justify-center">
                 I&apos;m Hiring Talent
               </Button>
             </Link>
