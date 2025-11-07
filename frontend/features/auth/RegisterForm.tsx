@@ -42,10 +42,16 @@ export function RegisterForm() {
     setError('');
 
     try {
+      // Split full name into first and last name
+      const nameParts = data.full_name.trim().split(' ');
+      const first_name = nameParts[0] || '';
+      const last_name = nameParts.slice(1).join(' ') || nameParts[0]; // Use first name as last if only one name provided
+      
       const response = await apiClient.register({
         email: data.email,
         password: data.password,
-        full_name: data.full_name,
+        first_name,
+        last_name,
         role: data.role,
       });
       

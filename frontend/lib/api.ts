@@ -52,7 +52,7 @@ class ApiClient {
     return response.data;
   }
 
-  async register(data: { email: string; password: string; full_name: string; role: string }) {
+  async register(data: { email: string; password: string; first_name: string; last_name: string; role: string }) {
     const response = await this.client.post('/auth/register', data);
     return response.data;
   }
