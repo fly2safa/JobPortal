@@ -13,7 +13,8 @@ import { Upload, Save } from 'lucide-react';
 import apiClient from '@/lib/api';
 
 interface ProfileFormData {
-  full_name: string;
+  first_name: string;
+  last_name: string;
   email: string;
   phone: string;
   location: string;
@@ -36,7 +37,8 @@ export default function ProfilePage() {
     formState: { errors },
   } = useForm<ProfileFormData>({
     defaultValues: {
-      full_name: user?.full_name || '',
+      first_name: user?.first_name || '',
+      last_name: user?.last_name || '',
       email: user?.email || '',
       phone: jobSeekerProfile?.phone || '',
       location: jobSeekerProfile?.location || '',
@@ -84,7 +86,7 @@ export default function ProfilePage() {
           <CardContent>
             <div className="flex items-center space-x-6">
               <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center text-white text-3xl font-bold">
-                {user?.full_name?.charAt(0) || 'U'}
+                {user?.first_name?.charAt(0) || 'U'}
               </div>
               <div>
                 <Button variant="outline" size="sm">
@@ -104,9 +106,14 @@ export default function ProfilePage() {
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
-                  label="Full Name"
-                  {...register('full_name', { required: 'Name is required' })}
-                  error={errors.full_name?.message}
+                  label="First Name"
+                  {...register('first_name', { required: 'First name is required' })}
+                  error={errors.first_name?.message}
+                />
+                <Input
+                  label="Last Name"
+                  {...register('last_name', { required: 'Last name is required' })}
+                  error={errors.last_name?.message}
                 />
                 <Input
                   label="Email"

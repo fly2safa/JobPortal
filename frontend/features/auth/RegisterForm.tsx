@@ -11,7 +11,8 @@ import apiClient from '@/lib/api';
 import Link from 'next/link';
 
 interface RegisterFormData {
-  full_name: string;
+  first_name: string;
+  last_name: string;
   email: string;
   password: string;
   confirmPassword: string;
@@ -45,7 +46,8 @@ export function RegisterForm() {
       const response = await apiClient.register({
         email: data.email,
         password: data.password,
-        full_name: data.full_name,
+        first_name: data.first_name,
+        last_name: data.last_name,
         role: data.role,
       });
       
@@ -58,7 +60,7 @@ export function RegisterForm() {
         router.push('/dashboard');
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Registration failed. Please try again.');
+      setError(err.response?.data?.detail || err.response?.data?.error || 'Registration failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -79,17 +81,31 @@ export function RegisterForm() {
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Input
-          label="Full Name"
+          label="First Name"
           type="text"
-          placeholder="John Doe"
-          {...register('full_name', {
-            required: 'Full name is required',
+          placeholder="John"
+          {...register('first_name', {
+            required: 'First name is required',
             minLength: {
               value: 2,
-              message: 'Name must be at least 2 characters',
+              message: 'First name must be at least 2 characters',
             },
           })}
-          error={errors.full_name?.message}
+          error={errors.first_name?.message}
+        />
+
+        <Input
+          label="Last Name"
+          type="text"
+          placeholder="Doe"
+          {...register('last_name', {
+            required: 'Last name is required',
+            minLength: {
+              value: 2,
+              message: 'Last name must be at least 2 characters',
+            },
+          })}
+          error={errors.last_name?.message}
         />
 
         <Input
