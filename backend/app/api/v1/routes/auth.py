@@ -14,7 +14,7 @@ logger = get_logger(__name__)
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register(user_data: UserRegister):
     """
     Register a new user account.
@@ -36,7 +36,7 @@ async def register(user_data: UserRegister):
         logger.warning(f"Registration failed: Email already exists - {user_data.email}")
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Email already registered"
+            detail="Email already registered. Please fix your email and try again"
         )
     
     # Create new user
@@ -53,8 +53,16 @@ async def register(user_data: UserRegister):
     await user.insert()
     logger.info(f"User registered successfully: {user.email} (ID: {user.id})")
     
+    # Create access token for auto-login
+    token_data = {
+        "user_id": str(user.id),
+        "email": user.email,
+        "role": user.role,
+    }
+    access_token = create_access_token(token_data)
+    
     # Convert to response model
-    return UserResponse(
+    user_response = UserResponse(
         id=str(user.id),
         email=user.email,
         first_name=user.first_name,
@@ -74,6 +82,12 @@ async def register(user_data: UserRegister):
         is_verified=user.is_verified,
         created_at=user.created_at,
     )
+    
+    return {
+        "user": user_response,
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
 
 
 @router.post("/login", response_model=Token)
