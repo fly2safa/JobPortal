@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.core.logging import setup_logging, get_logger
+from app.db.init_db import connect_to_mongo, close_mongo_connection
 
 # Setup logging
 setup_logging(level="DEBUG" if settings.DEBUG else "INFO")
@@ -23,12 +24,14 @@ async def lifespan(app: FastAPI):
     """
     # Startup
     logger.info(f"Starting {settings.APP_NAME} v{settings.APP_VERSION}")
+    await connect_to_mongo()
     logger.info("Application startup complete")
     
     yield
     
     # Shutdown
     logger.info("Shutting down application...")
+    await close_mongo_connection()
     logger.info("Application shutdown complete")
 
 
@@ -91,4 +94,5 @@ if __name__ == "__main__":
         port=8000,
         reload=settings.DEBUG,
     )
+
 
