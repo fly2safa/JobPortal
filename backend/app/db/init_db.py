@@ -60,3 +60,6 @@ async def get_database():
     """Get database instance."""
     return mongodb_client[settings.DATABASE_NAME]
 
+
+
+

@@ -43,3 +43,6 @@ class Company(Document):
             "industry",
         ]
 
+
+
+
