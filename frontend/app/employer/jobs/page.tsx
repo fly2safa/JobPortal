@@ -25,8 +25,8 @@ export default function EmployerJobsPage() {
   const fetchJobs = async () => {
     setIsLoading(true);
     try {
-      const response = await apiClient.getJobs({ employer: true });
-      setJobs(response.data || []);
+      const response = await apiClient.getEmployerJobs();
+      setJobs(response.jobs || []);
     } catch (error) {
       console.error('Failed to fetch jobs:', error);
       // Show mock data for demo

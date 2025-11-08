@@ -1,0 +1,4 @@
+"""
+Email templates for notifications.
+"""
+
