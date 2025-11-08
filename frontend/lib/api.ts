@@ -88,6 +88,11 @@ class ApiClient {
     return response.data;
   }
 
+  async getEmployerJobs(params?: any) {
+    const response = await this.client.get('/jobs/employer/me', { params });
+    return response.data;
+  }
+
   // Application endpoints
   async getApplications(params?: any) {
     const response = await this.client.get('/applications', { params });

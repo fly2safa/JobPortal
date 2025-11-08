@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardTitle, CardContent } from '@/components/ui/Card';
@@ -10,10 +10,9 @@ import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Select } from '@/components/ui/Select';
 import { useAuth, useRequireRole } from '@/hooks/useAuth';
-import { useAuthStore } from '@/store/authStore';
 import { JOB_TYPES, EXPERIENCE_LEVELS } from '@/constants';
 import apiClient from '@/lib/api';
-import { Save } from 'lucide-react';
+import { Save, ArrowLeft } from 'lucide-react';
 
 interface JobFormData {
   title: string;
@@ -26,35 +25,62 @@ interface JobFormData {
   skills: string;
   requirements: string;
   benefits: string;
+  status: string;
 }
 
-export default function NewJobPage() {
+export default function EditJobPage() {
   useAuth(true);
   useRequireRole(['employer']);
   const router = useRouter();
-  const { user } = useAuthStore();
+  const params = useParams();
+  const jobId = params.id as string;
+  
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<JobFormData>();
+
+  useEffect(() => {
+    fetchJob();
+  }, [jobId]);
+
+  const fetchJob = async () => {
+    setIsLoading(true);
+    try {
+      const job = await apiClient.getJobById(jobId);
+      
+      // Populate form with existing job data
+      setValue('title', job.title);
+      setValue('description', job.description);
+      setValue('location', job.location);
+      setValue('job_type', job.job_type);
+      setValue('experience_level', job.experience_level);
+      setValue('salary_min', job.salary_min);
+      setValue('salary_max', job.salary_max);
+      setValue('skills', job.skills.join(', '));
+      setValue('requirements', job.requirements || '');
+      setValue('benefits', job.benefits ? job.benefits.join('\n') : '');
+      setValue('status', job.status);
+    } catch (err: any) {
+      setError('Failed to load job. Please try again.');
+      console.error('Failed to fetch job:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const onSubmit = async (data: JobFormData) => {
     setIsSubmitting(true);
     setError('');
 
-    // Check if user has company_id
-    if (!user?.company_id) {
-      setError('You must be associated with a company to post jobs. Please contact support.');
-      setIsSubmitting(false);
-      return;
-    }
-
     try {
-      await apiClient.createJob({
+      await apiClient.updateJob(jobId, {
         title: data.title,
         description: data.description,
         location: data.location,
@@ -66,23 +92,41 @@ export default function NewJobPage() {
         required_skills: data.skills.split(',').map((s) => s.trim()).filter(Boolean),
         requirements: data.requirements,
         benefits: data.benefits ? data.benefits.split('\n').filter(Boolean) : [],
-        company_id: user.company_id,
-        status: 'active',
+        status: data.status,
       });
       router.push('/employer/jobs');
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to create job. Please try again.');
+      setError(err.response?.data?.detail || 'Failed to update job. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex justify-center py-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-6 max-w-4xl">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Post a New Job</h1>
-          <p className="text-gray-600">Fill out the details below to create your job posting</p>
+        <div className="flex items-center space-x-4">
+          <Button
+            variant="ghost"
+            onClick={() => router.back()}
+            className="p-2"
+          >
+            <ArrowLeft size={20} />
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Edit Job Posting</h1>
+            <p className="text-gray-600">Update your job posting details</p>
+          </div>
         </div>
 
         {error && (
@@ -130,15 +174,28 @@ export default function NewJobPage() {
                   />
                 </div>
 
-                <Select
-                  label="Experience Level"
-                  options={[
-                    { value: '', label: 'Select experience level' },
-                    ...EXPERIENCE_LEVELS.map((level) => ({ value: level.value, label: level.label })),
-                  ]}
-                  {...register('experience_level', { required: 'Experience level is required' })}
-                  error={errors.experience_level?.message}
-                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Select
+                    label="Experience Level"
+                    options={[
+                      { value: '', label: 'Select experience level' },
+                      ...EXPERIENCE_LEVELS.map((level) => ({ value: level.value, label: level.label })),
+                    ]}
+                    {...register('experience_level', { required: 'Experience level is required' })}
+                    error={errors.experience_level?.message}
+                  />
+
+                  <Select
+                    label="Status"
+                    options={[
+                      { value: 'draft', label: 'Draft' },
+                      { value: 'active', label: 'Active' },
+                      { value: 'closed', label: 'Closed' },
+                    ]}
+                    {...register('status', { required: 'Status is required' })}
+                    error={errors.status?.message}
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -213,7 +270,7 @@ export default function NewJobPage() {
             </Button>
             <Button type="submit" variant="primary" isLoading={isSubmitting} className="flex-1">
               <Save size={18} className="mr-2" />
-              Publish Job
+              Save Changes
             </Button>
           </div>
         </form>
