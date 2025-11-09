@@ -39,7 +39,7 @@
 - JobsBookmarked
    (Empty
 
-**Employer
+**Employers
 Collection**
 
 - CompanyName
@@ -57,7 +57,7 @@ Collection**
 - Location (City,
    State)
 
-Jobs
+**Jobs**
 
 - JobID
 
@@ -84,7 +84,7 @@ Jobs
 
 - AppIDsReceived
 
-Applications
+**Applications**
 
 - Username
 
