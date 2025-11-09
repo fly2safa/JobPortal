@@ -1,0 +1,124 @@
+# Production Docker Compose Configuration
+# Cross-platform support: Apple Silicon (ARM64), x86/AMD64, Windows
+# Usage: docker-compose up -d
+
+version: '3.8'
+
+services:
+  # Backend Service (FastAPI)
+  backend:
+    # Platform auto-detection for cross-platform compatibility
+    # Docker automatically selects the correct architecture
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: jobportal-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - HOST=0.0.0.0
+      - PORT=8000
+    env_file:
+      - ./backend/.env
+    volumes:
+      # Mount for development hot-reload (comment out for production)
+      - ./backend/app:/app/app:ro
+      # Logs volume
+      - backend-logs:/app/logs
+    networks:
+      - jobportal-network
+    depends_on:
+      - mongodb
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend Service (Next.js)
+  frontend:
+    # Platform auto-detection for cross-platform compatibility
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production  # Build production stage
+    container_name: jobportal-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://backend:8000
+    env_file:
+      - ./frontend/.env.local
+    networks:
+      - jobportal-network
+    depends_on:
+      - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (res) => {process.exit(res.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # MongoDB Service (Optional local instance)
+  mongodb:
+    # Platform auto-detection for cross-platform compatibility
+    image: mongo:7.0
+    container_name: jobportal-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=admin123
+      - MONGO_INITDB_DATABASE=jobportal
+    volumes:
+      - mongodb-data:/data/db
+      - mongodb-config:/data/configdb
+    networks:
+      - jobportal-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # MongoDB Express (Optional - Database Admin UI)
+  mongo-express:
+    # Platform auto-detection for cross-platform compatibility
+    image: mongo-express:latest
+    container_name: jobportal-mongo-express
+    ports:
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=admin123
+      - ME_CONFIG_MONGODB_URL=mongodb://admin:admin123@mongodb:27017/
+      - ME_CONFIG_BASICAUTH_USERNAME=admin
+      - ME_CONFIG_BASICAUTH_PASSWORD=admin
+    networks:
+      - jobportal-network
+    depends_on:
+      - mongodb
+    restart: unless-stopped
+    profiles:
+      - tools  # Only start with: docker-compose --profile tools up
+
+networks:
+  jobportal-network:
+    driver: bridge
+
+volumes:
+  mongodb-data:
+    driver: local
+  mongodb-config:
+    driver: local
+  backend-logs:
+    driver: local
+

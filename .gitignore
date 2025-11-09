@@ -20,6 +20,7 @@ dist/
 .env.local
 .env*.local
 *.env
+*.env.backup
 
 # Debug
 npm-debug.log*
@@ -61,4 +62,11 @@ backend/ENV/
 *.pid
 *.seed
 *.pid.lock
+
+# Local startup scripts (not part of repository)
+start.sh
+start.bat
+start.ps1
+stop.sh
+STARTUP_GUIDE.md
 
