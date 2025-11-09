@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 from app.core.config import settings
 from app.core.logging import setup_logging, get_logger
 from app.db.init_db import connect_to_mongo, close_mongo_connection
-from app.api.v1.routes import auth, jobs
+from app.api.v1.routes import auth, jobs, users, resumes
 
 # Setup logging
 setup_logging(level="DEBUG" if settings.DEBUG else "INFO")
@@ -58,6 +58,8 @@ app.add_middleware(
 # Register routers
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(jobs.router, prefix="/api/v1")
+app.include_router(users.router, prefix="/api/v1")
+app.include_router(resumes.router, prefix="/api/v1")
 
 
 # Health check endpoints
