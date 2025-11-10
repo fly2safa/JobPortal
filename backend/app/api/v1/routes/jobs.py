@@ -13,14 +13,219 @@ from app.schemas.job import (
     JobPublish,
     JobStatusUpdate
 )
-from app.models.job import Job, JobStatus
+from app.models.job import Job, JobStatus, JobType, ExperienceLevel
 from app.models.user import User
 from app.models.company import Company
 from app.api.dependencies import get_current_user, get_current_employer
+from app.services.search_service import SearchService
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
+search_service = SearchService()
+
+
+@router.get("/search", response_model=JobListResponse)
+async def search_jobs(
+    query: Optional[str] = Query(None, description="Search query for title and description"),
+    location: Optional[str] = Query(None, description="Filter by location"),
+    skills: Optional[str] = Query(None, description="Comma-separated list of skills"),
+    company_name: Optional[str] = Query(None, description="Filter by company name"),
+    job_type: Optional[JobType] = Query(None, description="Filter by job type"),
+    experience_level: Optional[ExperienceLevel] = Query(None, description="Filter by experience level"),
+    is_remote: Optional[bool] = Query(None, description="Filter remote jobs"),
+    salary_min: Optional[float] = Query(None, ge=0, description="Minimum salary"),
+    salary_max: Optional[float] = Query(None, ge=0, description="Maximum salary"),
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(20, ge=1, le=100, description="Results per page"),
+):
+    """
+    Search and filter jobs (Public endpoint).
+    
+    Supports multiple filters:
+    - Text search in title, description, and company name
+    - Location filter
+    - Skills filter (provide comma-separated skills)
+    - Company name filter
+    - Job type filter
+    - Experience level filter
+    - Remote jobs filter
+    - Salary range filter
+    
+    Args:
+        query: Search query string
+        location: Location filter
+        skills: Comma-separated skills (e.g., "Python,React,AWS")
+        company_name: Company name filter
+        job_type: Job type filter
+        experience_level: Experience level filter
+        is_remote: Remote jobs filter
+        salary_min: Minimum salary
+        salary_max: Maximum salary
+        page: Page number
+        page_size: Results per page
+        
+    Returns:
+        Paginated list of matching jobs
+    """
+    logger.info(f"Job search request - query: {query}, location: {location}")
+    
+    # Parse skills from comma-separated string
+    skills_list = None
+    if skills:
+        skills_list = [s.strip() for s in skills.split(",") if s.strip()]
+    
+    # Call search service
+    result = await search_service.search_jobs(
+        query=query,
+        location=location,
+        skills=skills_list,
+        company_name=company_name,
+        job_type=job_type,
+        experience_level=experience_level,
+        is_remote=is_remote,
+        salary_min=salary_min,
+        salary_max=salary_max,
+        page=page,
+        page_size=page_size
+    )
+    
+    return result
+
+
+@router.get("/featured", response_model=List[JobResponse])
+async def get_featured_jobs(
+    limit: int = Query(10, ge=1, le=50, description="Number of featured jobs")
+):
+    """
+    Get featured/popular jobs (Public endpoint).
+    
+    Returns jobs sorted by view count and recency.
+    
+    Args:
+        limit: Number of jobs to return (max 50)
+        
+    Returns:
+        List of featured jobs
+    """
+    logger.info(f"Fetching {limit} featured jobs")
+    
+    jobs = await search_service.get_featured_jobs(limit=limit)
+    
+    return jobs
+
+
+@router.get("/remote", response_model=JobListResponse)
+async def get_remote_jobs(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100)
+):
+    """
+    Get all remote jobs (Public endpoint).
+    
+    Args:
+        page: Page number
+        page_size: Results per page
+        
+    Returns:
+        Paginated list of remote jobs
+    """
+    logger.info(f"Fetching remote jobs - page {page}")
+    
+    result = await search_service.search_remote_jobs(
+        page=page,
+        page_size=page_size
+    )
+    
+    return result
+
+
+@router.get("/company/{company_id}", response_model=JobListResponse)
+async def get_company_jobs(
+    company_id: str,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100)
+):
+    """
+    Get all active jobs for a specific company (Public endpoint).
+    
+    Args:
+        company_id: Company ID
+        page: Page number
+        page_size: Results per page
+        
+    Returns:
+        Paginated list of company's jobs
+    """
+    logger.info(f"Fetching jobs for company {company_id}")
+    
+    result = await search_service.get_jobs_by_company(
+        company_id=company_id,
+        page=page,
+        page_size=page_size
+    )
+    
+    return result
+
+
+@router.get("/{job_id}/similar", response_model=List[JobResponse])
+async def get_similar_jobs(
+    job_id: str,
+    limit: int = Query(5, ge=1, le=20, description="Number of similar jobs")
+):
+    """
+    Get similar jobs based on skills and location (Public endpoint).
+    
+    Args:
+        job_id: Reference job ID
+        limit: Number of similar jobs to return
+        
+    Returns:
+        List of similar jobs
+    """
+    logger.info(f"Fetching similar jobs for {job_id}")
+    
+    # Check if job exists
+    job = await Job.get(job_id)
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job not found"
+        )
+    
+    similar_jobs = await search_service.get_similar_jobs(
+        job_id=job_id,
+        limit=limit
+    )
+    
+    return similar_jobs
+
+
+@router.get("", response_model=JobListResponse)
+async def get_all_jobs(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100)
+):
+    """
+    Get all active jobs with pagination (Public endpoint).
+    
+    Returns all active job postings sorted by posted date (newest first).
+    
+    Args:
+        page: Page number
+        page_size: Results per page
+        
+    Returns:
+        Paginated list of all active jobs
+    """
+    logger.info(f"Fetching all active jobs - page {page}")
+    
+    result = await search_service.get_all_active_jobs(
+        page=page,
+        page_size=page_size
+    )
+    
+    return result
 
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=JobResponse)
@@ -216,6 +421,8 @@ async def get_job(job_id: str):
     """
     Get a specific job by ID (Public endpoint).
     
+    Automatically increments the view count when accessed.
+    
     Args:
         job_id: Job ID
         
@@ -227,49 +434,17 @@ async def get_job(job_id: str):
     """
     logger.info(f"Fetching job: {job_id}")
     
-    job = await Job.get(job_id)
-    if not job:
+    # Use search service to get job details (includes view count increment)
+    job_response = await search_service.get_job_details(job_id)
+    
+    if not job_response:
         logger.warning(f"Job not found: {job_id}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Job not found"
         )
     
-    # Increment view count
-    job.view_count += 1
-    await job.save()
-    
-    return JobResponse(
-        id=str(job.id),
-        title=job.title,
-        description=job.description,
-        requirements=job.requirements,
-        responsibilities=job.responsibilities,
-        skills=job.skills,
-        required_skills=job.required_skills,
-        preferred_skills=job.preferred_skills,
-        location=job.location,
-        is_remote=job.is_remote,
-        company_id=job.company_id,
-        company_name=job.company_name,
-        employer_id=job.employer_id,
-        salary_min=job.salary_min,
-        salary_max=job.salary_max,
-        salary_currency=job.salary_currency,
-        job_type=job.job_type,
-        experience_level=job.experience_level,
-        experience_years_min=job.experience_years_min,
-        experience_years_max=job.experience_years_max,
-        status=job.status,
-        posted_date=job.posted_date,
-        closing_date=job.closing_date,
-        application_count=job.application_count,
-        view_count=job.view_count,
-        benefits=job.benefits,
-        application_instructions=job.application_instructions,
-        created_at=job.created_at,
-        updated_at=job.updated_at,
-    )
+    return job_response
 
 
 @router.put("/{job_id}", response_model=JobResponse)
