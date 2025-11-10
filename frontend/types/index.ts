@@ -2,10 +2,25 @@
 export interface User {
   id: string;
   email: string;
-  full_name: string;
+  first_name: string;
+  last_name: string;
   role: 'job_seeker' | 'employer';
-  profile?: JobSeekerProfile | EmployerProfile;
+  // Profile fields are directly on user object (not nested in profile)
+  phone?: string;
+  location?: string;
+  skills?: string[];
+  experience_years?: number;
+  education?: string;
+  bio?: string;
+  linkedin_url?: string;
+  portfolio_url?: string;
+  company_id?: string;
+  job_title?: string;
+  is_active?: boolean;
+  is_verified?: boolean;
   created_at: string;
+  updated_at?: string;
+  last_login?: string;
 }
 
 export interface JobSeekerProfile {
@@ -146,7 +161,8 @@ export interface LoginRequest {
 export interface RegisterRequest {
   email: string;
   password: string;
-  full_name: string;
+  first_name: string;
+  last_name: string;
   role: 'job_seeker' | 'employer';
 }
 

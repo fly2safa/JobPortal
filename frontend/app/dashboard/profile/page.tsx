@@ -33,8 +33,6 @@ export default function ProfilePage() {
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [isLoadingResumes, setIsLoadingResumes] = useState(false);
 
-  const jobSeekerProfile = user?.role === 'job_seeker' ? user.profile as any : {};
-
   const {
     register,
     handleSubmit,
@@ -44,12 +42,12 @@ export default function ProfilePage() {
       first_name: user?.first_name || '',
       last_name: user?.last_name || '',
       email: user?.email || '',
-      phone: jobSeekerProfile?.phone || '',
-      location: jobSeekerProfile?.location || '',
-      experience_years: jobSeekerProfile?.experience_years || 0,
-      skills: jobSeekerProfile?.skills?.join(', ') || '',
-      education: jobSeekerProfile?.education || '',
-      bio: jobSeekerProfile?.bio || '',
+      phone: user?.phone || '',
+      location: user?.location || '',
+      experience_years: user?.experience_years || 0,
+      skills: user?.skills?.join(', ') || '',
+      education: user?.education || '',
+      bio: user?.bio || '',
     },
   });
 
