@@ -67,9 +67,30 @@ export interface Resume {
   user_id: string;
   file_url: string;
   file_name: string;
+  file_size: number;
+  
+  // Parsed data
   parsed_text?: string;
-  skills_extracted?: string[];
-  created_date: string;
+  skills_extracted: string[];
+  experience_years?: number;
+  education?: string;
+  work_experience?: string;
+  summary?: string;
+  
+  // Parsing metadata
+  parsing_method: 'algorithmic' | 'hybrid' | 'ai';
+  parsing_confidence: number;
+  ai_used: boolean;
+  
+  // Timestamps
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ResumeUploadResponse {
+  resume: Resume;
+  message: string;
+  skills_synced: boolean;
 }
 
 // Interview Types
