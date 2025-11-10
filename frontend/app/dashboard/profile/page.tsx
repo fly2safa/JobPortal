@@ -29,6 +29,7 @@ interface ProfileFormData {
 export default function ProfilePage() {
   const { user } = useAuth(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [successMessage, setSuccessMessage] = useState('');
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [isLoadingResumes, setIsLoadingResumes] = useState(false);
@@ -36,25 +37,51 @@ export default function ProfilePage() {
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<ProfileFormData>({
     defaultValues: {
-      first_name: user?.first_name || '',
-      last_name: user?.last_name || '',
-      email: user?.email || '',
-      phone: user?.phone || '',
-      location: user?.location || '',
-      experience_years: user?.experience_years || 0,
-      skills: user?.skills?.join(', ') || '',
-      education: user?.education || '',
-      bio: user?.bio || '',
+      first_name: '',
+      last_name: '',
+      email: '',
+      phone: '',
+      location: '',
+      experience_years: 0,
+      skills: '',
+      education: '',
+      bio: '',
     },
   });
 
-  // Fetch resumes on mount
+  // Fetch profile data and resumes on mount
   useEffect(() => {
+    fetchProfileData();
     fetchResumes();
   }, []);
+
+  const fetchProfileData = async () => {
+    setIsLoadingProfile(true);
+    try {
+      const profileData = await apiClient.getProfile();
+      
+      // Update form with fetched data
+      reset({
+        first_name: profileData.first_name || '',
+        last_name: profileData.last_name || '',
+        email: profileData.email || '',
+        phone: profileData.phone || '',
+        location: profileData.location || '',
+        experience_years: profileData.experience_years || 0,
+        skills: profileData.skills?.join(', ') || '',
+        education: profileData.education || '',
+        bio: profileData.bio || '',
+      });
+    } catch (error) {
+      console.error('Failed to fetch profile:', error);
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  };
 
   const fetchResumes = async () => {
     setIsLoadingResumes(true);
@@ -73,11 +100,21 @@ export default function ProfilePage() {
     setSuccessMessage('');
 
     try {
-      await apiClient.updateProfile({
+      const updatedProfile = await apiClient.updateProfile({
         ...data,
         skills: data.skills.split(',').map((s) => s.trim()),
       });
+      
+      // Update the auth store with the new profile data
+      const { updateUser } = await import('@/store/authStore').then(m => m.useAuthStore.getState());
+      updateUser(updatedProfile);
+      
       setSuccessMessage('Profile updated successfully!');
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => {
+        setSuccessMessage('');
+      }, 5000);
     } catch (error) {
       console.error('Failed to update profile:', error);
     } finally {
@@ -146,7 +183,10 @@ export default function ProfilePage() {
         <Card>
           <CardTitle>Personal Information</CardTitle>
           <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {isLoadingProfile ? (
+              <div className="text-center py-8 text-gray-500">Loading profile...</div>
+            ) : (
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
                   label="First Name"
@@ -216,6 +256,7 @@ export default function ProfilePage() {
                 Save Changes
               </Button>
             </form>
+            )}
           </CardContent>
         </Card>
 
