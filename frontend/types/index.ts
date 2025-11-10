@@ -2,10 +2,25 @@
 export interface User {
   id: string;
   email: string;
-  full_name: string;
+  first_name: string;
+  last_name: string;
   role: 'job_seeker' | 'employer';
-  profile?: JobSeekerProfile | EmployerProfile;
+  // Profile fields are directly on user object (not nested in profile)
+  phone?: string;
+  location?: string;
+  skills?: string[];
+  experience_years?: number;
+  education?: string;
+  bio?: string;
+  linkedin_url?: string;
+  portfolio_url?: string;
+  company_id?: string;
+  job_title?: string;
+  is_active?: boolean;
+  is_verified?: boolean;
   created_at: string;
+  updated_at?: string;
+  last_login?: string;
 }
 
 export interface JobSeekerProfile {
@@ -67,9 +82,30 @@ export interface Resume {
   user_id: string;
   file_url: string;
   file_name: string;
+  file_size: number;
+  
+  // Parsed data
   parsed_text?: string;
-  skills_extracted?: string[];
-  created_date: string;
+  skills_extracted: string[];
+  experience_years?: number;
+  education?: string;
+  work_experience?: string;
+  summary?: string;
+  
+  // Parsing metadata
+  parsing_method: 'algorithmic' | 'hybrid' | 'ai';
+  parsing_confidence: number;
+  ai_used: boolean;
+  
+  // Timestamps
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ResumeUploadResponse {
+  resume: Resume;
+  message: string;
+  skills_synced: boolean;
 }
 
 // Interview Types
@@ -125,7 +161,8 @@ export interface LoginRequest {
 export interface RegisterRequest {
   email: string;
   password: string;
-  full_name: string;
+  first_name: string;
+  last_name: string;
   role: 'job_seeker' | 'employer';
 }
 

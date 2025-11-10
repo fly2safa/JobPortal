@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Select } from '@/components/ui/Select';
 import { useAuth, useRequireRole } from '@/hooks/useAuth';
+import { useAuthStore } from '@/store/authStore';
 import { JOB_TYPES, EXPERIENCE_LEVELS } from '@/constants';
 import apiClient from '@/lib/api';
 import { Save } from 'lucide-react';
@@ -31,6 +32,7 @@ export default function NewJobPage() {
   useAuth(true);
   useRequireRole(['employer']);
   const router = useRouter();
+  const { user } = useAuthStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -44,17 +46,32 @@ export default function NewJobPage() {
     setIsSubmitting(true);
     setError('');
 
+    // Check if user has company_id
+    if (!user?.company_id) {
+      setError('You must be associated with a company to post jobs. Please contact support.');
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       await apiClient.createJob({
-        ...data,
+        title: data.title,
+        description: data.description,
+        location: data.location,
+        job_type: data.job_type,
+        experience_level: data.experience_level,
+        salary_min: data.salary_min || undefined,
+        salary_max: data.salary_max || undefined,
         skills: data.skills.split(',').map((s) => s.trim()).filter(Boolean),
-        requirements: data.requirements.split('\n').filter(Boolean),
+        required_skills: data.skills.split(',').map((s) => s.trim()).filter(Boolean),
+        requirements: data.requirements,
         benefits: data.benefits ? data.benefits.split('\n').filter(Boolean) : [],
+        company_id: user.company_id,
         status: 'active',
       });
       router.push('/employer/jobs');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to create job. Please try again.');
+      setError(err.response?.data?.detail || 'Failed to create job. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
