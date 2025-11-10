@@ -38,7 +38,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const links = isJobSeeker ? jobSeekerLinks : employerLinks;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{
+      background: 'linear-gradient(135deg, #075299 0%, #5a9ab3 100%)'
+    }}>
       <Navbar />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
