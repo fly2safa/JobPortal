@@ -95,7 +95,12 @@ class ApiClient {
 
   // Application endpoints
   async getApplications(params?: any) {
-    const response = await this.client.get('/applications', { params });
+    const response = await this.client.get('/applications/me', { params });
+    return response.data;
+  }
+
+  async getApplicationStats() {
+    const response = await this.client.get('/applications/me/stats');
     return response.data;
   }
 
