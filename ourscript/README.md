@@ -28,6 +28,11 @@ This folder contains convenient scripts to start the backend and frontend server
 .\ourscript\start-backend.ps1 -Port 8010
 ```
 
+#### Start Backend (Custom Host and Port)
+```powershell
+.\ourscript\start-backend.ps1 -Port 8010 -HostAddress "0.0.0.0"
+```
+
 #### Start Frontend (Default Port 3000)
 ```powershell
 .\ourscript\start-frontend.ps1

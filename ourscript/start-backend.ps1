@@ -9,6 +9,9 @@
 #   Custom Port (e.g., 8010):
 #     .\ourscript\start-backend.ps1 -Port 8010
 #
+#   Custom Host and Port:
+#     .\ourscript\start-backend.ps1 -Port 8010 -HostAddress "0.0.0.0"
+#
 # PREREQUISITES:
 #   - Python 3.8+ installed
 #   - Virtual environment created in backend/venv
@@ -23,7 +26,7 @@
 
 param(
     [int]$Port = 8000,
-    [string]$Host = "127.0.0.1"
+    [string]$HostAddress = "127.0.0.1"
 )
 
 # Color output functions
@@ -51,10 +54,10 @@ if (-not (Test-Path "backend\venv\Scripts\Activate.ps1")) {
 Write-Info "============================================"
 Write-Info "  Starting Backend Server (FastAPI)"
 Write-Info "============================================"
-Write-Info "Host: $Host"
+Write-Info "Host: $HostAddress"
 Write-Info "Port: $Port"
-Write-Info "URL:  http://${Host}:${Port}"
-Write-Info "Docs: http://${Host}:${Port}/docs"
+Write-Info "URL:  http://${HostAddress}:${Port}"
+Write-Info "Docs: http://${HostAddress}:${Port}/docs"
 Write-Info "============================================"
 Write-Host ""
 
@@ -67,5 +70,5 @@ Write-Success "Starting Uvicorn server..."
 Write-Info "Press Ctrl+C to stop the server"
 Write-Host ""
 
-python -m uvicorn app.main:app --host $Host --port $Port --reload
+python -m uvicorn app.main:app --host $HostAddress --port $Port --reload
 
