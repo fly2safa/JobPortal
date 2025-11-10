@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardTitle, CardContent } from '@/components/ui/Card';
@@ -11,6 +11,8 @@ import { Select } from '@/components/ui/Select';
 import { useAuth } from '@/hooks/useAuth';
 import { Upload, Save } from 'lucide-react';
 import apiClient from '@/lib/api';
+import { ResumeUpload, ResumeList } from '@/features/profile';
+import { Resume, ResumeUploadResponse } from '@/types';
 
 interface ProfileFormData {
   first_name: string;
@@ -28,8 +30,8 @@ export default function ProfilePage() {
   const { user } = useAuth(true);
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
-
-  const jobSeekerProfile = user?.role === 'job_seeker' ? user.profile as any : {};
+  const [resumes, setResumes] = useState<Resume[]>([]);
+  const [isLoadingResumes, setIsLoadingResumes] = useState(false);
 
   const {
     register,
@@ -40,14 +42,31 @@ export default function ProfilePage() {
       first_name: user?.first_name || '',
       last_name: user?.last_name || '',
       email: user?.email || '',
-      phone: jobSeekerProfile?.phone || '',
-      location: jobSeekerProfile?.location || '',
-      experience_years: jobSeekerProfile?.experience_years || 0,
-      skills: jobSeekerProfile?.skills?.join(', ') || '',
-      education: jobSeekerProfile?.education || '',
-      bio: jobSeekerProfile?.bio || '',
+      phone: user?.phone || '',
+      location: user?.location || '',
+      experience_years: user?.experience_years || 0,
+      skills: user?.skills?.join(', ') || '',
+      education: user?.education || '',
+      bio: user?.bio || '',
     },
   });
+
+  // Fetch resumes on mount
+  useEffect(() => {
+    fetchResumes();
+  }, []);
+
+  const fetchResumes = async () => {
+    setIsLoadingResumes(true);
+    try {
+      const data = await apiClient.getResumes();
+      setResumes(data);
+    } catch (error) {
+      console.error('Failed to fetch resumes:', error);
+    } finally {
+      setIsLoadingResumes(false);
+    }
+  };
 
   const onSubmit = async (data: ProfileFormData) => {
     setIsLoading(true);
@@ -63,6 +82,30 @@ export default function ProfilePage() {
       console.error('Failed to update profile:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleUploadSuccess = (uploadResponse: ResumeUploadResponse) => {
+    setSuccessMessage('Resume uploaded and parsed successfully!');
+    fetchResumes(); // Refresh resume list
+    
+    // Clear success message after 5 seconds
+    setTimeout(() => {
+      setSuccessMessage('');
+    }, 5000);
+  };
+
+  const handleDeleteResume = async (resumeId: string) => {
+    try {
+      await apiClient.deleteResume(resumeId);
+      setSuccessMessage('Resume deleted successfully!');
+      fetchResumes(); // Refresh list
+      
+      setTimeout(() => {
+        setSuccessMessage('');
+      }, 3000);
+    } catch (error) {
+      console.error('Failed to delete resume:', error);
     }
   };
 
@@ -180,35 +223,14 @@ export default function ProfilePage() {
         <Card>
           <CardTitle>Resume</CardTitle>
           <CardContent>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-              <Upload className="mx-auto text-gray-400 mb-4" size={48} />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Upload Your Resume</h3>
-              <p className="text-sm text-gray-600 mb-4">
-                PDF, DOC, or DOCX. Max size 5MB. Our AI will parse your resume automatically.
-              </p>
-              <Button variant="primary">
-                <Upload size={16} className="mr-2" />
-                Choose File
-              </Button>
-            </div>
+            <ResumeUpload onUploadSuccess={handleUploadSuccess} />
             
-            <div className="mt-4">
-              <h4 className="font-medium text-gray-900 mb-2">Uploaded Resumes</h4>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center">
-                    <FileIcon />
-                    <div className="ml-3">
-                      <p className="text-sm font-medium text-gray-900">My Resume.pdf</p>
-                      <p className="text-xs text-gray-500">Uploaded 2 days ago</p>
-                    </div>
-                  </div>
-                  <div className="flex space-x-2">
-                    <Button variant="ghost" size="sm">View</Button>
-                    <Button variant="ghost" size="sm">Delete</Button>
-                  </div>
-                </div>
-              </div>
+            <div className="mt-6">
+              <ResumeList
+                resumes={resumes}
+                isLoading={isLoadingResumes}
+                onDelete={handleDeleteResume}
+              />
             </div>
           </CardContent>
         </Card>
@@ -217,13 +239,4 @@ export default function ProfilePage() {
   );
 }
 
-function FileIcon() {
-  return (
-    <div className="w-10 h-10 bg-red-100 rounded flex items-center justify-center">
-      <svg className="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 20 20">
-        <path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" />
-      </svg>
-    </div>
-  );
-}
 

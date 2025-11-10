@@ -116,12 +116,12 @@ class ApiClient {
 
   // Profile endpoints
   async getProfile() {
-    const response = await this.client.get('/users/profile');
+    const response = await this.client.get('/users/me');
     return response.data;
   }
 
   async updateProfile(data: any) {
-    const response = await this.client.put('/users/profile', data);
+    const response = await this.client.put('/users/me', data);
     return response.data;
   }
 
@@ -139,6 +139,16 @@ class ApiClient {
 
   async getResumes() {
     const response = await this.client.get('/resumes');
+    return response.data;
+  }
+
+  async getResumeById(id: string) {
+    const response = await this.client.get(`/resumes/${id}`);
+    return response.data;
+  }
+
+  async deleteResume(id: string) {
+    const response = await this.client.delete(`/resumes/${id}`);
     return response.data;
   }
 

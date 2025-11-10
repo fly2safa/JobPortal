@@ -42,7 +42,17 @@ export function LoginForm() {
         router.push('/dashboard');
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Invalid email or password');
+      console.error('Login error:', err);
+      // FastAPI returns errors in 'detail' field, not 'error'
+      if (err.response?.data?.detail) {
+        setError(err.response.data.detail);
+      } else if (err.response?.data?.error) {
+        setError(err.response.data.error);
+      } else if (!err.response) {
+        setError('Unable to connect to server. Please check if the backend is running.');
+      } else {
+        setError('Invalid email or password');
+      }
     } finally {
       setIsLoading(false);
     }

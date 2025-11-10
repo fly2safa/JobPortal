@@ -90,16 +90,16 @@ async def register(user_data: UserRegister):
     }
 
 
-@router.post("/login", response_model=Token)
+@router.post("/login")
 async def login(credentials: UserLogin):
     """
-    Authenticate user and return JWT token.
+    Authenticate user and return JWT token and user data.
     
     Args:
         credentials: User login credentials
         
     Returns:
-        JWT access token
+        JWT access token and user object
         
     Raises:
         HTTPException: If credentials are invalid
@@ -143,9 +143,35 @@ async def login(credentials: UserLogin):
     }
     access_token = create_access_token(token_data)
     
+    # Convert to response model
+    user_response = UserResponse(
+        id=str(user.id),
+        email=user.email,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        role=user.role,
+        phone=user.phone,
+        location=user.location,
+        skills=user.skills,
+        experience_years=user.experience_years,
+        education=user.education,
+        bio=user.bio,
+        linkedin_url=user.linkedin_url,
+        portfolio_url=user.portfolio_url,
+        company_id=user.company_id,
+        job_title=user.job_title,
+        is_active=user.is_active,
+        is_verified=user.is_verified,
+        created_at=user.created_at,
+    )
+    
     logger.info(f"User logged in successfully: {user.email}")
     
-    return Token(access_token=access_token)
+    return {
+        "user": user_response,
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
 
 
 @router.get("/me", response_model=UserResponse)
