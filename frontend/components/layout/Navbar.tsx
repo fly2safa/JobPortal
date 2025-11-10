@@ -105,7 +105,11 @@ export function Navbar() {
                 )}
                 
                 <div className="flex items-center space-x-2 border-l pl-4 ml-2">
-                  <span className="text-sm text-gray-700">{user?.full_name}</span>
+                  <span className="text-sm text-gray-700">
+                    {user?.first_name && user?.last_name 
+                      ? `${user.first_name} ${user.last_name}`
+                      : user?.email || 'User'}
+                  </span>
                   <Button variant="ghost" size="sm" onClick={handleLogout}>
                     <LogOut size={16} className="mr-1" />
                     Logout

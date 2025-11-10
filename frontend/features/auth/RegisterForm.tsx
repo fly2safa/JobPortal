@@ -11,7 +11,8 @@ import apiClient from '@/lib/api';
 import Link from 'next/link';
 
 interface RegisterFormData {
-  full_name: string;
+  first_name: string;
+  last_name: string;
   email: string;
   password: string;
   confirmPassword: string;
@@ -47,6 +48,7 @@ export function RegisterForm() {
         id: '1',
         email: data.email,
         full_name: data.full_name,
+        password: data.password,
         role: data.role,
         is_active: true,
         created_at: new Date().toISOString(),
@@ -77,7 +79,7 @@ export function RegisterForm() {
         router.push('/dashboard');
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Registration failed. Please try again.');
+      setError(err.response?.data?.detail || err.response?.data?.error || 'Registration failed. Please try again.');
     } finally {
       setIsLoading(false);
     }

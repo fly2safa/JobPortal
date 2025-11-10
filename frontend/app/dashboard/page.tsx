@@ -1,15 +1,46 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
 import { Briefcase, FileText, Star, TrendingUp, Clock } from 'lucide-react';
+import { apiClient } from '@/lib/api';
 
 export default function DashboardPage() {
   useAuth(true);
+
+  const [stats, setStats] = useState({ 
+    total: 0, 
+    pending: 0,
+    reviewing: 0, 
+    shortlisted: 0,
+    interview: 0,
+    rejected: 0,
+    accepted: 0,
+    withdrawn: 0
+  });
+  const [recentApplications, setRecentApplications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const statsData = await apiClient.getApplicationStats();
+        setStats(statsData);
+        
+        const appsResponse = await apiClient.getApplications({ page: 1, page_size: 3 });
+        setRecentApplications(appsResponse.applications || []);
+      } catch (error) {
+        console.error('Failed to fetch dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboardData();
+  }, []);
 
   return (
     <DashboardLayout>
@@ -25,8 +56,10 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500 mb-1">Applications Sent</p>
-                <p className="text-3xl font-bold text-gray-900">12</p>
-                <p className="text-sm text-green-600 mt-1">+3 this week</p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {loading ? '...' : stats.total}
+                </p>
+                <p className="text-sm text-green-600 mt-1">Total applications</p>
               </div>
               <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
                 <FileText className="text-primary" size={24} />
@@ -38,7 +71,9 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500 mb-1">In Review</p>
-                <p className="text-3xl font-bold text-gray-900">5</p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {loading ? '...' : (stats.reviewing + stats.shortlisted)}
+                </p>
                 <p className="text-sm text-blue-600 mt-1">Active applications</p>
               </div>
               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
@@ -51,8 +86,10 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500 mb-1">Interviews</p>
-                <p className="text-3xl font-bold text-gray-900">2</p>
-                <p className="text-sm text-purple-600 mt-1">Upcoming</p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {loading ? '...' : stats.interview}
+                </p>
+                <p className="text-sm text-purple-600 mt-1">Scheduled</p>
               </div>
               <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
                 <Star className="text-purple-600" size={24} />
@@ -117,11 +154,13 @@ export default function DashboardPage() {
                 </div>
               ))}
             </div>
-            <Link href="/dashboard/applications">
-              <Button variant="ghost" className="w-full mt-4">
-                View All Applications
-              </Button>
-            </Link>
+            {recentApplications.length > 0 && (
+              <Link href="/dashboard/applications">
+                <Button variant="ghost" className="w-full mt-4">
+                  View All Applications
+                </Button>
+              </Link>
+            )}
           </CardContent>
         </Card>
       </div>

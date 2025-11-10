@@ -1,0 +1,283 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { Card, CardTitle, CardContent } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
+import { Select } from '@/components/ui/Select';
+import { useAuth, useRequireRole } from '@/hooks/useAuth';
+import { JOB_TYPES, EXPERIENCE_LEVELS } from '@/constants';
+import apiClient from '@/lib/api';
+import { Save, ArrowLeft } from 'lucide-react';
+
+interface JobFormData {
+  title: string;
+  description: string;
+  location: string;
+  job_type: string;
+  experience_level: string;
+  salary_min: number;
+  salary_max: number;
+  skills: string;
+  requirements: string;
+  benefits: string;
+  status: string;
+}
+
+export default function EditJobPage() {
+  useAuth(true);
+  useRequireRole(['employer']);
+  const router = useRouter();
+  const params = useParams();
+  const jobId = params.id as string;
+  
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm<JobFormData>();
+
+  useEffect(() => {
+    fetchJob();
+  }, [jobId]);
+
+  const fetchJob = async () => {
+    setIsLoading(true);
+    try {
+      const job = await apiClient.getJobById(jobId);
+      
+      // Populate form with existing job data
+      setValue('title', job.title);
+      setValue('description', job.description);
+      setValue('location', job.location);
+      setValue('job_type', job.job_type);
+      setValue('experience_level', job.experience_level);
+      setValue('salary_min', job.salary_min);
+      setValue('salary_max', job.salary_max);
+      setValue('skills', job.skills.join(', '));
+      setValue('requirements', job.requirements || '');
+      setValue('benefits', job.benefits ? job.benefits.join('\n') : '');
+      setValue('status', job.status);
+    } catch (err: any) {
+      setError('Failed to load job. Please try again.');
+      console.error('Failed to fetch job:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const onSubmit = async (data: JobFormData) => {
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      await apiClient.updateJob(jobId, {
+        title: data.title,
+        description: data.description,
+        location: data.location,
+        job_type: data.job_type,
+        experience_level: data.experience_level,
+        salary_min: data.salary_min || undefined,
+        salary_max: data.salary_max || undefined,
+        skills: data.skills.split(',').map((s) => s.trim()).filter(Boolean),
+        required_skills: data.skills.split(',').map((s) => s.trim()).filter(Boolean),
+        requirements: data.requirements,
+        benefits: data.benefits ? data.benefits.split('\n').filter(Boolean) : [],
+        status: data.status,
+      });
+      router.push('/employer/jobs');
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to update job. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex justify-center py-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <DashboardLayout>
+      <div className="space-y-6 max-w-4xl">
+        <div className="flex items-center space-x-4">
+          <Button
+            variant="ghost"
+            onClick={() => router.back()}
+            className="p-2"
+          >
+            <ArrowLeft size={20} />
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Edit Job Posting</h1>
+            <p className="text-gray-600">Update your job posting details</p>
+          </div>
+        </div>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <Card>
+            <CardTitle>Basic Information</CardTitle>
+            <CardContent>
+              <div className="space-y-4">
+                <Input
+                  label="Job Title"
+                  placeholder="e.g., Senior Frontend Developer"
+                  {...register('title', { required: 'Job title is required' })}
+                  error={errors.title?.message}
+                />
+
+                <Textarea
+                  label="Job Description"
+                  rows={6}
+                  placeholder="Describe the role, responsibilities, and what makes this position exciting..."
+                  {...register('description', { required: 'Description is required' })}
+                  error={errors.description?.message}
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    label="Location"
+                    placeholder="e.g., San Francisco, CA or Remote"
+                    {...register('location', { required: 'Location is required' })}
+                    error={errors.location?.message}
+                  />
+
+                  <Select
+                    label="Job Type"
+                    options={[
+                      { value: '', label: 'Select job type' },
+                      ...JOB_TYPES.map((type) => ({ value: type.value, label: type.label })),
+                    ]}
+                    {...register('job_type', { required: 'Job type is required' })}
+                    error={errors.job_type?.message}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Select
+                    label="Experience Level"
+                    options={[
+                      { value: '', label: 'Select experience level' },
+                      ...EXPERIENCE_LEVELS.map((level) => ({ value: level.value, label: level.label })),
+                    ]}
+                    {...register('experience_level', { required: 'Experience level is required' })}
+                    error={errors.experience_level?.message}
+                  />
+
+                  <Select
+                    label="Status"
+                    options={[
+                      { value: 'draft', label: 'Draft' },
+                      { value: 'active', label: 'Active' },
+                      { value: 'closed', label: 'Closed' },
+                    ]}
+                    {...register('status', { required: 'Status is required' })}
+                    error={errors.status?.message}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardTitle>Compensation</CardTitle>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="Minimum Salary"
+                  type="number"
+                  placeholder="80000"
+                  {...register('salary_min', { valueAsNumber: true })}
+                  helperText="Annual salary in USD"
+                />
+                <Input
+                  label="Maximum Salary"
+                  type="number"
+                  placeholder="120000"
+                  {...register('salary_max', { valueAsNumber: true })}
+                  helperText="Annual salary in USD"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardTitle>Requirements & Skills</CardTitle>
+            <CardContent>
+              <div className="space-y-4">
+                <Input
+                  label="Required Skills"
+                  placeholder="JavaScript, React, TypeScript, Node.js (comma separated)"
+                  {...register('skills', { required: 'At least one skill is required' })}
+                  error={errors.skills?.message}
+                  helperText="Enter skills separated by commas"
+                />
+
+                <Textarea
+                  label="Requirements"
+                  rows={6}
+                  placeholder="• 5+ years of professional experience&#10;• Strong knowledge of React and its ecosystem&#10;• Experience with TypeScript&#10;• Bachelor's degree in Computer Science or related field"
+                  {...register('requirements', { required: 'Requirements are required' })}
+                  error={errors.requirements?.message}
+                  helperText="Enter each requirement on a new line"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardTitle>Benefits (Optional)</CardTitle>
+            <CardContent>
+              <Textarea
+                label="Benefits & Perks"
+                rows={6}
+                placeholder="• Competitive salary and equity&#10;• Health, dental, and vision insurance&#10;• 401(k) with company match&#10;• Flexible PTO policy&#10;• Remote work options"
+                {...register('benefits')}
+                helperText="Enter each benefit on a new line"
+              />
+            </CardContent>
+          </Card>
+
+          <div className="flex space-x-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.back()}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary" isLoading={isSubmitting} className="flex-1">
+              <Save size={18} className="mr-2" />
+              Save Changes
+            </Button>
+          </div>
+        </form>
+      </div>
+    </DashboardLayout>
+  );
+}
+
+
+

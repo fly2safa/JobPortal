@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardTitle, CardContent } from '@/components/ui/Card';
@@ -11,9 +11,12 @@ import { Select } from '@/components/ui/Select';
 import { useAuth } from '@/hooks/useAuth';
 import { Upload, Save } from 'lucide-react';
 import apiClient from '@/lib/api';
+import { ResumeUpload, ResumeList } from '@/features/profile';
+import { Resume, ResumeUploadResponse } from '@/types';
 
 interface ProfileFormData {
-  full_name: string;
+  first_name: string;
+  last_name: string;
   email: string;
   phone: string;
   location: string;
@@ -26,41 +29,120 @@ interface ProfileFormData {
 export default function ProfilePage() {
   const { user } = useAuth(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [successMessage, setSuccessMessage] = useState('');
-
-  const jobSeekerProfile = user?.role === 'job_seeker' ? user.profile as any : {};
+  const [resumes, setResumes] = useState<Resume[]>([]);
+  const [isLoadingResumes, setIsLoadingResumes] = useState(false);
 
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<ProfileFormData>({
     defaultValues: {
-      full_name: user?.full_name || '',
-      email: user?.email || '',
-      phone: jobSeekerProfile?.phone || '',
-      location: jobSeekerProfile?.location || '',
-      experience_years: jobSeekerProfile?.experience_years || 0,
-      skills: jobSeekerProfile?.skills?.join(', ') || '',
-      education: jobSeekerProfile?.education || '',
-      bio: jobSeekerProfile?.bio || '',
+      first_name: '',
+      last_name: '',
+      email: '',
+      phone: '',
+      location: '',
+      experience_years: 0,
+      skills: '',
+      education: '',
+      bio: '',
     },
   });
+
+  // Fetch profile data and resumes on mount
+  useEffect(() => {
+    fetchProfileData();
+    fetchResumes();
+  }, []);
+
+  const fetchProfileData = async () => {
+    setIsLoadingProfile(true);
+    try {
+      const profileData = await apiClient.getProfile();
+      
+      // Update form with fetched data
+      reset({
+        first_name: profileData.first_name || '',
+        last_name: profileData.last_name || '',
+        email: profileData.email || '',
+        phone: profileData.phone || '',
+        location: profileData.location || '',
+        experience_years: profileData.experience_years || 0,
+        skills: profileData.skills?.join(', ') || '',
+        education: profileData.education || '',
+        bio: profileData.bio || '',
+      });
+    } catch (error) {
+      console.error('Failed to fetch profile:', error);
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  };
+
+  const fetchResumes = async () => {
+    setIsLoadingResumes(true);
+    try {
+      const data = await apiClient.getResumes();
+      setResumes(data);
+    } catch (error) {
+      console.error('Failed to fetch resumes:', error);
+    } finally {
+      setIsLoadingResumes(false);
+    }
+  };
 
   const onSubmit = async (data: ProfileFormData) => {
     setIsLoading(true);
     setSuccessMessage('');
 
     try {
-      await apiClient.updateProfile({
+      const updatedProfile = await apiClient.updateProfile({
         ...data,
         skills: data.skills.split(',').map((s) => s.trim()),
       });
+      
+      // Update the auth store with the new profile data
+      const { updateUser } = await import('@/store/authStore').then(m => m.useAuthStore.getState());
+      updateUser(updatedProfile);
+      
       setSuccessMessage('Profile updated successfully!');
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => {
+        setSuccessMessage('');
+      }, 5000);
     } catch (error) {
       console.error('Failed to update profile:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleUploadSuccess = (uploadResponse: ResumeUploadResponse) => {
+    setSuccessMessage('Resume uploaded and parsed successfully!');
+    fetchResumes(); // Refresh resume list
+    
+    // Clear success message after 5 seconds
+    setTimeout(() => {
+      setSuccessMessage('');
+    }, 5000);
+  };
+
+  const handleDeleteResume = async (resumeId: string) => {
+    try {
+      await apiClient.deleteResume(resumeId);
+      setSuccessMessage('Resume deleted successfully!');
+      fetchResumes(); // Refresh list
+      
+      setTimeout(() => {
+        setSuccessMessage('');
+      }, 3000);
+    } catch (error) {
+      console.error('Failed to delete resume:', error);
     }
   };
 
@@ -84,7 +166,7 @@ export default function ProfilePage() {
           <CardContent>
             <div className="flex items-center space-x-6">
               <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center text-white text-3xl font-bold">
-                {user?.full_name?.charAt(0) || 'U'}
+                {user?.first_name?.charAt(0) || 'U'}
               </div>
               <div>
                 <Button variant="outline" size="sm">
@@ -101,12 +183,20 @@ export default function ProfilePage() {
         <Card>
           <CardTitle>Personal Information</CardTitle>
           <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {isLoadingProfile ? (
+              <div className="text-center py-8 text-gray-500">Loading profile...</div>
+            ) : (
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
-                  label="Full Name"
-                  {...register('full_name', { required: 'Name is required' })}
-                  error={errors.full_name?.message}
+                  label="First Name"
+                  {...register('first_name', { required: 'First name is required' })}
+                  error={errors.first_name?.message}
+                />
+                <Input
+                  label="Last Name"
+                  {...register('last_name', { required: 'Last name is required' })}
+                  error={errors.last_name?.message}
                 />
                 <Input
                   label="Email"
@@ -166,6 +256,7 @@ export default function ProfilePage() {
                 Save Changes
               </Button>
             </form>
+            )}
           </CardContent>
         </Card>
 
@@ -173,35 +264,14 @@ export default function ProfilePage() {
         <Card>
           <CardTitle>Resume</CardTitle>
           <CardContent>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-              <Upload className="mx-auto text-gray-400 mb-4" size={48} />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Upload Your Resume</h3>
-              <p className="text-sm text-gray-600 mb-4">
-                PDF, DOC, or DOCX. Max size 5MB. Our AI will parse your resume automatically.
-              </p>
-              <Button variant="primary">
-                <Upload size={16} className="mr-2" />
-                Choose File
-              </Button>
-            </div>
+            <ResumeUpload onUploadSuccess={handleUploadSuccess} />
             
-            <div className="mt-4">
-              <h4 className="font-medium text-gray-900 mb-2">Uploaded Resumes</h4>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center">
-                    <FileIcon />
-                    <div className="ml-3">
-                      <p className="text-sm font-medium text-gray-900">My Resume.pdf</p>
-                      <p className="text-xs text-gray-500">Uploaded 2 days ago</p>
-                    </div>
-                  </div>
-                  <div className="flex space-x-2">
-                    <Button variant="ghost" size="sm">View</Button>
-                    <Button variant="ghost" size="sm">Delete</Button>
-                  </div>
-                </div>
-              </div>
+            <div className="mt-6">
+              <ResumeList
+                resumes={resumes}
+                isLoading={isLoadingResumes}
+                onDelete={handleDeleteResume}
+              />
             </div>
           </CardContent>
         </Card>
@@ -210,13 +280,4 @@ export default function ProfilePage() {
   );
 }
 
-function FileIcon() {
-  return (
-    <div className="w-10 h-10 bg-red-100 rounded flex items-center justify-center">
-      <svg className="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 20 20">
-        <path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" />
-      </svg>
-    </div>
-  );
-}
 
