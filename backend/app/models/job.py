@@ -123,3 +123,5 @@ class Job(Document):
         self.status = JobStatus.ARCHIVED
         self.updated_at = datetime.utcnow()
 
+
+

@@ -398,3 +398,5 @@ async def delete_job(
     await job.delete()
     logger.info(f"Job deleted successfully: {job.title} (ID: {job_id})")
 
+
+

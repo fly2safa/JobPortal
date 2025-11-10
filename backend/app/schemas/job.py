@@ -108,3 +108,5 @@ class JobStatusUpdate(BaseModel):
     """Schema for updating job status."""
     status: JobStatus
 
+
+
