@@ -70,5 +70,13 @@ Write-Success "Starting Uvicorn server..."
 Write-Info "Press Ctrl+C to stop the server"
 Write-Host ""
 
-python -m uvicorn app.main:app --host $HostAddress --port $Port --reload
+# Check Python version for compatibility
+$pythonVersion = python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')"
+if ([float]$pythonVersion -ge 3.13) {
+    Write-Info "Python 3.13+ detected - running without auto-reload (Windows compatibility)"
+    Write-Info "Restart the server manually after code changes"
+    python -m uvicorn app.main:app --host $HostAddress --port $Port
+} else {
+    python -m uvicorn app.main:app --host $HostAddress --port $Port --reload
+}
 
