@@ -436,3 +436,5 @@ This is an automated message from {settings.APP_NAME}. Please do not reply to th
     
     return {"html": html, "text": text}
 
+
+

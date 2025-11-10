@@ -358,3 +358,5 @@ class EmailService:
 # Global email service instance
 email_service = EmailService()
 
+
+
