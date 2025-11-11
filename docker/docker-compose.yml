@@ -4,8 +4,8 @@ services:
   # Backend Service (FastAPI)
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: ../backend
+      dockerfile: ../docker/backend.Dockerfile
     container_name: jobportal-backend
     ports:
       - "8000:8000"
@@ -24,7 +24,7 @@ services:
       - SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL}
       - SMTP_FROM_NAME=${SMTP_FROM_NAME:-TalentNest}
     volumes:
-      - ./backend/uploads:/app/uploads
+      - ../backend/uploads:/app/uploads
     networks:
       - jobportal-network
     restart: unless-stopped
@@ -38,8 +38,8 @@ services:
   # Frontend Service (Next.js)
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
+      context: ../frontend
+      dockerfile: ../docker/frontend.Dockerfile
     container_name: jobportal-frontend
     ports:
       - "3000:3000"

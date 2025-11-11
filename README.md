@@ -73,6 +73,11 @@ A secure, scalable, and user-friendly platform connecting job seekers and employ
 
 3. **Build and run with Docker Compose**:
    ```bash
+   # From project root
+   docker-compose -f docker/docker-compose.yml up --build
+   
+   # Or from docker directory
+   cd docker
    docker-compose up --build
    ```
 
@@ -83,8 +88,15 @@ A secure, scalable, and user-friendly platform connecting job seekers and employ
 
 5. **Stop the application**:
    ```bash
+   # From project root
+   docker-compose -f docker/docker-compose.yml down
+   
+   # Or from docker directory
+   cd docker
    docker-compose down
    ```
+
+For detailed Docker documentation, see [docker/README.md](./docker/README.md)
 
 ### Option 2: Manual Setup
 
@@ -196,35 +208,39 @@ npm test
 
 ## 🐳 Docker Commands
 
+All Docker files are located in the `docker/` directory.
+
 ### Build images
 ```bash
-docker-compose build
+docker-compose -f docker/docker-compose.yml build
 ```
 
 ### Run in detached mode
 ```bash
-docker-compose up -d
+docker-compose -f docker/docker-compose.yml up -d
 ```
 
 ### View logs
 ```bash
-docker-compose logs -f
+docker-compose -f docker/docker-compose.yml logs -f
 ```
 
 ### Stop containers
 ```bash
-docker-compose down
+docker-compose -f docker/docker-compose.yml down
 ```
 
 ### Remove volumes
 ```bash
-docker-compose down -v
+docker-compose -f docker/docker-compose.yml down -v
 ```
 
 ### Rebuild and restart
 ```bash
-docker-compose up --build --force-recreate
+docker-compose -f docker/docker-compose.yml up --build --force-recreate
 ```
+
+For more Docker commands and troubleshooting, see [docker/README.md](./docker/README.md)
 
 ## 📁 Project Structure
 
@@ -238,7 +254,7 @@ JobPortal/
 │   │   ├── services/       # Business logic
 │   │   ├── ai/             # AI features (RAG, prompts)
 │   │   └── main.py         # Application entry point
-│   ├── Dockerfile
+│   ├── .env.example        # Environment template
 │   └── requirements.txt
 ├── frontend/               # Next.js frontend
 │   ├── app/               # App router pages
@@ -246,9 +262,14 @@ JobPortal/
 │   ├── features/          # Feature-specific components
 │   ├── lib/               # Utilities and API client
 │   ├── store/             # State management
-│   ├── Dockerfile
+│   ├── .env.example       # Environment template
 │   └── package.json
-└── docker-compose.yml     # Docker orchestration
+├── docker/                # Docker configuration
+│   ├── backend.Dockerfile
+│   ├── frontend.Dockerfile
+│   ├── docker-compose.yml
+│   └── README.md          # Docker documentation
+└── README.md              # This file
 
 ```
 
