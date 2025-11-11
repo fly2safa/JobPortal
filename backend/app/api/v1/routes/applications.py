@@ -374,6 +374,73 @@ async def withdraw_application(
     return _application_to_response(application)
 
 
+@router.post("/{application_id}/shortlist", response_model=ApplicationResponse)
+async def shortlist_application(
+    application_id: str,
+    current_user: User = Depends(get_current_employer)
+):
+    """
+    Shortlist an application (Employer only - must own the job).
+    
+    Convenience endpoint for updating status to SHORTLISTED.
+    
+    Args:
+        application_id: Application ID
+        current_user: Current authenticated employer
+        
+    Returns:
+        Updated application object
+        
+    Raises:
+        HTTPException: If application not found or user not authorized
+    """
+    logger.info(f"Shortlisting application {application_id} by employer: {current_user.email}")
+    
+    application = await application_service.update_application_status(
+        application_id=application_id,
+        employer_id=str(current_user.id),
+        new_status=ApplicationStatus.SHORTLISTED,
+        notes="Candidate shortlisted for further review"
+    )
+    
+    return _application_to_response(application)
+
+
+@router.post("/{application_id}/reject", response_model=ApplicationResponse)
+async def reject_application(
+    application_id: str,
+    rejection_reason: Optional[str] = None,
+    current_user: User = Depends(get_current_employer)
+):
+    """
+    Reject an application (Employer only - must own the job).
+    
+    Convenience endpoint for updating status to REJECTED.
+    
+    Args:
+        application_id: Application ID
+        rejection_reason: Optional reason for rejection
+        current_user: Current authenticated employer
+        
+    Returns:
+        Updated application object
+        
+    Raises:
+        HTTPException: If application not found or user not authorized
+    """
+    logger.info(f"Rejecting application {application_id} by employer: {current_user.email}")
+    
+    application = await application_service.update_application_status(
+        application_id=application_id,
+        employer_id=str(current_user.id),
+        new_status=ApplicationStatus.REJECTED,
+        notes="Application rejected",
+        rejection_reason=rejection_reason
+    )
+    
+    return _application_to_response(application)
+
+
 @router.delete("/{application_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_application(
     application_id: str,
