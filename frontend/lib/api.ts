@@ -177,8 +177,41 @@ class ApiClient {
     return response.data;
   }
 
-  async generateCoverLetter(jobId: string) {
-    const response = await this.client.post('/assistant/generate-cover-letter', { job_id: jobId });
+  // AI Assistant endpoints
+  async chatWithAssistant(message: string, conversationId?: string) {
+    const response = await this.client.post('/assistant/chat', {
+      message,
+      conversation_id: conversationId,
+    });
+    return response.data;
+  }
+
+  async getConversations(limit?: number) {
+    const response = await this.client.get('/assistant/conversations', {
+      params: { limit },
+    });
+    return response.data;
+  }
+
+  async getConversation(conversationId: string) {
+    const response = await this.client.get(`/assistant/conversations/${conversationId}`);
+    return response.data;
+  }
+
+  async deleteConversation(conversationId: string) {
+    await this.client.delete(`/assistant/conversations/${conversationId}`);
+  }
+
+  async generateCoverLetter(data: {
+    job_id: string;
+    job_title: string;
+    job_description: string;
+    company_name: string;
+    user_name: string;
+    user_skills?: string[];
+    user_experience?: string;
+  }) {
+    const response = await this.client.post('/assistant/generate-cover-letter', data);
     return response.data;
   }
 
