@@ -39,7 +39,7 @@ export default function RecommendationsPage() {
     setIsLoading(true);
     try {
       const response = await apiClient.getJobRecommendations();
-      setRecommendations(response.data || []);
+      setRecommendations(response || []);
     } catch (error) {
       console.error('Failed to fetch recommendations:', error);
       setRecommendations(getMockRecommendations());

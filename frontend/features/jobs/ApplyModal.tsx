@@ -6,15 +6,20 @@ import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Textarea';
 import { Select } from '@/components/ui/Select';
+import { Card } from '@/components/ui/Card';
 import apiClient from '@/lib/api';
 import { Sparkles } from 'lucide-react';
 import { Resume } from '@/types';
+import { CoverLetterGenerator } from '@/features/assistant';
+import { useAuthStore } from '@/store/authStore';
 
 interface ApplyModalProps {
   isOpen: boolean;
   onClose: () => void;
   jobId: string;
   jobTitle: string;
+  jobDescription?: string;
+  companyName?: string;
   onSuccess: () => void;
 }
 
@@ -23,9 +28,16 @@ interface ApplyFormData {
   cover_letter: string;
 }
 
-export function ApplyModal({ isOpen, onClose, jobId, jobTitle, onSuccess }: ApplyModalProps) {
+export function ApplyModal({
+  isOpen,
+  onClose,
+  jobId,
+  jobTitle,
+  jobDescription = '',
+  companyName = '',
+  onSuccess,
+}: ApplyModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isGeneratingCoverLetter, setIsGeneratingCoverLetter] = useState(false);
   const [error, setError] = useState('');
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [isUploadingResume, setIsUploadingResume] = useState(false);
@@ -46,18 +58,27 @@ export function ApplyModal({ isOpen, onClose, jobId, jobTitle, onSuccess }: Appl
       setResumes([]);
     }
   };
+  const [showGenerator, setShowGenerator] = useState(false);
+  const { user } = useAuthStore();
 
-  const handleGenerateCoverLetter = async () => {
-    setIsGeneratingCoverLetter(true);
-    try {
-      const response = await apiClient.generateCoverLetter(jobId);
-      setValue('cover_letter', response.cover_letter);
-    } catch (err) {
-      console.error('Failed to generate cover letter:', err);
-      setValue('cover_letter', `Dear Hiring Manager,\n\nI am writing to express my strong interest in the ${jobTitle} position. With my skills and experience, I believe I would be a great fit for this role.\n\n[Customize this cover letter to highlight your relevant experience and explain why you're interested in this position.]\n\nThank you for considering my application.\n\nBest regards`);
-    } finally {
-      setIsGeneratingCoverLetter(false);
-    }
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<ApplyFormData>();
+
+  const coverLetter = watch('cover_letter');
+
+  const handleGenerateCoverLetter = async (data: any) => {
+    const response = await apiClient.generateCoverLetter(data);
+    return response.cover_letter;
+  };
+
+  const handleInsertCoverLetter = (letter: string) => {
+    setValue('cover_letter', letter);
+    setShowGenerator(false);
   };
 
   const onResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -138,28 +159,47 @@ export function ApplyModal({ isOpen, onClose, jobId, jobTitle, onSuccess }: Appl
         />
 
         <div>
-          <div className="flex justify-between items-center mb-1">
-            <label className="block text-sm font-medium text-gray-700">
-              Cover Letter <span className="text-gray-500">(optional)</span>
-            </label>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleGenerateCoverLetter}
-              disabled={isGeneratingCoverLetter}
-              className="text-primary"
-            >
-              <Sparkles size={16} className="mr-1" />
-              {isGeneratingCoverLetter ? 'Generating...' : 'AI Generate'}
-            </Button>
-          </div>
-          <Textarea
-            rows={8}
-            placeholder="Write a cover letter to introduce yourself..."
-            {...register('cover_letter')}
-            error={errors.cover_letter?.message}
-          />
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Cover Letter <span className="text-gray-500">(optional)</span>
+          </label>
+
+          {!showGenerator && !coverLetter && (
+            <Card className="p-4 mb-3">
+              <CoverLetterGenerator
+                jobId={jobId}
+                jobTitle={jobTitle}
+                jobDescription={jobDescription}
+                companyName={companyName}
+                userName={user ? `${user.first_name} ${user.last_name}` : 'Applicant'}
+                userSkills={user?.skills || []}
+                userExperience={user?.bio}
+                onGenerate={handleGenerateCoverLetter}
+                onInsert={handleInsertCoverLetter}
+              />
+            </Card>
+          )}
+
+          {(showGenerator || coverLetter) && (
+            <>
+              <Textarea
+                rows={8}
+                placeholder="Write a cover letter to introduce yourself..."
+                {...register('cover_letter')}
+                error={errors.cover_letter?.message}
+              />
+              {coverLetter && !showGenerator && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowGenerator(true)}
+                  className="mt-2 text-primary"
+                >
+                  Regenerate with AI
+                </Button>
+              )}
+            </>
+          )}
         </div>
 
         <div className="flex gap-3 pt-4">

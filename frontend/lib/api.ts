@@ -110,12 +110,24 @@ class ApiClient {
   }
 
   async updateApplicationStatus(id: string, status: string) {
-    const response = await this.client.patch(`/applications/${id}/status`, { status });
+    const response = await this.client.put(`/applications/${id}/status`, { status });
     return response.data;
   }
 
-  async getJobApplications(jobId: string) {
-    const response = await this.client.get(`/jobs/${jobId}/applications`);
+  async shortlistApplication(id: string) {
+    const response = await this.client.post(`/applications/${id}/shortlist`);
+    return response.data;
+  }
+
+  async rejectApplication(id: string, rejectionReason?: string) {
+    const response = await this.client.post(`/applications/${id}/reject`, {
+      rejection_reason: rejectionReason
+    });
+    return response.data;
+  }
+
+  async getJobApplications(jobId: string, params?: { status_filter?: string; page?: number; page_size?: number }) {
+    const response = await this.client.get(`/applications/job/${jobId}`, { params });
     return response.data;
   }
 
@@ -177,8 +189,41 @@ class ApiClient {
     return response.data;
   }
 
-  async generateCoverLetter(jobId: string) {
-    const response = await this.client.post('/assistant/generate-cover-letter', { job_id: jobId });
+  // AI Assistant endpoints
+  async chatWithAssistant(message: string, conversationId?: string) {
+    const response = await this.client.post('/assistant/chat', {
+      message,
+      conversation_id: conversationId,
+    });
+    return response.data;
+  }
+
+  async getConversations(limit?: number) {
+    const response = await this.client.get('/assistant/conversations', {
+      params: { limit },
+    });
+    return response.data;
+  }
+
+  async getConversation(conversationId: string) {
+    const response = await this.client.get(`/assistant/conversations/${conversationId}`);
+    return response.data;
+  }
+
+  async deleteConversation(conversationId: string) {
+    await this.client.delete(`/assistant/conversations/${conversationId}`);
+  }
+
+  async generateCoverLetter(data: {
+    job_id: string;
+    job_title: string;
+    job_description: string;
+    company_name: string;
+    user_name: string;
+    user_skills?: string[];
+    user_experience?: string;
+  }) {
+    const response = await this.client.post('/assistant/generate-cover-letter', data);
     return response.data;
   }
 

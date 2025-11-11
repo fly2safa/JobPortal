@@ -25,6 +25,23 @@ class JobGenerator:
     EMPLOYMENT_TYPES = ["Full-Time", "Part-Time", "Contract"]
     REMOTE_OPTIONS = ["On-site", "Remote", "Hybrid"]
     
+    # Mapping to backend enum values
+    EMPLOYMENT_TYPE_MAP = {
+        "Full-Time": "full_time",
+        "Part-Time": "part_time",
+        "Contract": "contract",
+        "Internship": "internship",
+        "Temporary": "temporary"
+    }
+    
+    EXPERIENCE_LEVEL_MAP = {
+        "junior": "junior",
+        "mid": "mid",
+        "senior": "senior",
+        "lead": "lead",
+        "principal": "executive"
+    }
+    
     # Salary ranges by job level (annual in USD)
     SALARY_RANGES = {
         "junior": (45000, 75000),
@@ -70,9 +87,10 @@ class JobGenerator:
         else:
             return "principal"
     
-    def generate_salary_range(self, job_title: str, level: str, location: str = None) -> str:
+    def generate_salary_range(self, job_title: str, level: str, location: str = None) -> tuple[float, float]:
         """
         Generate salary range with consistency for similar jobs (+/- 10% variance).
+        Returns (min_salary, max_salary) as floats.
         """
         # Create a cache key for similar jobs
         cache_key = f"{job_title.lower()}_{level}"
@@ -94,7 +112,7 @@ class JobGenerator:
         min_salary = round(min_salary / 5000) * 5000
         max_salary = round(max_salary / 5000) * 5000
         
-        return f"${min_salary:,} - ${max_salary:,}"
+        return float(min_salary), float(max_salary)
     
     def generate_job_with_ai(self, candidate: Dict, employer: Dict) -> Dict:
         """Generate a job posting using AI based on candidate skills and employer info."""
@@ -166,18 +184,80 @@ No markdown formatting or code blocks."""
             # Build complete job posting
             job_title = ai_data.get("job_title", f"{level_prefix} {primary_skill} Developer").strip()
             
+            # Get salary range as tuple
+            salary_min, salary_max = self.generate_salary_range(job_title, level, location)
+            
+            # Determine remote status
+            remote_option = random.choice(self.REMOTE_OPTIONS)
+            is_remote = remote_option == "Remote"
+            
+            # Map employment type to backend enum
+            employment_type_str = random.choice(self.EMPLOYMENT_TYPES)
+            job_type = self.EMPLOYMENT_TYPE_MAP.get(employment_type_str, "full_time")
+            
+            # Map experience level to backend enum
+            experience_level = self.EXPERIENCE_LEVEL_MAP.get(level, "mid")
+            
+            # Parse requirements
+            requirements_list = ai_data.get("requirements", skills[:5])
+            requirements_str = "\n".join(f"• {req}" for req in requirements_list) if isinstance(requirements_list, list) else requirements_list
+            
+            # Generate posted date
+            posted_date_str = self.generate_posted_date()
+            posted_date = datetime.strptime(posted_date_str, "%Y-%m-%d")
+            
+            # NEW SCHEMA - Backend compatible
             job = {
-                "job_id": self.generate_job_id(),
-                "job_title": job_title,
-                "company_name": company_name,
+                # Core fields
+                "title": job_title,
                 "description": ai_data.get("description", f"Exciting opportunity at {company_name}."),
-                "requirements": ai_data.get("requirements", skills[:5]),
-                "salary_range": self.generate_salary_range(job_title, level, location),
+                "requirements": requirements_str,
+                "responsibilities": None,
+                
+                # Skills
+                "skills": skills[:10],
+                "required_skills": skills[:5],
+                "preferred_skills": skills[5:10] if len(skills) > 5 else [],
+                
+                # Location
                 "location": location,
-                "remote": random.choice(self.REMOTE_OPTIONS),
-                "employment_type": random.choice(self.EMPLOYMENT_TYPES),
-                "posted_date": self.generate_posted_date(),
-                "app_ids_received": []
+                "is_remote": is_remote,
+                
+                # Company/Employer
+                "company_id": str(employer.get("_id", "default_company")),
+                "company_name": company_name,
+                "employer_id": str(employer.get("_id", "default_employer")),
+                
+                # Salary
+                "salary_min": salary_min,
+                "salary_max": salary_max,
+                "salary_currency": "USD",
+                
+                # Job details
+                "job_type": job_type,
+                "experience_level": experience_level,
+                "experience_years_min": max(0, experience_years - 2),
+                "experience_years_max": experience_years + 2,
+                
+                # Status
+                "status": "active",
+                "posted_date": posted_date,
+                "closing_date": None,
+                
+                # Tracking
+                "application_count": 0,
+                "view_count": 0,
+                
+                # Additional
+                "benefits": [],
+                "application_instructions": None,
+                
+                # Metadata
+                "created_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow(),
+                
+                # Legacy reference (optional)
+                "_legacy_job_id": self.generate_job_id(),
             }
             
             return job
@@ -201,18 +281,79 @@ No markdown formatting or code blocks."""
         primary_skill = skills[0] if skills else "Software"
         job_title = f"{level_prefix} {primary_skill} Developer".strip()
         
+        # Get salary range as tuple
+        salary_min, salary_max = self.generate_salary_range(job_title, level, location)
+        
+        # Determine remote status
+        remote_option = random.choice(self.REMOTE_OPTIONS)
+        is_remote = remote_option == "Remote"
+        
+        # Map employment type to backend enum
+        employment_type_str = random.choice(self.EMPLOYMENT_TYPES)
+        job_type = self.EMPLOYMENT_TYPE_MAP.get(employment_type_str, "full_time")
+        
+        # Map experience level to backend enum
+        experience_level = self.EXPERIENCE_LEVEL_MAP.get(level, "mid")
+        
+        # Format requirements
+        requirements_str = "\n".join(f"• {skill}" for skill in skills[:5])
+        
+        # Generate posted date
+        posted_date_str = self.generate_posted_date()
+        posted_date = datetime.strptime(posted_date_str, "%Y-%m-%d")
+        
+        # NEW SCHEMA - Backend compatible
         return {
-            "job_id": self.generate_job_id(),
-            "job_title": job_title,
-            "company_name": company_name,
-            "description": f"Join {company_name} as a {job_title}. Work with cutting-edge technologies.",
-            "requirements": skills[:5],
-            "salary_range": self.generate_salary_range(job_title, level, location),
+            # Core fields
+            "title": job_title,
+            "description": f"Join {company_name} as a {job_title}. Work with cutting-edge technologies and contribute to innovative projects.",
+            "requirements": requirements_str,
+            "responsibilities": None,
+            
+            # Skills
+            "skills": skills[:10],
+            "required_skills": skills[:5],
+            "preferred_skills": skills[5:10] if len(skills) > 5 else [],
+            
+            # Location
             "location": location,
-            "remote": random.choice(self.REMOTE_OPTIONS),
-            "employment_type": random.choice(self.EMPLOYMENT_TYPES),
-            "posted_date": self.generate_posted_date(),
-            "app_ids_received": []
+            "is_remote": is_remote,
+            
+            # Company/Employer
+            "company_id": str(employer.get("_id", "default_company")),
+            "company_name": company_name,
+            "employer_id": str(employer.get("_id", "default_employer")),
+            
+            # Salary
+            "salary_min": salary_min,
+            "salary_max": salary_max,
+            "salary_currency": "USD",
+            
+            # Job details
+            "job_type": job_type,
+            "experience_level": experience_level,
+            "experience_years_min": max(0, experience_years - 2),
+            "experience_years_max": experience_years + 2,
+            
+            # Status
+            "status": "active",
+            "posted_date": posted_date,
+            "closing_date": None,
+            
+            # Tracking
+            "application_count": 0,
+            "view_count": 0,
+            
+            # Additional
+            "benefits": [],
+            "application_instructions": None,
+            
+            # Metadata
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+            
+            # Legacy reference (optional)
+            "_legacy_job_id": self.generate_job_id(),
         }
 
 
@@ -310,7 +451,7 @@ def save_jobs_to_json(jobs: List[Dict], filename: str = "generated_jobs.json") -
     print(f"📊 Total jobs in file: {len(existing_jobs)}")
 
 
-def save_jobs_to_mongodb(jobs: List[Dict], db_url: str, db_name: str, collection_name: str = "Jobs") -> bool:
+def save_jobs_to_mongodb(jobs: List[Dict], db_url: str, db_name: str, collection_name: str = "jobs") -> bool:
     """Save accepted jobs to MongoDB."""
     try:
         # Connect to MongoDB
@@ -371,15 +512,28 @@ def main():
     print("💼  TalentNest Job Generator  💼")
     print("="*70)
     
-    # Load environment variables
+    # Load environment variables from multiple possible locations
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    env_path = os.path.join(script_dir, '.env')
-    load_dotenv(env_path)
+    backend_dir = os.path.join(os.path.dirname(script_dir), 'backend')
+    
+    # Try loading from current directory first, then backend directory
+    env_loaded = False
+    if os.path.exists(os.path.join(script_dir, '.env')):
+        load_dotenv(os.path.join(script_dir, '.env'))
+        env_loaded = True
+        print(f"✓ Loaded .env from: {script_dir}")
+    elif os.path.exists(os.path.join(backend_dir, '.env')):
+        load_dotenv(os.path.join(backend_dir, '.env'))
+        env_loaded = True
+        print(f"✓ Loaded .env from: {backend_dir}")
+    else:
+        load_dotenv()  # Try default locations
+        print("⚠️  .env file not found in DB_ContentGen or backend directories")
     
     api_key = os.getenv('OPENAI_API_KEY')
     if not api_key:
         print("\n❌ Error: OPENAI_API_KEY not found in .env file")
-        print(f"Please add your OpenAI API key to: {env_path}")
+        print(f"Please add your OpenAI API key to .env in {script_dir} or {backend_dir}")
         return
     
     # Load database configuration
