@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
@@ -8,6 +8,8 @@ import { Textarea } from '@/components/ui/Textarea';
 import { Select } from '@/components/ui/Select';
 import { Card } from '@/components/ui/Card';
 import apiClient from '@/lib/api';
+import { Sparkles } from 'lucide-react';
+import { Resume } from '@/types';
 import { CoverLetterGenerator } from '@/features/assistant';
 import { useAuthStore } from '@/store/authStore';
 
@@ -37,6 +39,25 @@ export function ApplyModal({
 }: ApplyModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [resumes, setResumes] = useState<Resume[]>([]);
+  const [isUploadingResume, setIsUploadingResume] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Get available resumes for selection, refresh after upload
+  useEffect(() => {
+    if (isOpen) {
+      fetchResumes();
+    }
+  }, [isOpen]);
+
+  const fetchResumes = async () => {
+    try {
+      const response = await apiClient.getResumes();
+      setResumes(response.data || []);
+    } catch (err) {
+      setResumes([]);
+    }
+  };
   const [showGenerator, setShowGenerator] = useState(false);
   const { user } = useAuthStore();
 
@@ -59,6 +80,31 @@ export function ApplyModal({
     setValue('cover_letter', letter);
     setShowGenerator(false);
   };
+
+  const onResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingResume(true);
+    setError("");
+    try {
+      const response = await apiClient.uploadResume(file);
+      await fetchResumes();
+      // Auto-select the newly uploaded resume
+      setValue('resume_url', response.resume.file_url, { shouldValidate: true });
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to upload resume. Please try again.');
+    } finally {
+      setIsUploadingResume(false);
+    }
+  };
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<ApplyFormData>();
 
   const onSubmit = async (data: ApplyFormData) => {
     setIsSubmitting(true);
@@ -87,16 +133,29 @@ export function ApplyModal({
         </div>
       )}
 
+      {/* Upload Resume Section */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Upload Resume
+        </label>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf,.doc,.docx"
+          onChange={onResumeUpload}
+          disabled={isUploadingResume || isSubmitting}
+          className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:ring-2 focus:ring-primary"
+        />
+        {isUploadingResume && <span className="text-xs text-gray-500 mt-1 inline-block">Uploading...</span>}
+      </div>
+
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Select
           label="Select Resume"
-          options={[
-            { value: '', label: 'Select a resume' },
-            { value: 'resume-1', label: 'My Resume.pdf' },
-            { value: 'resume-2', label: 'Updated Resume 2024.pdf' },
-          ]}
-          {...register('resume_url', { required: 'Please select a resume' })}
+          options={[{ value: '', label: 'Select a resume' }, ...resumes.map((r) => ({ value: r.file_url, label: r.file_name }))]}
+          {...register('resume_url', { required: 'Please select or upload a resume' })}
           error={errors.resume_url?.message}
+          disabled={isUploadingResume || isSubmitting}
         />
 
         <div>
