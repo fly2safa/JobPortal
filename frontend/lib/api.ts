@@ -95,7 +95,12 @@ class ApiClient {
 
   // Application endpoints
   async getApplications(params?: any) {
-    const response = await this.client.get('/applications', { params });
+    const response = await this.client.get('/applications/me', { params });
+    return response.data;
+  }
+
+  async getApplicationStats() {
+    const response = await this.client.get('/applications/me/stats');
     return response.data;
   }
 
@@ -105,23 +110,35 @@ class ApiClient {
   }
 
   async updateApplicationStatus(id: string, status: string) {
-    const response = await this.client.patch(`/applications/${id}/status`, { status });
+    const response = await this.client.put(`/applications/${id}/status`, { status });
     return response.data;
   }
 
-  async getJobApplications(jobId: string) {
-    const response = await this.client.get(`/jobs/${jobId}/applications`);
+  async shortlistApplication(id: string) {
+    const response = await this.client.post(`/applications/${id}/shortlist`);
+    return response.data;
+  }
+
+  async rejectApplication(id: string, rejectionReason?: string) {
+    const response = await this.client.post(`/applications/${id}/reject`, {
+      rejection_reason: rejectionReason
+    });
+    return response.data;
+  }
+
+  async getJobApplications(jobId: string, params?: { status_filter?: string; page?: number; page_size?: number }) {
+    const response = await this.client.get(`/applications/job/${jobId}`, { params });
     return response.data;
   }
 
   // Profile endpoints
   async getProfile() {
-    const response = await this.client.get('/users/profile');
+    const response = await this.client.get('/users/me');
     return response.data;
   }
 
   async updateProfile(data: any) {
-    const response = await this.client.put('/users/profile', data);
+    const response = await this.client.put('/users/me', data);
     return response.data;
   }
 
@@ -139,6 +156,16 @@ class ApiClient {
 
   async getResumes() {
     const response = await this.client.get('/resumes');
+    return response.data;
+  }
+
+  async getResumeById(id: string) {
+    const response = await this.client.get(`/resumes/${id}`);
+    return response.data;
+  }
+
+  async deleteResume(id: string) {
+    const response = await this.client.delete(`/resumes/${id}`);
     return response.data;
   }
 
@@ -162,8 +189,41 @@ class ApiClient {
     return response.data;
   }
 
-  async generateCoverLetter(jobId: string) {
-    const response = await this.client.post('/assistant/generate-cover-letter', { job_id: jobId });
+  // AI Assistant endpoints
+  async chatWithAssistant(message: string, conversationId?: string) {
+    const response = await this.client.post('/assistant/chat', {
+      message,
+      conversation_id: conversationId,
+    });
+    return response.data;
+  }
+
+  async getConversations(limit?: number) {
+    const response = await this.client.get('/assistant/conversations', {
+      params: { limit },
+    });
+    return response.data;
+  }
+
+  async getConversation(conversationId: string) {
+    const response = await this.client.get(`/assistant/conversations/${conversationId}`);
+    return response.data;
+  }
+
+  async deleteConversation(conversationId: string) {
+    await this.client.delete(`/assistant/conversations/${conversationId}`);
+  }
+
+  async generateCoverLetter(data: {
+    job_id: string;
+    job_title: string;
+    job_description: string;
+    company_name: string;
+    user_name: string;
+    user_skills?: string[];
+    user_experience?: string;
+  }) {
+    const response = await this.client.post('/assistant/generate-cover-letter', data);
     return response.data;
   }
 

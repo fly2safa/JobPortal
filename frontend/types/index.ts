@@ -2,10 +2,25 @@
 export interface User {
   id: string;
   email: string;
-  full_name: string;
+  first_name: string;
+  last_name: string;
   role: 'job_seeker' | 'employer';
-  profile?: JobSeekerProfile | EmployerProfile;
+  // Profile fields are directly on user object (not nested in profile)
+  phone?: string;
+  location?: string;
+  skills?: string[];
+  experience_years?: number;
+  education?: string;
+  bio?: string;
+  linkedin_url?: string;
+  portfolio_url?: string;
+  company_id?: string;
+  job_title?: string;
+  is_active?: boolean;
+  is_verified?: boolean;
   created_at: string;
+  updated_at?: string;
+  last_login?: string;
 }
 
 export interface JobSeekerProfile {
@@ -32,19 +47,41 @@ export interface Job {
   id: string;
   title: string;
   description: string;
-  company_id: string;
-  company_name?: string;
+  requirements?: string;  // String format from backend
+  responsibilities?: string;
+  
+  skills: string[];
+  required_skills?: string[];
+  preferred_skills?: string[];
+  
   location: string;
-  job_type: 'full-time' | 'part-time' | 'contract' | 'internship';
-  experience_level: 'entry' | 'mid' | 'senior' | 'lead';
+  is_remote: boolean;
+  
+  company_id: string;
+  company_name: string;
+  employer_id: string;
+  
   salary_min?: number;
   salary_max?: number;
-  skills: string[];
-  requirements: string[];
+  salary_currency?: string;
+  
+  job_type: 'full_time' | 'part_time' | 'contract' | 'internship' | 'temporary';
+  experience_level: 'entry' | 'junior' | 'mid' | 'senior' | 'lead' | 'executive';
+  experience_years_min?: number;
+  experience_years_max?: number;
+  
+  status: 'draft' | 'active' | 'closed' | 'archived';
+  posted_date?: string;
+  closing_date?: string;
+  
+  application_count: number;
+  view_count: number;
+  
   benefits?: string[];
-  status: 'active' | 'closed' | 'draft';
-  posted_date: string;
-  deadline?: string;
+  application_instructions?: string;
+  
+  created_at: string;
+  updated_at: string;
 }
 
 // Application Types
@@ -67,9 +104,30 @@ export interface Resume {
   user_id: string;
   file_url: string;
   file_name: string;
+  file_size: number;
+  
+  // Parsed data
   parsed_text?: string;
-  skills_extracted?: string[];
-  created_date: string;
+  skills_extracted: string[];
+  experience_years?: number;
+  education?: string;
+  work_experience?: string;
+  summary?: string;
+  
+  // Parsing metadata
+  parsing_method: 'algorithmic' | 'hybrid' | 'ai';
+  parsing_confidence: number;
+  ai_used: boolean;
+  
+  // Timestamps
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ResumeUploadResponse {
+  resume: Resume;
+  message: string;
+  skills_synced: boolean;
 }
 
 // Interview Types
@@ -125,7 +183,8 @@ export interface LoginRequest {
 export interface RegisterRequest {
   email: string;
   password: string;
-  full_name: string;
+  first_name: string;
+  last_name: string;
   role: 'job_seeker' | 'employer';
 }
 

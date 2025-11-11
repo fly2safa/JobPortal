@@ -52,8 +52,8 @@ export default function EmployerJobsPage() {
       <div className="space-y-6">
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">My Job Postings</h1>
-            <p className="text-gray-600">Manage and track your job listings</p>
+            <h1 className="text-3xl font-bold text-white mb-2">My Job Postings</h1>
+            <p className="text-white">Manage and track your job listings</p>
           </div>
           <Link href="/employer/jobs/new">
             <Button variant="primary">
@@ -166,7 +166,7 @@ function getMockEmployerJobs(): Job[] {
       description: 'Looking for an experienced frontend developer...',
       company_id: 'company-1',
       location: 'San Francisco, CA',
-      job_type: 'full-time',
+      job_type: 'full_time',
       experience_level: 'senior',
       salary_min: 120000,
       salary_max: 180000,
@@ -181,7 +181,7 @@ function getMockEmployerJobs(): Job[] {
       description: 'Seeking a product manager to lead our initiatives...',
       company_id: 'company-1',
       location: 'Remote',
-      job_type: 'full-time',
+      job_type: 'full_time',
       experience_level: 'mid',
       salary_min: 100000,
       salary_max: 150000,

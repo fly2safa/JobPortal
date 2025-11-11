@@ -3,28 +3,29 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 
 export function useAuth(requireAuth: boolean = true) {
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, _hasHydrated } = useAuthStore();
   const router = useRouter();
 
   useEffect(() => {
-    if (requireAuth && !isAuthenticated) {
+    // Only redirect after hydration is complete
+    if (_hasHydrated && requireAuth && !isAuthenticated) {
       router.push('/login');
     }
-  }, [isAuthenticated, requireAuth, router]);
+  }, [isAuthenticated, requireAuth, router, _hasHydrated]);
 
-  return { isAuthenticated, user };
+  return { isAuthenticated, user, isLoading: !_hasHydrated };
 }
 
 export function useRequireRole(allowedRoles: string[]) {
-  const { user } = useAuthStore();
+  const { user, _hasHydrated } = useAuthStore();
   const router = useRouter();
 
   useEffect(() => {
-    if (user && !allowedRoles.includes(user.role)) {
+    if (_hasHydrated && user && !allowedRoles.includes(user.role)) {
       router.push('/dashboard');
     }
-  }, [user, allowedRoles, router]);
+  }, [user, allowedRoles, router, _hasHydrated]);
 
-  return user;
+  return { user, isLoading: !_hasHydrated };
 }
 

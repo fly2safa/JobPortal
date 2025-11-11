@@ -28,7 +28,7 @@ export default function ApplicationsPage() {
     setIsLoading(true);
     try {
       const response = await apiClient.getApplications();
-      setApplications(response.data || []);
+      setApplications(response.applications || []);
     } catch (error) {
       console.error('Failed to fetch applications:', error);
       // Show mock data for demo
@@ -48,8 +48,8 @@ export default function ApplicationsPage() {
       <div className="space-y-6">
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">My Applications</h1>
-            <p className="text-gray-600">Track the status of your job applications</p>
+            <h1 className="text-3xl font-bold text-white mb-2">My Applications</h1>
+            <p className="text-white">Track the status of your job applications</p>
           </div>
         </div>
 

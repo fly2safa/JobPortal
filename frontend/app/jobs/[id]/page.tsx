@@ -33,7 +33,7 @@ export default function JobDetailPage() {
     setIsLoading(true);
     try {
       const response = await apiClient.getJobById(params.id as string);
-      setJob(response.data);
+      setJob(response);
     } catch (error) {
       console.error('Failed to fetch job:', error);
       // Show mock data for demo
@@ -57,7 +57,9 @@ export default function JobDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen" style={{
+        background: 'linear-gradient(135deg, #075299 0%, #5a9ab3 100%)'
+      }}>
         <Navbar />
         <div className="max-w-5xl mx-auto px-4 py-20 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
@@ -68,7 +70,9 @@ export default function JobDetailPage() {
 
   if (!job) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen" style={{
+        background: 'linear-gradient(135deg, #075299 0%, #5a9ab3 100%)'
+      }}>
         <Navbar />
         <div className="max-w-5xl mx-auto px-4 py-20 text-center">
           <p className="text-gray-600">Job not found</p>
@@ -83,7 +87,9 @@ export default function JobDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{
+      background: 'linear-gradient(135deg, #075299 0%, #5a9ab3 100%)'
+    }}>
       <Navbar />
       
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -233,6 +239,8 @@ export default function JobDetailPage() {
         onClose={() => setShowApplyModal(false)}
         jobId={job.id}
         jobTitle={job.title}
+        jobDescription={job.description}
+        companyName={job.company_name || job.company_id}
         onSuccess={handleApplicationSuccess}
       />
     </div>
@@ -247,7 +255,7 @@ function getMockJob(id: string): Job {
     company_id: 'company-1',
     company_name: 'TechCorp Inc.',
     location: 'San Francisco, CA (Hybrid)',
-    job_type: 'full-time',
+    job_type: 'full_time',
     experience_level: 'senior',
     salary_min: 120000,
     salary_max: 180000,

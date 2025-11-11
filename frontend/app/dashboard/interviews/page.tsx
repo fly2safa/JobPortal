@@ -24,7 +24,7 @@ export default function InterviewsPage() {
     setIsLoading(true);
     try {
       const response = await apiClient.getInterviews();
-      setInterviews(response.data || []);
+      setInterviews(response || []);
     } catch (error) {
       console.error('Failed to fetch interviews:', error);
       // Show mock data for demo
@@ -41,8 +41,8 @@ export default function InterviewsPage() {
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Interviews</h1>
-          <p className="text-gray-600">Manage your upcoming and past interviews</p>
+          <h1 className="text-3xl font-bold text-white mb-2">Interviews</h1>
+          <p className="text-white">Manage your upcoming and past interviews</p>
         </div>
 
         {/* Upcoming Interviews */}

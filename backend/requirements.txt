@@ -44,7 +44,10 @@ aiosmtplib>=3.0.1
 # tiktoken>=0.5.2
 # numpy>=1.26.0
 
-# Optional - Background task processing (uncomment if needed)
+# Optional - for email notifications
+# aiosmtplib>=3.0.1
+
+# Optional - for background tasks
 # celery>=5.3.6
 # redis>=5.0.1
 
