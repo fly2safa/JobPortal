@@ -41,8 +41,8 @@ aiofiles>=23.2.1
 # tiktoken>=0.5.2
 # numpy>=1.26.0
 
-# Optional - for email notifications
-# aiosmtplib>=3.0.1
+# Email SMTP (required for email notifications)
+aiosmtplib>=3.0.1
 
 # Optional - for background tasks
 # celery>=5.3.6

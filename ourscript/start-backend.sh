@@ -90,5 +90,14 @@ print_success "Starting Uvicorn server..."
 print_info "Press Ctrl+C to stop the server"
 echo ""
 
-python -m uvicorn app.main:app --host "$HOST" --port "$PORT" --reload
+# Check Python version for compatibility
+PYTHON_VERSION=$(python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>/dev/null || python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+MAJOR_MINOR=$(echo "$PYTHON_VERSION" | awk -F. '{printf "%d%02d", $1, $2}')
+
+if [ "$MAJOR_MINOR" -ge 313 ]; then
+    print_info "Python 3.13+ detected - using alternative reload method"
+    python -m uvicorn app.main:app --host "$HOST" --port "$PORT" --reload-dir app
+else
+    python -m uvicorn app.main:app --host "$HOST" --port "$PORT" --reload
+fi
 
