@@ -12,6 +12,7 @@ import { Application } from '@/types';
 import { formatDate } from '@/lib/utils';
 import { Eye, CheckCircle, X, Calendar, FileText, Mail, Sparkles } from 'lucide-react';
 import apiClient from '@/lib/api';
+import CandidateRecommendations from '@/features/employer/candidate-recommendations/CandidateRecommendations';
 
 export default function JobApplicationsPage() {
   useAuth(true);
@@ -86,22 +87,7 @@ export default function JobApplicationsPage() {
         </div>
 
         {/* AI Recommendations */}
-        <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
-          <div className="flex items-start space-x-4">
-            <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
-              <Sparkles className="text-white" size={24} />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-gray-900 mb-1">AI-Recommended Candidates</h3>
-              <p className="text-sm text-gray-700 mb-3">
-                Based on job requirements, these candidates are the best matches
-              </p>
-              <Button variant="outline" size="sm">
-                View Top Matches
-              </Button>
-            </div>
-          </div>
-        </Card>
+        <CandidateRecommendations jobId={params.id as string} />
 
         {/* Applications List */}
         {isLoading ? (
