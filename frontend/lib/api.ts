@@ -110,12 +110,24 @@ class ApiClient {
   }
 
   async updateApplicationStatus(id: string, status: string) {
-    const response = await this.client.patch(`/applications/${id}/status`, { status });
+    const response = await this.client.put(`/applications/${id}/status`, { status });
     return response.data;
   }
 
-  async getJobApplications(jobId: string) {
-    const response = await this.client.get(`/jobs/${jobId}/applications`);
+  async shortlistApplication(id: string) {
+    const response = await this.client.post(`/applications/${id}/shortlist`);
+    return response.data;
+  }
+
+  async rejectApplication(id: string, rejectionReason?: string) {
+    const response = await this.client.post(`/applications/${id}/reject`, {
+      rejection_reason: rejectionReason
+    });
+    return response.data;
+  }
+
+  async getJobApplications(jobId: string, params?: { status_filter?: string; page?: number; page_size?: number }) {
+    const response = await this.client.get(`/applications/job/${jobId}`, { params });
     return response.data;
   }
 
