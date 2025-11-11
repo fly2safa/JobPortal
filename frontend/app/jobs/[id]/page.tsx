@@ -239,6 +239,8 @@ export default function JobDetailPage() {
         onClose={() => setShowApplyModal(false)}
         jobId={job.id}
         jobTitle={job.title}
+        jobDescription={job.description}
+        companyName={job.company_name || job.company_id}
         onSuccess={handleApplicationSuccess}
       />
     </div>
