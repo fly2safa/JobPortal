@@ -27,6 +27,15 @@ export default function ApplicationsPage() {
   const fetchApplications = async () => {
     setIsLoading(true);
     try {
+      // Check if using demo token
+      const token = localStorage.getItem('access_token');
+      if (token && token.startsWith('demo-token-')) {
+        // Use mock data for demo mode
+        setApplications(getMockApplications());
+        setIsLoading(false);
+        return;
+      }
+
       const response = await apiClient.getApplications();
       setApplications(response.applications || []);
     } catch (error) {

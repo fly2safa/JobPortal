@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { Briefcase, Users, Calendar, TrendingUp, Eye, CheckCircle } from 'lucide-react';
 import apiClient from '@/lib/api';
 import { Job } from '@/types';
+import { formatDate } from '@/lib/utils';
 
 export default function EmployerDashboardPage() {
   useAuth(true);
@@ -25,6 +26,15 @@ export default function EmployerDashboardPage() {
     setIsLoading(true);
     setError("");
     try {
+      // Check if using demo token
+      const token = localStorage.getItem('access_token');
+      if (token && token.startsWith('demo-token-')) {
+        // Skip API calls for demo mode, use empty jobs list
+        setJobs([]);
+        setIsLoading(false);
+        return;
+      }
+
       const response = await apiClient.getEmployerJobs();
       setJobs(response.jobs || []);
     } catch (err) {

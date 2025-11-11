@@ -14,6 +14,13 @@ export default function AssistantPage() {
 
   const handleSendMessage = async (message: string): Promise<string> => {
     try {
+      // Check if using demo token
+      const token = localStorage.getItem('access_token');
+      if (token && token.startsWith('demo-token-')) {
+        // Return a demo response for demo mode
+        return "I'm the AI Career Assistant! In demo mode, I can help you with career advice, job search tips, and interview preparation. Connect to a real backend to get personalized assistance.";
+      }
+
       const response = await apiClient.chatWithAssistant(message, conversationId);
       
       // Store conversation ID for subsequent messages

@@ -28,6 +28,25 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
+        // Check if using demo token
+        const token = localStorage.getItem('access_token');
+        if (token && token.startsWith('demo-token-')) {
+          // Skip API calls for demo mode, use default empty state
+          setStats({ 
+            total: 0, 
+            pending: 0,
+            reviewing: 0, 
+            shortlisted: 0,
+            interview: 0,
+            rejected: 0,
+            accepted: 0,
+            withdrawn: 0
+          });
+          setRecentApplications([]);
+          setLoading(false);
+          return;
+        }
+
         const statsData = await apiClient.getApplicationStats();
         setStats(statsData);
         
@@ -35,6 +54,18 @@ export default function DashboardPage() {
         setRecentApplications(appsResponse.applications || []);
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error);
+        // Set default empty state on error
+        setStats({ 
+          total: 0, 
+          pending: 0,
+          reviewing: 0, 
+          shortlisted: 0,
+          interview: 0,
+          rejected: 0,
+          accepted: 0,
+          withdrawn: 0
+        });
+        setRecentApplications([]);
       } finally {
         setLoading(false);
       }

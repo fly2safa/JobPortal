@@ -47,9 +47,7 @@ export function RegisterForm() {
       const mockUser = {
         id: '1',
         email: data.email,
-        password: data.password,
-        first_name: data.first_name,
-        last_name: data.last_name,
+        full_name: `${data.first_name} ${data.last_name}`,
         role: data.role,
         is_active: true,
         created_at: new Date().toISOString(),

@@ -36,9 +36,13 @@ class ApiClient {
         if (error.response?.status === 401) {
           // Token expired or invalid
           if (typeof window !== 'undefined') {
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('user');
-            window.location.href = '/login';
+            const token = localStorage.getItem('access_token');
+            // Don't auto-logout for demo/mock tokens
+            if (token && !token.startsWith('demo-token-')) {
+              localStorage.removeItem('access_token');
+              localStorage.removeItem('user');
+              window.location.href = '/login';
+            }
           }
         }
         return Promise.reject(error);
