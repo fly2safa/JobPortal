@@ -136,23 +136,43 @@ export default function DashboardPage() {
           <CardTitle>Recent Applications</CardTitle>
           <CardContent>
             <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <div 
-                  key={i} 
-                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg cursor-pointer transition-all duration-200 hover:bg-white hover:shadow-md hover:scale-[1.02]"
-                >
-                  <div>
-                    <h4 className="font-semibold text-gray-900">Senior Frontend Developer</h4>
-                    <p className="text-sm text-gray-600">TechCorp Inc. • San Francisco, CA</p>
-                    <p className="text-xs text-gray-500 mt-1">Applied 2 days ago</p>
+              {loading ? (
+                <div className="text-center py-4 text-gray-500">Loading applications...</div>
+              ) : recentApplications.length > 0 ? (
+                recentApplications.map((app) => (
+                  <div key={app.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div>
+                      <h4 className="font-semibold text-gray-900">{app.job?.title || 'Unknown Position'}</h4>
+                      <p className="text-sm text-gray-600">
+                        {app.job?.company?.name || 'Unknown Company'} • {app.job?.location || 'Location N/A'}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Applied {new Date(app.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <span className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${
+                        app.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                        app.status === 'reviewing' ? 'bg-blue-100 text-blue-800' :
+                        app.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                        app.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {app.status?.charAt(0).toUpperCase() + app.status?.slice(1) || 'Pending'}
+                      </span>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
-                      Reviewing
-                    </span>
-                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <p>No applications yet</p>
+                  <Link href="/jobs">
+                    <Button variant="outline" className="mt-4">
+                      Browse Jobs
+                    </Button>
+                  </Link>
                 </div>
-              ))}
+              )}
             </div>
             {recentApplications.length > 0 && (
               <Link href="/dashboard/applications">
