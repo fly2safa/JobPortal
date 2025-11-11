@@ -24,23 +24,27 @@ email-validator>=2.3.0
 # Utilities
 httpx>=0.26.0
 
-# AI & ML (Optional - install separately if needed)
-# openai>=1.10.0
+# AI & ML (Required for resume parsing)
+openai>=1.10.0
+
+# Document Processing (Required for resume/document parsing)
+pypdf2>=3.0.1
+python-docx>=1.1.0
+
+# File Operations (Required for async file handling)
+aiofiles>=23.2.1
+
+# Email SMTP (Required for email notifications)
+aiosmtplib>=3.0.1
+
+# Optional - Advanced AI features (uncomment if needed)
 # langchain>=0.1.4
 # langchain-openai>=0.0.5
 # chromadb>=0.4.22
 # tiktoken>=0.5.2
 # numpy>=1.26.0
 
-# Document Processing (Optional - install separately if needed)
-# pypdf2>=3.0.1
-# python-docx>=1.1.0
-
-# Email SMTP (Optional - install separately if needed)
-# aiosmtplib>=3.0.1
-
-# Background Tasks (Optional - install separately if needed)
+# Optional - Background task processing (uncomment if needed)
 # celery>=5.3.6
 # redis>=5.0.1
-# aiofiles>=23.2.1
 
