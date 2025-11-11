@@ -39,7 +39,7 @@ export default function EmployerInterviewsPage() {
     setIsLoading(true);
     try {
       const response = await apiClient.getInterviews({ employer: true });
-      setInterviews(response.data || []);
+      setInterviews(response || []);
     } catch (error) {
       console.error('Failed to fetch interviews:', error);
       setInterviews(getMockInterviews());

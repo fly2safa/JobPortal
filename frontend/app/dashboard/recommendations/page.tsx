@@ -23,7 +23,7 @@ export default function RecommendationsPage() {
     setIsLoading(true);
     try {
       const response = await apiClient.getJobRecommendations();
-      setRecommendations(response.data || []);
+      setRecommendations(response || []);
     } catch (error) {
       console.error('Failed to fetch recommendations:', error);
       // Show mock data for demo
@@ -127,7 +127,7 @@ function getMockRecommendations(): JobRecommendation[] {
         company_id: 'company-1',
         company_name: 'TechCorp Inc.',
         location: 'San Francisco, CA',
-        job_type: 'full-time',
+        job_type: 'full_time',
         experience_level: 'senior',
         salary_min: 120000,
         salary_max: 180000,
@@ -152,7 +152,7 @@ function getMockRecommendations(): JobRecommendation[] {
         company_id: 'company-2',
         company_name: 'StartupXYZ',
         location: 'Remote',
-        job_type: 'full-time',
+        job_type: 'full_time',
         experience_level: 'mid',
         salary_min: 90000,
         salary_max: 140000,

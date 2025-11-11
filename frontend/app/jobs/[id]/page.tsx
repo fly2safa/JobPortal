@@ -33,7 +33,7 @@ export default function JobDetailPage() {
     setIsLoading(true);
     try {
       const response = await apiClient.getJobById(params.id as string);
-      setJob(response.data);
+      setJob(response);
     } catch (error) {
       console.error('Failed to fetch job:', error);
       // Show mock data for demo
@@ -247,7 +247,7 @@ function getMockJob(id: string): Job {
     company_id: 'company-1',
     company_name: 'TechCorp Inc.',
     location: 'San Francisco, CA (Hybrid)',
-    job_type: 'full-time',
+    job_type: 'full_time',
     experience_level: 'senior',
     salary_min: 120000,
     salary_max: 180000,

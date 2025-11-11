@@ -24,7 +24,7 @@ export default function InterviewsPage() {
     setIsLoading(true);
     try {
       const response = await apiClient.getInterviews();
-      setInterviews(response.data || []);
+      setInterviews(response || []);
     } catch (error) {
       console.error('Failed to fetch interviews:', error);
       // Show mock data for demo
