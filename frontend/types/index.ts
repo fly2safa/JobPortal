@@ -47,19 +47,41 @@ export interface Job {
   id: string;
   title: string;
   description: string;
-  company_id: string;
-  company_name?: string;
+  requirements?: string;  // String format from backend
+  responsibilities?: string;
+  
+  skills: string[];
+  required_skills?: string[];
+  preferred_skills?: string[];
+  
   location: string;
-  job_type: 'full-time' | 'part-time' | 'contract' | 'internship';
-  experience_level: 'entry' | 'mid' | 'senior' | 'lead';
+  is_remote: boolean;
+  
+  company_id: string;
+  company_name: string;
+  employer_id: string;
+  
   salary_min?: number;
   salary_max?: number;
-  skills: string[];
-  requirements: string[];
+  salary_currency?: string;
+  
+  job_type: 'full_time' | 'part_time' | 'contract' | 'internship' | 'temporary';
+  experience_level: 'entry' | 'junior' | 'mid' | 'senior' | 'lead' | 'executive';
+  experience_years_min?: number;
+  experience_years_max?: number;
+  
+  status: 'draft' | 'active' | 'closed' | 'archived';
+  posted_date?: string;
+  closing_date?: string;
+  
+  application_count: number;
+  view_count: number;
+  
   benefits?: string[];
-  status: 'active' | 'closed' | 'draft';
-  posted_date: string;
-  deadline?: string;
+  application_instructions?: string;
+  
+  created_at: string;
+  updated_at: string;
 }
 
 // Application Types

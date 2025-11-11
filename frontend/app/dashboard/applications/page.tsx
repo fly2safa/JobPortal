@@ -28,7 +28,7 @@ export default function ApplicationsPage() {
     setIsLoading(true);
     try {
       const response = await apiClient.getApplications();
-      setApplications(response.data || []);
+      setApplications(response.applications || []);
     } catch (error) {
       console.error('Failed to fetch applications:', error);
       // Show mock data for demo
