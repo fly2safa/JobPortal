@@ -133,17 +133,34 @@ export function RegisterForm() {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" style={{ fontFamily: 'Playfair Display, serif' }}>
         <div style={{ fontFamily: 'Playfair Display, serif' }}>
           <Input
-            label="Full Name"
+            label="First Name"
             type="text"
-            placeholder="Talent Nest"
-            {...register('full_name', {
-              required: 'Full name is required',
+            placeholder="Talent"
+            {...register('first_name', {
+              required: 'First name is required',
               minLength: {
                 value: 2,
                 message: 'Name must be at least 2 characters',
               },
             })}
-            error={errors.full_name?.message}
+            error={errors.first_name?.message}
+            style={{ fontFamily: 'Playfair Display, serif' }}
+          />
+        </div>
+
+        <div style={{ fontFamily: 'Playfair Display, serif' }}>
+          <Input
+            label="Last Name"
+            type="text"
+            placeholder="Nest"
+            {...register('last_name', {
+              required: 'Last name is required',
+              minLength: {
+                value: 2,
+                message: 'Name must be at least 2 characters',
+              },
+            })}
+            error={errors.last_name?.message}
             style={{ fontFamily: 'Playfair Display, serif' }}
           />
         </div>
