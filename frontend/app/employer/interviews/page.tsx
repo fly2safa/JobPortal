@@ -71,8 +71,8 @@ export default function EmployerInterviewsPage() {
       <div className="space-y-6">
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Interviews</h1>
-            <p className="text-gray-600">Manage and schedule interviews with candidates</p>
+            <h1 className="text-3xl font-bold text-white mb-2">Interviews</h1>
+            <p className="text-white">Manage and schedule interviews with candidates</p>
           </div>
           <Button variant="primary" onClick={() => setShowScheduleModal(true)}>
             <Plus size={18} className="mr-2" />

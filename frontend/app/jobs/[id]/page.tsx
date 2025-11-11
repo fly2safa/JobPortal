@@ -57,7 +57,9 @@ export default function JobDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen" style={{
+        background: 'linear-gradient(135deg, #075299 0%, #5a9ab3 100%)'
+      }}>
         <Navbar />
         <div className="max-w-5xl mx-auto px-4 py-20 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
@@ -68,7 +70,9 @@ export default function JobDetailPage() {
 
   if (!job) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen" style={{
+        background: 'linear-gradient(135deg, #075299 0%, #5a9ab3 100%)'
+      }}>
         <Navbar />
         <div className="max-w-5xl mx-auto px-4 py-20 text-center">
           <p className="text-gray-600">Job not found</p>
@@ -83,7 +87,9 @@ export default function JobDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{
+      background: 'linear-gradient(135deg, #075299 0%, #5a9ab3 100%)'
+    }}>
       <Navbar />
       
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

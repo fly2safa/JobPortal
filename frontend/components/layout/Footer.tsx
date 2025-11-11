@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Briefcase, Mail, MapPin, Phone } from 'lucide-react';
+import { Mail, MapPin, Phone } from 'lucide-react';
 
 export function Footer() {
   return (
@@ -8,11 +8,18 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="col-span-1">
-            <div className="flex items-center space-x-2 mb-4">
-              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                <Briefcase className="text-white" size={24} />
-              </div>
-              <span className="text-2xl font-bold">TalentNest</span>
+            <div className="mb-4">
+              <span className="text-2xl">
+                <span style={{ 
+                  fontFamily: 'Playfair Display, serif', 
+                  fontWeight: 700,
+                  background: 'linear-gradient(135deg, #5a9ab3 0%, #a8d5e2 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text'
+                }}>TALENT</span>
+                <span style={{ fontFamily: 'Dancing Script, cursive', fontWeight: 700 }} className="text-white">Nest</span>
+              </span>
             </div>
             <p className="text-gray-400 text-sm">
               Connecting talented professionals with their dream careers through AI-powered matching.

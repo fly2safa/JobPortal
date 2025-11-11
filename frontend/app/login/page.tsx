@@ -1,21 +1,37 @@
 import { LoginForm } from '@/features/auth/LoginForm';
-import { Briefcase } from 'lucide-react';
 import Link from 'next/link';
 
 export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 to-blue-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-2xl">
         {/* Logo */}
-        <Link href="/" className="flex items-center justify-center space-x-2 mb-8">
-          <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
-            <Briefcase className="text-white" size={28} />
-          </div>
-          <span className="text-3xl font-bold text-primary">TalentNest</span>
+        <Link href="/" className="flex items-center justify-center mb-6">
+          <span className="text-4xl">
+            <span style={{ 
+              fontFamily: 'Playfair Display, serif', 
+              fontWeight: 700,
+              background: 'linear-gradient(135deg, #075299 0%, #5a9ab3 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text'
+            }}>TALENT</span>
+            <span style={{ fontFamily: 'Dancing Script, cursive', fontWeight: 700 }} className="text-primary">Nest</span>
+          </span>
         </Link>
 
+        {/* Welcome Message */}
+        <div className="text-center mb-8 px-4" style={{ fontFamily: 'Playfair Display, serif' }}>
+          <h1 className="text-3xl text-gray-900 mb-4" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}>Welcome to Talent Nest</h1>
+          <p className="text-gray-700 leading-relaxed" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}>
+            Your gateway to meaningful careers and exceptional talent. At Talent Nest, we connect ambitious professionals with forward-thinking employers. Whether you&apos;re seeking your next opportunity or scouting top-tier candidates, our platform is designed to help you thrive. Log in to access personalized job matches, smart hiring tools, and a community built on growth and potential.
+          </p>
+        </div>
+
         {/* Login Form */}
-        <LoginForm />
+        <div className="max-w-md mx-auto">
+          <LoginForm />
+        </div>
       </div>
     </div>
   );
