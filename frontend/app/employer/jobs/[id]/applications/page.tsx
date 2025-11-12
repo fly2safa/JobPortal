@@ -200,7 +200,12 @@ export default function JobApplicationsPage() {
               <p className="text-sm text-gray-700 mb-3">
                 Based on job requirements, these candidates are the best matches
               </p>
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="primary" 
+                size="sm"
+                onClick={() => router.push(`/employer/jobs/${params.id}/candidates`)}
+              >
+                <Sparkles size={14} className="mr-2" />
                 View Top Matches
               </Button>
             </div>

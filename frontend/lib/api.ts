@@ -175,8 +175,12 @@ class ApiClient {
     return response.data;
   }
 
-  async getCandidateRecommendations(jobId: string) {
-    const response = await this.client.get(`/jobs/${jobId}/recommended-candidates`);
+  async getCandidateRecommendations(jobId: string, params?: { 
+    limit?: number; 
+    min_score?: number; 
+    include_applied?: boolean 
+  }) {
+    const response = await this.client.get(`/recommendations/jobs/${jobId}/candidates`, { params });
     return response.data;
   }
 
