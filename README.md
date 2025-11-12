@@ -257,227 +257,151 @@ graph TB
 
 ## 🎨 Frontend Architecture
 
-### Frontend Architectural Diagram
+### Frontend Flow Diagram
 
 ```mermaid
-graph TB
-    subgraph "Next.js 14 App Router"
-        AppRoot[app/ Root]
-        
-        subgraph "Public Routes"
-            HomePage["page.tsx<br/>Landing Page"]
-            LoginPage["login/page.tsx"]
-            RegisterPage["register/page.tsx"]
-            JobsPage["jobs/page.tsx<br/>Job Listings"]
-            JobDetailPage["jobs/:id/page.tsx<br/>Job Details"]
-        end
-        
-        subgraph "Job Seeker Routes"
-            JSDashboard["dashboard/page.tsx"]
-            JSProfile["dashboard/profile/page.tsx"]
-            JSApplications["dashboard/applications/page.tsx"]
-            JSRecommendations["dashboard/recommendations/page.tsx"]
-            JSAssistant["dashboard/assistant/page.tsx"]
-            JSInterviews["dashboard/interviews/page.tsx"]
-        end
-        
-        subgraph "Employer Routes"
-            EMPDashboard["employer/dashboard/page.tsx"]
-            EMPJobs["employer/jobs/page.tsx"]
-            EMPNewJob["employer/jobs/new/page.tsx"]
-            EMPEditJob["employer/jobs/:id/edit/page.tsx"]
-            EMPApplications["employer/jobs/:id/applications/page.tsx"]
-            EMPInterviews["employer/interviews/page.tsx"]
-        end
-    end
+graph LR
+    %% App Router
+    Router["📱 Next.js App Router<br/>File-based Routing"]
     
-    subgraph "Components Layer"
-        subgraph "Layout Components"
-            Navbar["Navbar<br/>Auth-aware navigation"]
-            Footer["Footer<br/>Site footer"]
-            DashboardLayout["DashboardLayout<br/>Sidebar + content"]
-        end
-        
-        subgraph "UI Components"
-            Button["Button"]
-            Input["Input"]
-            Card["Card"]
-            Modal["Modal"]
-            Select["Select"]
-            Textarea["Textarea"]
-            Badge["Badge"]
-        end
-    end
+    %% Pages Layer
+    Pages["📄 Pages Layer<br/>- Public Routes<br/>- Job Seeker Routes<br/>- Employer Routes"]
     
-    subgraph "Features Layer"
-        subgraph "Auth Features"
-            LoginForm["LoginForm<br/>Email + Password"]
-            RegisterForm["RegisterForm<br/>Role selection"]
-        end
-        
-        subgraph "Job Features"
-            JobCard["JobCard<br/>Job preview"]
-            JobFilters["JobFilters<br/>Search & filter"]
-            ApplyModal["ApplyModal<br/>Application form"]
-        end
-        
-        subgraph "Profile Features"
-            ProfileForm["ProfileForm<br/>User info"]
-            ResumeUpload["ResumeUpload<br/>File upload"]
-            SkillsManager["SkillsManager<br/>Skills list"]
-        end
-        
-        subgraph "AI Features"
-            ChatInterface["ChatInterface<br/>AI Assistant"]
-            CoverLetterGen["CoverLetterGenerator<br/>AI-powered"]
-            RecommendationCard["RecommendationCard<br/>Job matches"]
-        end
-        
-        subgraph "Employer Features"
-            JobPostForm["JobPostForm<br/>Create/Edit job"]
-            CandidateCard["CandidateCard<br/>Application review"]
-            ApplicationFilters["ApplicationFilters<br/>Status filters"]
-        end
-    end
-    
-    subgraph "State Management"
-        AuthStore["authStore.ts<br/>Zustand"]
-        
-        subgraph "Auth State"
-            User["user: User or null"]
-            Token["token: string or null"]
-            IsAuth["isAuthenticated: boolean"]
-        end
-        
-        subgraph "Auth Actions"
-            Login["login"]
-            Logout["logout"]
-            SetUser["setUser"]
-        end
-    end
-    
-    subgraph "API Layer"
-        APIClient["api.ts<br/>Axios Client"]
-        
-        subgraph "API Methods"
-            AuthAPI["register, login"]
-            JobsAPI["getJobs, getJob, createJob"]
-            AppsAPI["apply, getApplications"]
-            UsersAPI["getProfile, updateProfile"]
-            ResumeAPI["uploadResume"]
-            AssistantAPI["chat, generateCoverLetter"]
-        end
-    end
-    
-    subgraph "Utilities"
-        Hooks["hooks/<br/>useAuth, useDebounce"]
-        Utils["utils.ts<br/>Helpers"]
-        Types["types/<br/>TypeScript definitions"]
-        Constants["constants/<br/>App constants"]
-    end
-    
-    %% App Router Flow
-    AppRoot --> HomePage
-    AppRoot --> LoginPage
-    AppRoot --> RegisterPage
-    AppRoot --> JobsPage
-    AppRoot --> JobDetailPage
-    AppRoot --> JSDashboard
-    AppRoot --> JSProfile
-    AppRoot --> JSApplications
-    AppRoot --> JSRecommendations
-    AppRoot --> JSAssistant
-    AppRoot --> JSInterviews
-    AppRoot --> EMPDashboard
-    AppRoot --> EMPJobs
-    AppRoot --> EMPNewJob
-    AppRoot --> EMPEditJob
-    AppRoot --> EMPApplications
-    AppRoot --> EMPInterviews
-    
-    %% Layout Usage
-    HomePage --> Navbar
-    HomePage --> Footer
-    JSDashboard --> DashboardLayout
-    EMPDashboard --> DashboardLayout
-    
-    %% Pages to Features
-    LoginPage --> LoginForm
-    RegisterPage --> RegisterForm
-    JobsPage --> JobCard
-    JobsPage --> JobFilters
-    JobDetailPage --> ApplyModal
-    JSProfile --> ProfileForm
-    JSProfile --> ResumeUpload
-    JSProfile --> SkillsManager
-    JSAssistant --> ChatInterface
-    JSRecommendations --> RecommendationCard
-    ApplyModal --> CoverLetterGen
-    EMPNewJob --> JobPostForm
-    EMPApplications --> CandidateCard
-    EMPApplications --> ApplicationFilters
-    
-    %% Features to UI Components
-    LoginForm --> Button
-    LoginForm --> Input
-    RegisterForm --> Button
-    RegisterForm --> Input
-    RegisterForm --> Select
-    JobCard --> Card
-    JobCard --> Badge
-    ApplyModal --> Modal
-    ApplyModal --> Textarea
-    ProfileForm --> Input
-    ProfileForm --> Button
-    ChatInterface --> Card
-    ChatInterface --> Input
-    
-    %% Features to API
-    LoginForm --> APIClient
-    RegisterForm --> APIClient
-    JobCard --> APIClient
-    ApplyModal --> APIClient
-    ProfileForm --> APIClient
-    ResumeUpload --> APIClient
-    ChatInterface --> APIClient
-    CoverLetterGen --> APIClient
-    JobPostForm --> APIClient
-    CandidateCard --> APIClient
-    
-    %% API Client Methods
-    APIClient --> AuthAPI
-    APIClient --> JobsAPI
-    APIClient --> AppsAPI
-    APIClient --> UsersAPI
-    APIClient --> ResumeAPI
-    APIClient --> AssistantAPI
+    %% Components Layer
+    Components["🧩 Components<br/>- Layout (Navbar, Footer)<br/>- UI (Button, Input, Card)<br/>- Features (Forms, Cards)"]
     
     %% State Management
-    LoginForm --> AuthStore
-    RegisterForm --> AuthStore
-    Navbar --> AuthStore
-    DashboardLayout --> AuthStore
+    State["💾 State Management<br/>Zustand Store<br/>- Auth State<br/>- User Data"]
     
-    AuthStore --> User
-    AuthStore --> Token
-    AuthStore --> IsAuth
-    AuthStore --> Login
-    AuthStore --> Logout
-    AuthStore --> SetUser
+    %% API Client
+    API["🔌 API Client<br/>Axios + JWT<br/>- Auth API<br/>- Jobs API<br/>- Applications API"]
     
     %% Utilities
-    LoginForm --> Hooks
-    ProfileForm --> Hooks
-    APIClient --> Utils
-    LoginForm --> Types
-    JobCard --> Types
-    JobsPage --> Constants
+    Utils["🛠️ Utilities<br/>- Hooks<br/>- Types<br/>- Helpers"]
+    
+    %% Backend Connection
+    Backend["🚀 Backend API<br/>FastAPI"]
+    
+    %% Flow
+    Router ==>|"Route to"| Pages
+    Pages ==>|"Use"| Components
+    Components ==>|"Read/Write"| State
+    Components ==>|"Call"| API
+    Components ==>|"Import"| Utils
+    State ==>|"Persist Token"| API
+    API ==>|"HTTP + JWT"| Backend
+    
+    %% Styling
+    classDef router fill:#61dafb,stroke:#333,stroke-width:3px,color:#000
+    classDef pages fill:#4ecdc4,stroke:#333,stroke-width:3px,color:#000
+    classDef components fill:#95e1d3,stroke:#333,stroke-width:3px,color:#000
+    classDef state fill:#764abc,stroke:#333,stroke-width:3px,color:#fff
+    classDef api fill:#ff6b6b,stroke:#333,stroke-width:3px,color:#fff
+    classDef utils fill:#ffd93d,stroke:#333,stroke-width:3px,color:#000
+    classDef backend fill:#009688,stroke:#333,stroke-width:3px,color:#fff
+    
+    class Router router
+    class Pages pages
+    class Components components
+    class State state
+    class API api
+    class Utils utils
+    class Backend backend
+    
+    %% Link styling
+    linkStyle default stroke:#333,stroke-width:3px
+```
 
-    style AppRoot fill:#61dafb
-    style AuthStore fill:#764abc
-    style APIClient fill:#ff6b6b
-    style Navbar fill:#4ecdc4
-    style DashboardLayout fill:#4ecdc4
+**Frontend Architecture Overview:**
+
+1. **App Router** → File-based routing system manages all pages
+2. **Pages Layer** → Public, Job Seeker, and Employer routes
+3. **Components** → Reusable UI and feature components
+4. **State Management** → Zustand store for auth and global state
+5. **API Client** → Axios instance with JWT for backend communication
+6. **Utilities** → Hooks, types, and helper functions
+7. **Backend** → FastAPI REST API integration
+
+### Detailed Frontend Architecture Diagram
+
+For a comprehensive view of all frontend components and their relationships:
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#ffffff','primaryTextColor':'#000000','primaryBorderColor':'#000000','lineColor':'#333333','secondaryColor':'#f4f4f4','tertiaryColor':'#ffffff','clusterBkg':'#f9f9f9','clusterBorder':'#333333','titleColor':'#000000','edgeLabelBackground':'#ffffff'}}}%%
+graph TB
+    subgraph Routes["<b>📱 ROUTES - Next.js 14 App Router</b>"]
+        PublicRoutes["🌐 Public Routes<br/>Home, Jobs, Login, Register"]
+        JSRoutes["👤 Job Seeker Routes<br/>Dashboard, Profile, Applications"]
+        EMPRoutes["💼 Employer Routes<br/>Dashboard, Post Jobs, Review Apps"]
+    end
+    
+    subgraph Components["<b>🧩 COMPONENTS LAYER</b>"]
+        Layout["📐 Layout<br/>Navbar, Footer, DashboardLayout"]
+        UI["🎨 UI Components<br/>Button, Input, Card, Modal"]
+        Features["⭐ Feature Components<br/>Forms, Cards, Filters"]
+    end
+    
+    subgraph State["<b>💾 STATE MANAGEMENT</b>"]
+        AuthStore["🔐 Zustand Auth Store<br/>user, token, isAuthenticated<br/>login(), logout(), setUser()"]
+    end
+    
+    subgraph API["<b>🔌 API LAYER</b>"]
+        APIClient["📡 Axios Client<br/>JWT Interceptor"]
+        APIMethods["🛠️ API Methods<br/>Auth, Jobs, Applications,<br/>Profile, Resume, Assistant"]
+    end
+    
+    subgraph Utils["<b>🛠️ UTILITIES</b>"]
+        Hooks["🪝 Custom Hooks<br/>useAuth, useDebounce"]
+        Types["📝 TypeScript Types<br/>User, Job, Application"]
+        Helpers["⚙️ Helper Functions<br/>formatDate, validateEmail"]
+    end
+    
+    subgraph Backend["<b>🚀 BACKEND</b>"]
+        FastAPI["FastAPI REST API<br/>http://localhost:8000"]
+    end
+    
+    %% Connections
+    PublicRoutes ==> Layout
+    JSRoutes ==> Layout
+    EMPRoutes ==> Layout
+    
+    PublicRoutes ==> Features
+    JSRoutes ==> Features
+    EMPRoutes ==> Features
+    
+    Layout ==> UI
+    Features ==> UI
+    
+    Features ==> AuthStore
+    Layout ==> AuthStore
+    
+    Features ==> APIClient
+    AuthStore ==> APIClient
+    
+    APIClient ==> APIMethods
+    APIMethods ==> FastAPI
+    
+    Features ==> Hooks
+    Features ==> Types
+    APIClient ==> Helpers
+    
+    %% Styling
+    classDef routesStyle fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
+    classDef componentsStyle fill:#e8f5e9,stroke:#388e3c,stroke-width:3px
+    classDef stateStyle fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px
+    classDef apiStyle fill:#fff3e0,stroke:#f57c00,stroke-width:3px
+    classDef utilsStyle fill:#fff9c4,stroke:#f57f17,stroke-width:3px
+    classDef backendStyle fill:#fce4ec,stroke:#c2185b,stroke-width:3px
+    
+    class Routes routesStyle
+    class Components componentsStyle
+    class State stateStyle
+    class API apiStyle
+    class Utils utilsStyle
+    class Backend backendStyle
+    
+    %% Link styling
+    linkStyle default stroke:#333,stroke-width:3px
 ```
 
 ### Frontend Architectural Highlights
