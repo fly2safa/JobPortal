@@ -50,156 +50,151 @@ A modern, AI-powered job portal connecting job seekers with employers. Built wit
 ### System Flow Diagram
 
 ```mermaid
-graph TB
-    subgraph "Client Layer"
-        Browser[Web Browser]
-        Mobile[Mobile Browser]
-    end
-
-    subgraph "Frontend - Next.js 14"
-        NextApp[Next.js App Router]
-        AuthStore[Zustand Auth Store]
-        APIClient[Axios API Client]
-        
-        subgraph "Pages"
-            PublicPages[Public Pages<br/>Home, Jobs, Login, Register]
-            JobSeekerPages[Job Seeker Pages<br/>Dashboard, Profile, Applications]
-            EmployerPages[Employer Pages<br/>Dashboard, Post Jobs, Review Apps]
-        end
-        
-        subgraph "Features"
-            AuthForms[Auth Forms]
-            JobComponents[Job Components]
-            AIComponents[AI Components<br/>Assistant, Cover Letter]
-            ProfileComponents[Profile Components]
-        end
-    end
-
-    subgraph "Backend - FastAPI"
-        FastAPI[FastAPI Application]
-        
-        subgraph "API Routes"
-            AuthAPI[Auth API<br/>/api/v1/auth]
-            JobsAPI[Jobs API<br/>/api/v1/jobs]
-            AppsAPI[Applications API<br/>/api/v1/applications]
-            UsersAPI[Users API<br/>/api/v1/users]
-            AssistantAPI[Assistant API<br/>/api/v1/assistant]
-        end
-        
-        subgraph "Services"
-            AuthService[Auth Service<br/>JWT, Bcrypt]
-            JobService[Job Service]
-            AppService[Application Service]
-            EmailService[Email Service<br/>SMTP]
-            ResumeParser[Resume Parser<br/>AI-Powered]
-            SearchService[Search Service]
-        end
-        
-        subgraph "AI Layer"
-            OpenAIClient[OpenAI Client<br/>GPT-4o]
-            RAGPipeline[RAG Pipeline<br/>Loader, Splitter, Retriever]
-            CoverLetterGen[Cover Letter Generator]
-            RecommendationEngine[Recommendation Engine]
-        end
-    end
-
-    subgraph "Data Layer"
-        MongoDB[(MongoDB Atlas)]
-        
-        subgraph "Collections"
-            Users[Users Collection]
-            Companies[Companies Collection]
-            Jobs[Jobs Collection]
-            Applications[Applications Collection]
-            Resumes[Resumes Collection]
-            Conversations[Conversations Collection]
-        end
-    end
-
-    subgraph "External Services"
-        OpenAI[OpenAI API<br/>GPT-4o]
-        SMTP[SMTP Server<br/>Email Notifications]
-        FileStorage[File Storage<br/>Resume Uploads]
-    end
-
-    %% Client to Frontend
-    Browser --> NextApp
-    Mobile --> NextApp
+graph LR
+    %% Client Layer
+    Client[👤 Web Browser]
     
-    %% Frontend Internal Flow
-    NextApp --> AuthStore
-    NextApp --> PublicPages
-    NextApp --> JobSeekerPages
-    NextApp --> EmployerPages
+    %% Frontend Layer
+    Frontend["⚛️ Next.js 14 Frontend<br/>- App Router<br/>- TypeScript<br/>- Tailwind CSS"]
     
-    PublicPages --> AuthForms
-    JobSeekerPages --> JobComponents
-    JobSeekerPages --> AIComponents
-    JobSeekerPages --> ProfileComponents
-    EmployerPages --> JobComponents
+    %% API Gateway
+    API["🚀 FastAPI Backend<br/>- REST API<br/>- JWT Auth<br/>- Async/Await"]
     
-    AuthStore --> APIClient
-    AuthForms --> APIClient
-    JobComponents --> APIClient
-    AIComponents --> APIClient
-    ProfileComponents --> APIClient
+    %% Service Layer
+    AuthSvc["🔐 Auth Service<br/>JWT + Bcrypt"]
+    JobSvc["💼 Job Service<br/>CRUD + Search"]
+    AppSvc["📋 Application Service<br/>Status Management"]
+    ResumeSvc["📄 Resume Service<br/>AI Parsing"]
+    EmailSvc["📧 Email Service<br/>SMTP"]
     
-    %% Frontend to Backend
-    APIClient -->|HTTP/REST + JWT| FastAPI
+    %% AI Layer
+    AISvc["🤖 AI Services<br/>- Cover Letters<br/>- Recommendations<br/>- RAG Assistant"]
     
-    %% Backend API Routing
-    FastAPI --> AuthAPI
-    FastAPI --> JobsAPI
-    FastAPI --> AppsAPI
-    FastAPI --> UsersAPI
-    FastAPI --> AssistantAPI
-    
-    %% API to Services
-    AuthAPI --> AuthService
-    JobsAPI --> JobService
-    JobsAPI --> SearchService
-    AppsAPI --> AppService
-    UsersAPI --> ResumeParser
-    AssistantAPI --> RAGPipeline
-    AssistantAPI --> CoverLetterGen
-    
-    %% Services to AI
-    ResumeParser --> OpenAIClient
-    CoverLetterGen --> OpenAIClient
-    RAGPipeline --> OpenAIClient
-    JobService --> RecommendationEngine
-    RecommendationEngine --> OpenAIClient
-    
-    %% Services to Data
-    AuthService --> MongoDB
-    JobService --> MongoDB
-    AppService --> MongoDB
-    ResumeParser --> MongoDB
-    EmailService --> SMTP
-    
-    %% MongoDB Collections
-    MongoDB --> Users
-    MongoDB --> Companies
-    MongoDB --> Jobs
-    MongoDB --> Applications
-    MongoDB --> Resumes
-    MongoDB --> Conversations
+    %% Data Layer
+    DB[("🗄️ MongoDB Atlas<br/>- Users<br/>- Jobs<br/>- Applications<br/>- Resumes")]
     
     %% External Services
-    OpenAIClient --> OpenAI
-    EmailService --> SMTP
-    ResumeParser --> FileStorage
+    OpenAI["🧠 OpenAI GPT-4o"]
+    SMTP["📮 SMTP Server"]
+    Storage["💾 File Storage"]
     
-    %% Background Tasks
-    AppService -.->|Trigger| EmailService
+    %% Main Flow
+    Client -->|"HTTP Requests"| Frontend
+    Frontend -->|"REST API + JWT"| API
+    
+    %% API to Services
+    API --> AuthSvc
+    API --> JobSvc
+    API --> AppSvc
+    API --> ResumeSvc
+    API --> AISvc
+    
+    %% Services to Data
+    AuthSvc --> DB
+    JobSvc --> DB
+    AppSvc --> DB
+    ResumeSvc --> DB
+    
+    %% Services to AI
+    ResumeSvc --> AISvc
+    JobSvc --> AISvc
+    
+    %% AI to External
+    AISvc --> OpenAI
+    
+    %% Email Flow
+    AppSvc -.->|"Async Trigger"| EmailSvc
+    EmailSvc --> SMTP
+    
+    %% File Storage
+    ResumeSvc --> Storage
+    
+    %% Styling
+    classDef frontend fill:#61dafb,stroke:#333,stroke-width:2px,color:#000
+    classDef backend fill:#009688,stroke:#333,stroke-width:2px,color:#fff
+    classDef service fill:#4caf50,stroke:#333,stroke-width:2px,color:#fff
+    classDef ai fill:#ff9800,stroke:#333,stroke-width:2px,color:#fff
+    classDef data fill:#2196f3,stroke:#333,stroke-width:2px,color:#fff
+    classDef external fill:#9c27b0,stroke:#333,stroke-width:2px,color:#fff
+    
+    class Client,Frontend frontend
+    class API backend
+    class AuthSvc,JobSvc,AppSvc,ResumeSvc,EmailSvc service
+    class AISvc ai
+    class DB data
+    class OpenAI,SMTP,Storage external
+```
 
-    style Browser fill:#e1f5ff
-    style Mobile fill:#e1f5ff
-    style NextApp fill:#61dafb
-    style FastAPI fill:#009688
-    style MongoDB fill:#4caf50
-    style OpenAI fill:#ff9800
-    style SMTP fill:#ff5722
+**Simplified Architecture Overview:**
+
+1. **Client** → Makes HTTP requests to frontend
+2. **Frontend (Next.js)** → Sends REST API calls with JWT to backend
+3. **Backend (FastAPI)** → Routes requests to appropriate services
+4. **Services Layer** → Handles business logic (Auth, Jobs, Applications, Resume, Email)
+5. **AI Services** → Processes AI features (GPT-4o integration)
+6. **Database** → MongoDB Atlas stores all application data
+7. **External Services** → OpenAI API, SMTP server, File storage
+
+### Detailed System Architecture Diagram
+
+For a more detailed view, here's the complete architecture broken down by layers:
+
+```mermaid
+graph TB
+    subgraph Client["👥 Client Layer"]
+        Browser["Web Browser"]
+        Mobile["Mobile Browser"]
+    end
+    
+    subgraph Frontend["⚛️ Frontend Layer - Next.js 14"]
+        Pages["📄 Pages<br/>Public & Protected Routes"]
+        Components["🧩 Components<br/>UI & Features"]
+        Store["💾 State Management<br/>Zustand"]
+        APIClient["🔌 API Client<br/>Axios + JWT"]
+    end
+    
+    subgraph Backend["🚀 Backend Layer - FastAPI"]
+        Routes["🛣️ API Routes<br/>/api/v1/*"]
+        Services["⚙️ Business Services"]
+        AI["🤖 AI Layer<br/>OpenAI Integration"]
+    end
+    
+    subgraph Data["🗄️ Data Layer"]
+        MongoDB[("MongoDB Atlas<br/>Collections:<br/>Users, Jobs,<br/>Applications,<br/>Resumes")]
+    end
+    
+    subgraph External["🌐 External Services"]
+        OpenAI["OpenAI GPT-4o"]
+        SMTP["SMTP Email"]
+        Files["File Storage"]
+    end
+    
+    %% Connections
+    Browser --> Pages
+    Mobile --> Pages
+    Pages --> Components
+    Components --> Store
+    Store --> APIClient
+    APIClient -->|REST + JWT| Routes
+    Routes --> Services
+    Services --> AI
+    Services --> MongoDB
+    AI --> OpenAI
+    Services --> SMTP
+    Services --> Files
+    
+    %% Styling
+    classDef clientStyle fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef frontendStyle fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    classDef backendStyle fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    classDef dataStyle fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef externalStyle fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    
+    class Client clientStyle
+    class Frontend frontendStyle
+    class Backend backendStyle
+    class Data dataStyle
+    class External externalStyle
 ```
 
 ### Key Architectural Highlights
