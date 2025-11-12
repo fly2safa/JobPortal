@@ -38,17 +38,24 @@ Before starting testing, ensure:
 Create or use these test accounts:
 
 **Job Seeker Account:**
+- First Name: `John`
+- Last Name: `Seeker`
 - Email: `jobseeker@test.com`
 - Password: `Test123!`
 - Role: Job Seeker
 
 **Employer Account:**
+- First Name: `Jane`
+- Last Name: `Employer`
 - Email: `employer@test.com`
 - Password: `Test123!`
 - Role: Employer
 - Company: Test Company Inc.
+- Job Title: `HR Manager`
 
 **Admin Account (if applicable):**
+- First Name: `Admin`
+- Last Name: `User`
 - Email: `admin@test.com`
 - Password: `Admin123!`
 - Role: Admin
