@@ -285,7 +285,19 @@ class TestingTrackerApp:
         list_frame = ttk.LabelFrame(parent, text="Test Cases", padding="5")
         list_frame.grid(row=1, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), padx=(0, 5))
         list_frame.columnconfigure(0, weight=1)
-        list_frame.rowconfigure(0, weight=1)
+        list_frame.rowconfigure(1, weight=1)
+        
+        # Jump to section dropdown
+        jump_frame = ttk.Frame(list_frame)
+        jump_frame.grid(row=0, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 5))
+        
+        ttk.Label(jump_frame, text="Jump to:").grid(row=0, column=0, padx=(0, 5))
+        self.section_var = tk.StringVar()
+        self.section_combo = ttk.Combobox(jump_frame, textvariable=self.section_var, 
+                                         state="readonly", width=30)
+        self.section_combo.grid(row=0, column=1, sticky=(tk.W, tk.E))
+        self.section_combo.bind('<<ComboboxSelected>>', self.on_section_jump)
+        jump_frame.columnconfigure(1, weight=1)
         
         # Create treeview
         columns = ("ID", "Section", "Title", "Status")
@@ -310,8 +322,8 @@ class TestingTrackerApp:
         self.tree.configure(yscrollcommand=scrollbar.set)
         
         # Grid layout
-        self.tree.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
-        scrollbar.grid(row=0, column=1, sticky=(tk.N, tk.S))
+        self.tree.grid(row=1, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        scrollbar.grid(row=1, column=1, sticky=(tk.N, tk.S))
         
         # Populate tree
         self.populate_tree()
@@ -332,9 +344,19 @@ class TestingTrackerApp:
                 sections[test.section] = []
             sections[test.section].append(test)
         
+        # Store section items for jumping
+        self.section_items = {}
+        
+        # Populate section dropdown
+        section_names = list(sections.keys())
+        self.section_combo['values'] = section_names
+        
         # Add to tree
         for section, tests in sections.items():
-            section_id = self.tree.insert("", "end", text="", values=("", section, "", ""))
+            section_id = self.tree.insert("", "end", text="📁", values=("", section, "", ""),
+                                         tags=("section", section))
+            self.section_items[section] = section_id
+            
             for test in tests:
                 # Status icon
                 icon = self.get_status_icon(test.status)
@@ -462,8 +484,27 @@ class TestingTrackerApp:
         # Get selected item
         item = selection[0]
         values = self.tree.item(item, 'values')
+        tags = self.tree.item(item, 'tags')
         
-        if not values[0]:  # Section header
+        # Check if it's a section header
+        if not values[0] and "section" in tags:
+            # Section header clicked - select first test in that section
+            children = self.tree.get_children(item)
+            if children:
+                first_child = children[0]
+                self.tree.selection_set(first_child)
+                self.tree.see(first_child)
+                # Trigger selection event for the first child
+                child_values = self.tree.item(first_child, 'values')
+                test_id = child_values[0]
+                for test in self.test_cases:
+                    if test.id == test_id:
+                        self.current_test = test
+                        self.display_test(test)
+                        break
+            return
+        
+        if not values[0]:  # Empty or invalid item
             return
         
         test_id = values[0]
@@ -474,6 +515,26 @@ class TestingTrackerApp:
                 self.current_test = test
                 self.display_test(test)
                 break
+    
+    def on_section_jump(self, event):
+        """Handle section jump from dropdown."""
+        section = self.section_var.get()
+        if section and section in self.section_items:
+            section_item = self.section_items[section]
+            # Get first test in section
+            children = self.tree.get_children(section_item)
+            if children:
+                first_child = children[0]
+                self.tree.selection_set(first_child)
+                self.tree.see(first_child)
+                # Trigger display
+                child_values = self.tree.item(first_child, 'values')
+                test_id = child_values[0]
+                for test in self.test_cases:
+                    if test.id == test_id:
+                        self.current_test = test
+                        self.display_test(test)
+                        break
     
     def display_test(self, test):
         """Display test details."""
