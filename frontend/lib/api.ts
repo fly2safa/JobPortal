@@ -228,18 +228,74 @@ class ApiClient {
   }
 
   // Interview endpoints
-  async getInterviews(params?: any) {
+  async getInterviews(params?: { 
+    status_filter?: string;
+    job_id?: string;
+    application_id?: string;
+    employer?: boolean;
+    page?: number;
+    page_size?: number;
+  }) {
     const response = await this.client.get('/interviews', { params });
     return response.data;
   }
 
-  async scheduleInterview(data: any) {
+  async getInterviewById(id: string) {
+    const response = await this.client.get(`/interviews/${id}`);
+    return response.data;
+  }
+
+  async scheduleInterview(data: {
+    job_id: string;
+    application_id: string;
+    scheduled_time: string;
+    duration_minutes: number;
+    interview_type?: string;
+    meeting_link?: string;
+    meeting_location?: string;
+    meeting_instructions?: string;
+    notes?: string;
+  }) {
     const response = await this.client.post('/interviews', data);
     return response.data;
   }
 
-  async updateInterview(id: string, data: any) {
+  async updateInterview(id: string, data: {
+    scheduled_time?: string;
+    duration_minutes?: number;
+    interview_type?: string;
+    meeting_link?: string;
+    meeting_location?: string;
+    meeting_instructions?: string;
+    notes?: string;
+    status?: string;
+    feedback?: string;
+    interviewer_notes?: string;
+  }) {
     const response = await this.client.put(`/interviews/${id}`, data);
+    return response.data;
+  }
+
+  async rescheduleInterview(id: string, data: {
+    scheduled_time: string;
+    reason?: string;
+  }) {
+    const response = await this.client.post(`/interviews/${id}/reschedule`, data);
+    return response.data;
+  }
+
+  async cancelInterview(id: string, reason?: string) {
+    const response = await this.client.post(`/interviews/${id}/cancel`, {
+      reason
+    });
+    return response.data;
+  }
+
+  async completeInterview(id: string, data: {
+    feedback?: string;
+    interviewer_notes?: string;
+  }) {
+    const response = await this.client.post(`/interviews/${id}/complete`, data);
     return response.data;
   }
 }

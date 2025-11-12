@@ -33,6 +33,7 @@ async def connect_to_mongo():
         from app.models.application import Application
         from app.models.resume import Resume
         from app.models.conversation import Conversation
+        from app.models.interview import Interview
         
         # Initialize Beanie with document models
         await init_beanie(
@@ -44,6 +45,7 @@ async def connect_to_mongo():
                 Application,
                 Resume,
                 Conversation,
+                Interview,
             ]
         )
         
