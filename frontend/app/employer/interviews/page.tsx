@@ -4,22 +4,32 @@ import { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
+import { Select } from '@/components/ui/Select';
 import { useAuth, useRequireRole } from '@/hooks/useAuth';
 import { Interview } from '@/types';
-import { formatDateTime } from '@/lib/utils';
-import { Calendar, Plus, Video, Edit, X } from 'lucide-react';
+import { InterviewCard, InterviewCalendar } from '@/features/interviews';
+import { Calendar as CalendarIcon, Plus, List } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import apiClient from '@/lib/api';
 
 interface ScheduleInterviewForm {
+  job_id: string;
+  application_id: string;
   scheduled_time: string;
   duration_minutes: number;
+  interview_type: string;
   meeting_link: string;
+  meeting_location: string;
+  meeting_instructions: string;
   notes: string;
+}
+
+interface RescheduleForm {
+  scheduled_time: string;
+  reason: string;
 }
 
 export default function EmployerInterviewsPage() {
@@ -27,9 +37,17 @@ export default function EmployerInterviewsPage() {
   useRequireRole(['employer']);
   const [interviews, setInterviews] = useState<Interview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [selectedInterview, setSelectedInterview] = useState<Interview | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [feedback, setFeedback] = useState('');
 
   const { register, handleSubmit, reset } = useForm<ScheduleInterviewForm>();
+  const { register: registerReschedule, handleSubmit: handleSubmitReschedule, reset: resetReschedule } = useForm<RescheduleForm>();
 
   useEffect(() => {
     fetchInterviews();
@@ -39,7 +57,7 @@ export default function EmployerInterviewsPage() {
     setIsLoading(true);
     try {
       const response = await apiClient.getInterviews({ employer: true });
-      setInterviews(response || []);
+      setInterviews(response.interviews || response || []);
     } catch (error) {
       console.error('Failed to fetch interviews:', error);
       setInterviews(getMockInterviews());
@@ -50,11 +68,7 @@ export default function EmployerInterviewsPage() {
 
   const handleScheduleInterview = async (data: ScheduleInterviewForm) => {
     try {
-      await apiClient.scheduleInterview({
-        ...data,
-        job_id: 'job-1',
-        application_id: 'app-1',
-      });
+      await apiClient.scheduleInterview(data);
       setShowScheduleModal(false);
       reset();
       fetchInterviews();
@@ -63,8 +77,71 @@ export default function EmployerInterviewsPage() {
     }
   };
 
-  const upcomingInterviews = interviews.filter((i) => i.status === 'scheduled');
-  const pastInterviews = interviews.filter((i) => i.status === 'completed' || i.status === 'cancelled');
+  const handleJoinInterview = (interview: Interview) => {
+    if (interview.meeting_link) {
+      window.open(interview.meeting_link, '_blank');
+    }
+  };
+
+  const handleRescheduleInterview = (interview: Interview) => {
+    setSelectedInterview(interview);
+    setShowRescheduleModal(true);
+  };
+
+  const confirmReschedule = async (data: RescheduleForm) => {
+    if (!selectedInterview) return;
+
+    try {
+      await apiClient.rescheduleInterview(selectedInterview.id, data);
+      setShowRescheduleModal(false);
+      resetReschedule();
+      setSelectedInterview(null);
+      fetchInterviews();
+    } catch (error) {
+      console.error('Failed to reschedule interview:', error);
+    }
+  };
+
+  const handleCancelInterview = (interview: Interview) => {
+    setSelectedInterview(interview);
+    setShowCancelModal(true);
+  };
+
+  const confirmCancelInterview = async () => {
+    if (!selectedInterview) return;
+
+    try {
+      await apiClient.cancelInterview(selectedInterview.id, cancelReason);
+      setShowCancelModal(false);
+      setCancelReason('');
+      setSelectedInterview(null);
+      fetchInterviews();
+    } catch (error) {
+      console.error('Failed to cancel interview:', error);
+    }
+  };
+
+  const handleCompleteInterview = (interview: Interview) => {
+    setSelectedInterview(interview);
+    setShowCompleteModal(true);
+  };
+
+  const confirmCompleteInterview = async () => {
+    if (!selectedInterview) return;
+
+    try {
+      await apiClient.completeInterview(selectedInterview.id, { feedback });
+      setShowCompleteModal(false);
+      setFeedback('');
+      setSelectedInterview(null);
+      fetchInterviews();
+    } catch (error) {
+      console.error('Failed to complete interview:', error);
+    }
+  };
+
+  const upcomingInterviews = interviews.filter((i) => i.status === 'scheduled' || i.status === 'rescheduled');
+  const pastInterviews = interviews.filter((i) => i.status === 'completed' || i.status === 'cancelled' || i.status === 'no_show');
 
   return (
     <DashboardLayout>
@@ -74,113 +151,89 @@ export default function EmployerInterviewsPage() {
             <h1 className="text-3xl font-bold text-white mb-2">Interviews</h1>
             <p className="text-white">Manage and schedule interviews with candidates</p>
           </div>
-          <Button variant="primary" onClick={() => setShowScheduleModal(true)}>
-            <Plus size={18} className="mr-2" />
-            Schedule Interview
-          </Button>
-        </div>
-
-        {/* Upcoming Interviews */}
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Upcoming Interviews</h2>
-          {isLoading ? (
-            <div className="flex justify-center py-10">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
-            </div>
-          ) : upcomingInterviews.length === 0 ? (
-            <Card className="text-center py-10">
-              <Calendar className="mx-auto text-gray-400 mb-3" size={48} />
-              <p className="text-gray-600 mb-4">No upcoming interviews scheduled</p>
-              <Button variant="primary" onClick={() => setShowScheduleModal(true)}>
-                Schedule Interview
-              </Button>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {upcomingInterviews.map((interview) => (
-                <Card key={interview.id} className="border-l-4 border-primary">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            {interview.candidate_name}
-                          </h3>
-                          <p className="text-sm text-gray-600">
-                            {formatDateTime(interview.scheduled_time)}
-                          </p>
-                        </div>
-                        <Badge variant="success">Scheduled</Badge>
-                      </div>
-
-                      <div className="flex items-center space-x-4 text-sm text-gray-600 mb-3">
-                        <span>Duration: {interview.duration_minutes} minutes</span>
-                        {interview.meeting_link && (
-                          <>
-                            <span>•</span>
-                            <a
-                              href={interview.meeting_link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-primary hover:underline flex items-center"
-                            >
-                              <Video size={14} className="mr-1" />
-                              Join Meeting
-                            </a>
-                          </>
-                        )}
-                      </div>
-
-                      {interview.notes && (
-                        <div className="bg-gray-50 rounded-lg p-3 mb-3 text-sm text-gray-700">
-                          {interview.notes}
-                        </div>
-                      )}
-
-                      <div className="flex space-x-2">
-                        {interview.meeting_link && (
-                          <Button variant="primary" size="sm">
-                            <Video size={14} className="mr-1" />
-                            Start Interview
-                          </Button>
-                        )}
-                        <Button variant="outline" size="sm">
-                          <Edit size={14} className="mr-1" />
-                          Reschedule
-                        </Button>
-                        <Button variant="ghost" size="sm" className="text-red-600">
-                          <X size={14} className="mr-1" />
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Past Interviews */}
-        {pastInterviews.length > 0 && (
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Past Interviews</h2>
-            <div className="space-y-4">
-              {pastInterviews.map((interview) => (
-                <Card key={interview.id} className="opacity-75">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{interview.candidate_name}</h3>
-                      <p className="text-sm text-gray-600">{formatDateTime(interview.scheduled_time)}</p>
-                    </div>
-                    <Badge variant={interview.status === 'completed' ? 'success' : 'default'}>
-                      {interview.status}
-                    </Badge>
-                  </div>
-                </Card>
-              ))}
-            </div>
+          <div className="flex space-x-2">
+            <Button
+              variant={viewMode === 'list' ? 'primary' : 'outline'}
+              onClick={() => setViewMode('list')}
+            >
+              <List size={18} className="mr-2" />
+              List
+            </Button>
+            <Button
+              variant={viewMode === 'calendar' ? 'primary' : 'outline'}
+              onClick={() => setViewMode('calendar')}
+            >
+              <CalendarIcon size={18} className="mr-2" />
+              Calendar
+            </Button>
+            <Button variant="primary" onClick={() => setShowScheduleModal(true)}>
+              <Plus size={18} className="mr-2" />
+              Schedule Interview
+            </Button>
           </div>
+        </div>
+
+        {isLoading ? (
+          <div className="flex justify-center py-10">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+          </div>
+        ) : viewMode === 'calendar' ? (
+          <InterviewCalendar
+            interviews={interviews}
+            onDateSelect={(date) => {
+              console.log('Selected date:', date);
+              setViewMode('list');
+            }}
+            onInterviewClick={(interview) => {
+              console.log('Selected interview:', interview);
+            }}
+          />
+        ) : (
+          <>
+            {/* Upcoming Interviews */}
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Upcoming Interviews</h2>
+              {upcomingInterviews.length === 0 ? (
+                <Card className="text-center py-10">
+                  <CalendarIcon className="mx-auto text-gray-400 mb-3" size={48} />
+                  <p className="text-gray-600 mb-4">No upcoming interviews scheduled</p>
+                  <Button variant="primary" onClick={() => setShowScheduleModal(true)}>
+                    Schedule Interview
+                  </Button>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {upcomingInterviews.map((interview) => (
+                    <InterviewCard
+                      key={interview.id}
+                      interview={interview}
+                      isEmployer={true}
+                      onJoin={handleJoinInterview}
+                      onReschedule={handleRescheduleInterview}
+                      onCancel={handleCancelInterview}
+                      onComplete={handleCompleteInterview}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Past Interviews */}
+            {pastInterviews.length > 0 && (
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Past Interviews</h2>
+                <div className="space-y-4">
+                  {pastInterviews.map((interview) => (
+                    <InterviewCard
+                      key={interview.id}
+                      interview={interview}
+                      isEmployer={true}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -189,9 +242,21 @@ export default function EmployerInterviewsPage() {
         isOpen={showScheduleModal}
         onClose={() => setShowScheduleModal(false)}
         title="Schedule Interview"
-        size="md"
+        size="lg"
       >
         <form onSubmit={handleSubmit(handleScheduleInterview)} className="space-y-4">
+          <Input
+            label="Job ID"
+            placeholder="Enter job ID"
+            {...register('job_id', { required: true })}
+          />
+
+          <Input
+            label="Application ID"
+            placeholder="Enter application ID"
+            {...register('application_id', { required: true })}
+          />
+
           <Input
             label="Date & Time"
             type="datetime-local"
@@ -205,15 +270,40 @@ export default function EmployerInterviewsPage() {
             {...register('duration_minutes', { required: true, valueAsNumber: true })}
           />
 
+          <Select
+            label="Interview Type"
+            {...register('interview_type')}
+          >
+            <option value="video">Video Interview</option>
+            <option value="phone">Phone Interview</option>
+            <option value="in_person">In-Person</option>
+            <option value="technical">Technical Interview</option>
+            <option value="behavioral">Behavioral Interview</option>
+            <option value="final">Final Interview</option>
+          </Select>
+
           <Input
             label="Meeting Link"
             placeholder="https://meet.google.com/..."
             {...register('meeting_link')}
           />
 
+          <Input
+            label="Meeting Location (for in-person)"
+            placeholder="Office address or location"
+            {...register('meeting_location')}
+          />
+
+          <Textarea
+            label="Meeting Instructions"
+            rows={2}
+            placeholder="Instructions for joining or finding the interview location..."
+            {...register('meeting_instructions')}
+          />
+
           <Textarea
             label="Notes"
-            rows={4}
+            rows={3}
             placeholder="Add any notes or preparation instructions for the interview..."
             {...register('notes')}
           />
@@ -228,10 +318,164 @@ export default function EmployerInterviewsPage() {
               Cancel
             </Button>
             <Button type="submit" variant="primary" className="flex-1">
-              Schedule
+              Schedule Interview
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Reschedule Interview Modal */}
+      <Modal
+        isOpen={showRescheduleModal}
+        onClose={() => {
+          setShowRescheduleModal(false);
+          resetReschedule();
+          setSelectedInterview(null);
+        }}
+        title="Reschedule Interview"
+        size="md"
+      >
+        <form onSubmit={handleSubmitReschedule(confirmReschedule)} className="space-y-4">
+          <p className="text-gray-700">
+            Reschedule interview with <strong>{selectedInterview?.candidate_name}</strong>
+          </p>
+
+          <Input
+            label="New Date & Time"
+            type="datetime-local"
+            {...registerReschedule('scheduled_time', { required: true })}
+          />
+
+          <Textarea
+            label="Reason for Rescheduling"
+            rows={3}
+            placeholder="Please provide a reason for rescheduling..."
+            {...registerReschedule('reason')}
+          />
+
+          <div className="flex space-x-2 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setShowRescheduleModal(false);
+                resetReschedule();
+                setSelectedInterview(null);
+              }}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary" className="flex-1">
+              Reschedule
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Cancel Interview Modal */}
+      <Modal
+        isOpen={showCancelModal}
+        onClose={() => {
+          setShowCancelModal(false);
+          setCancelReason('');
+          setSelectedInterview(null);
+        }}
+        title="Cancel Interview"
+        size="md"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-700">
+            Are you sure you want to cancel the interview with <strong>{selectedInterview?.candidate_name}</strong>? 
+            The candidate will be notified.
+          </p>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Reason for cancellation (optional)
+            </label>
+            <textarea
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              rows={3}
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="Please provide a reason..."
+            />
+          </div>
+
+          <div className="flex space-x-2 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowCancelModal(false);
+                setCancelReason('');
+                setSelectedInterview(null);
+              }}
+              className="flex-1"
+            >
+              Keep Interview
+            </Button>
+            <Button
+              variant="primary"
+              onClick={confirmCancelInterview}
+              className="flex-1 bg-red-600 hover:bg-red-700"
+            >
+              Cancel Interview
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Complete Interview Modal */}
+      <Modal
+        isOpen={showCompleteModal}
+        onClose={() => {
+          setShowCompleteModal(false);
+          setFeedback('');
+          setSelectedInterview(null);
+        }}
+        title="Complete Interview"
+        size="md"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-700">
+            Mark interview with <strong>{selectedInterview?.candidate_name}</strong> as completed.
+          </p>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Interview Feedback (optional)
+            </label>
+            <textarea
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              rows={4}
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+              placeholder="Add your feedback about the interview..."
+            />
+          </div>
+
+          <div className="flex space-x-2 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowCompleteModal(false);
+                setFeedback('');
+                setSelectedInterview(null);
+              }}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={confirmCompleteInterview}
+              className="flex-1"
+            >
+              Mark Complete
+            </Button>
+          </div>
+        </div>
       </Modal>
     </DashboardLayout>
   );
