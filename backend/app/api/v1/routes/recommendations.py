@@ -158,19 +158,22 @@ async def get_candidate_recommendations_for_job(
     job_id: str,
     current_user: User = Depends(get_current_employer),
     limit: int = Query(20, ge=1, le=50, description="Maximum number of recommendations"),
-    min_score: float = Query(0.3, ge=0.0, le=1.0, description="Minimum match score threshold")
+    min_score: float = Query(0.3, ge=0.0, le=1.0, description="Minimum match score threshold"),
+    include_applied: bool = Query(False, description="Include candidates who already applied")
 ):
     """
-    Get candidate recommendations for a specific job posting (Employer only).
+    Get AI-powered candidate recommendations for a specific job posting (Employer only).
     
-    Uses AI to analyze the job requirements and recommend the most suitable
-    candidates from the job seeker database.
+    Uses AI embeddings to analyze the job requirements and match with the most suitable
+    candidates from the job seeker database. Returns candidates ranked by match score
+    along with specific reasons why each candidate is a good fit.
     
     Args:
         job_id: Job posting ID
         current_user: Current authenticated employer
         limit: Maximum number of recommendations (default: 20, max: 50)
         min_score: Minimum similarity score threshold (default: 0.3)
+        include_applied: Whether to include candidates who already applied (default: False)
         
     Returns:
         List of candidate recommendations with match scores and reasons
@@ -202,12 +205,24 @@ async def get_candidate_recommendations_for_job(
             detail="You are not authorized to view recommendations for this job"
         )
     
+    # Check if job is active
+    from app.models.job import JobStatus
+    if job.status != JobStatus.ACTIVE:
+        logger.warning(
+            f"Candidate recommendations requested for inactive job {job_id}"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot get candidate recommendations for inactive jobs"
+        )
+    
     try:
         # Get recommendations from service
         recommendations = await recommendation_service.get_candidate_recommendations_for_job(
             job=job,
             limit=limit,
-            min_score=min_score
+            min_score=min_score,
+            include_applied=include_applied
         )
         
         logger.info(

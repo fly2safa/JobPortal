@@ -268,7 +268,8 @@ class RecommendationService:
         self,
         job: Job,
         limit: int = 20,
-        min_score: float = 0.3
+        min_score: float = 0.3,
+        include_applied: bool = False
     ) -> List[Dict[str, Any]]:
         """
         Get candidate recommendations for a job posting.
@@ -277,6 +278,7 @@ class RecommendationService:
             job: Job model instance
             limit: Maximum number of recommendations
             min_score: Minimum similarity score
+            include_applied: Whether to include candidates who already applied
             
         Returns:
             List of candidate recommendations with match scores
@@ -303,19 +305,50 @@ class RecommendationService:
             from app.models.user import UserRole
             job_seekers = await User.find(User.role == UserRole.JOB_SEEKER).to_list()
             
+            # Optionally filter out candidates who already applied
+            if not include_applied:
+                from app.models.application import Application
+                applications = await Application.find(
+                    Application.job_id == str(job.id)
+                ).to_list()
+                applied_user_ids = {app.applicant_id for app in applications}
+                job_seekers = [
+                    js for js in job_seekers 
+                    if str(js.id) not in applied_user_ids
+                ]
+                logger.debug(
+                    f"Filtered out {len(applied_user_ids)} candidates who already applied"
+                )
+            
             # Score candidates
             candidate_scores = []
             for candidate in job_seekers:
                 # Create candidate profile
                 candidate_profile = {
                     'id': str(candidate.id),
-                    'skills': candidate.skills,
+                    'name': candidate.full_name,
+                    'email': candidate.email,
+                    'skills': candidate.skills or [],
                     'experience_years': candidate.experience_years,
                     'location': candidate.location,
                     'education': candidate.education,
                     'bio': candidate.bio,
                     'job_title': candidate.job_title,
+                    'linkedin_url': candidate.linkedin_url,
+                    'portfolio_url': candidate.portfolio_url,
                 }
+                
+                # Enhance profile with resume data if available
+                from app.models.resume import Resume
+                resume = await Resume.find_one(Resume.user_id == str(candidate.id))
+                if resume:
+                    candidate_profile['resume_text'] = resume.parsed_text
+                    candidate_profile['work_experience'] = resume.work_experience
+                    if resume.skills_extracted:
+                        # Merge skills from resume with profile skills
+                        all_skills = set(candidate_profile['skills'])
+                        all_skills.update(resume.skills_extracted)
+                        candidate_profile['skills'] = list(all_skills)
                 
                 # Create candidate embedding
                 candidate_embedding = await self.embeddings.create_user_profile_embedding(
@@ -356,6 +389,17 @@ class RecommendationService:
                 
                 candidate_dict = candidate.dict()
                 candidate_dict['id'] = str(candidate.id)
+                
+                # Get resume info if available
+                from app.models.resume import Resume
+                resume = await Resume.find_one(Resume.user_id == str(candidate.id))
+                if resume:
+                    candidate_dict['resume'] = {
+                        'id': str(resume.id),
+                        'file_name': resume.file_name,
+                        'file_url': resume.file_url,
+                        'created_at': resume.created_at
+                    }
                 
                 recommendation = {
                     'candidate': candidate_dict,
