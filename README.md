@@ -404,6 +404,72 @@ graph TB
     linkStyle default stroke:#333,stroke-width:3px
 ```
 
+### Frontend Flow Explained in Simple Terms
+
+Think of the frontend as a **restaurant experience**:
+
+#### 1. 🚪 **The Entrance (App Router)**
+- When you visit the website, the **App Router** is like the restaurant's entrance
+- It decides which "room" (page) you should go to based on the URL
+- Example: `/login` takes you to the login page, `/dashboard` takes you to your dashboard
+
+#### 2. 📄 **The Rooms (Pages)**
+- Each page is like a different room in the restaurant
+- **Public rooms**: Anyone can enter (Home, Jobs, Login)
+- **Private rooms**: Need a key to enter (Dashboard, Profile)
+- **VIP rooms**: Only for special guests (Employer Dashboard)
+
+#### 3. 🧩 **The Furniture (Components)**
+- Components are like furniture pieces you can reuse in different rooms
+- **Layout furniture**: Navbar (menu board), Footer (exit sign)
+- **UI furniture**: Buttons (chairs), Input boxes (tables), Cards (display cases)
+- **Feature furniture**: Login forms, job cards, application forms
+
+#### 4. 💾 **The Memory (State Management)**
+- The **Zustand Store** is like the restaurant's memory system
+- It remembers: "Is this customer logged in?" "What's their name?" "What's their access token?"
+- All rooms can check this memory to know who you are
+
+#### 5. 🔌 **The Kitchen Phone (API Client)**
+- The **Axios Client** is like a phone that calls the kitchen (backend)
+- When you click "Apply for Job", it calls the kitchen: "Hey, this person wants to apply!"
+- The kitchen processes your order and sends back a response
+- The phone automatically includes your "membership card" (JWT token) with every call
+
+#### 6. 🛠️ **The Toolbox (Utilities)**
+- **Hooks**: Special tools that help components do their job (like a can opener)
+- **Types**: Labels that describe what each thing is (TypeScript definitions)
+- **Helpers**: Small tools for common tasks (format dates, validate emails)
+
+#### 7. 🚀 **The Kitchen (Backend)**
+- The **FastAPI Backend** is like the restaurant's kitchen
+- It receives orders (API requests), cooks them (processes data), and sends back food (responses)
+- It checks your membership card (JWT) to make sure you're allowed to order
+
+### How It All Works Together:
+
+**Example: Applying for a Job**
+
+1. 👤 **You** click "Apply" on a job listing
+2. 📄 **Page** shows you the application form (ApplyModal component)
+3. ✍️ **You** fill out the form and click "Submit"
+4. 🧩 **Component** collects your form data
+5. 💾 **State** provides your user info and token
+6. 🔌 **API Client** calls the backend: "POST /api/v1/applications" with your data + token
+7. 🚀 **Backend** receives the request, validates it, saves to database
+8. 📧 **Backend** sends you a confirmation email
+9. 🔌 **API Client** receives success response
+10. 🧩 **Component** shows you: "Application submitted successfully! ✅"
+11. 📄 **Page** updates to show your new application in the list
+
+**That's it!** The frontend is just a well-organized system that:
+- Shows you pages and forms (UI)
+- Remembers who you are (State)
+- Talks to the backend (API)
+- Makes everything look nice and work smoothly (Components)
+
+---
+
 ### Frontend Architectural Highlights
 
 #### 🎯 **Next.js 14 App Router**
