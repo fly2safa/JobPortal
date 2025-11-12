@@ -143,30 +143,31 @@ graph LR
 For a more detailed view, here's the complete architecture broken down by layers:
 
 ```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#ffffff','primaryTextColor':'#000000','primaryBorderColor':'#000000','lineColor':'#333333','secondaryColor':'#f4f4f4','tertiaryColor':'#ffffff','clusterBkg':'#f9f9f9','clusterBorder':'#333333','titleColor':'#000000','edgeLabelBackground':'#ffffff'}}}%%
 graph TB
-    subgraph Client["👥 Client Layer"]
+    subgraph Client["<b>👥 CLIENT LAYER</b>"]
         Browser["Web Browser"]
         Mobile["Mobile Browser"]
     end
     
-    subgraph Frontend["⚛️ Frontend Layer - Next.js 14"]
+    subgraph Frontend["<b>⚛️ FRONTEND LAYER - Next.js 14</b>"]
         Pages["📄 Pages<br/>Public & Protected Routes"]
         Components["🧩 Components<br/>UI & Features"]
         Store["💾 State Management<br/>Zustand"]
         APIClient["🔌 API Client<br/>Axios + JWT"]
     end
     
-    subgraph Backend["🚀 Backend Layer - FastAPI"]
+    subgraph Backend["<b>🚀 BACKEND LAYER - FastAPI</b>"]
         Routes["🛣️ API Routes<br/>/api/v1/*"]
         Services["⚙️ Business Services"]
         AI["🤖 AI Layer<br/>OpenAI Integration"]
     end
     
-    subgraph Data["🗄️ Data Layer"]
+    subgraph Data["<b>🗄️ DATA LAYER</b>"]
         MongoDB[("MongoDB Atlas<br/>Collections:<br/>Users, Jobs,<br/>Applications,<br/>Resumes")]
     end
     
-    subgraph External["🌐 External Services"]
+    subgraph External["<b>🌐 EXTERNAL SERVICES</b>"]
         OpenAI["OpenAI GPT-4o"]
         SMTP["SMTP Email"]
         Files["File Storage"]
