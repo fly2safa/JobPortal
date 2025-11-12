@@ -135,12 +135,66 @@ export interface Interview {
   id: string;
   job_id: string;
   application_id: string;
-  candidate_name?: string;
+  
+  candidate_id: string;
+  candidate_name: string;
+  candidate_email: string;
+  
+  employer_id: string;
+  employer_name: string;
+  employer_email: string;
+  
+  company_id: string;
+  company_name: string;
+  job_title: string;
+  
   scheduled_time: string;
   duration_minutes: number;
+  interview_type: 'phone' | 'video' | 'in_person' | 'technical' | 'behavioral' | 'final';
+  
   meeting_link?: string;
-  status: 'scheduled' | 'completed' | 'cancelled';
+  meeting_location?: string;
+  meeting_instructions?: string;
+  
+  status: 'scheduled' | 'rescheduled' | 'completed' | 'cancelled' | 'no_show';
+  status_history: any[];
+  
   notes?: string;
+  feedback?: string;
+  interviewer_notes?: string;
+  
+  candidate_notified: boolean;
+  employer_notified: boolean;
+  reminder_sent: boolean;
+  
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+}
+
+export interface InterviewCreate {
+  job_id: string;
+  application_id: string;
+  scheduled_time: string;
+  duration_minutes: number;
+  interview_type?: 'phone' | 'video' | 'in_person' | 'technical' | 'behavioral' | 'final';
+  meeting_link?: string;
+  meeting_location?: string;
+  meeting_instructions?: string;
+  notes?: string;
+}
+
+export interface InterviewUpdate {
+  scheduled_time?: string;
+  duration_minutes?: number;
+  interview_type?: 'phone' | 'video' | 'in_person' | 'technical' | 'behavioral' | 'final';
+  meeting_link?: string;
+  meeting_location?: string;
+  meeting_instructions?: string;
+  notes?: string;
+  status?: 'scheduled' | 'rescheduled' | 'completed' | 'cancelled' | 'no_show';
+  feedback?: string;
+  interviewer_notes?: string;
 }
 
 // Recommendation Types
