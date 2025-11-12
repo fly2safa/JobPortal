@@ -448,7 +448,7 @@ Think of the frontend as a **restaurant experience**:
 
 ### How It All Works Together:
 
-**Example: Applying for a Job**
+#### **Example 1: Job Seeker - Applying for a Job** 👤
 
 1. 👤 **You** click "Apply" on a job listing
 2. 📄 **Page** shows you the application form (ApplyModal component)
@@ -462,11 +462,32 @@ Think of the frontend as a **restaurant experience**:
 10. 🧩 **Component** shows you: "Application submitted successfully! ✅"
 11. 📄 **Page** updates to show your new application in the list
 
+#### **Example 2: Employer - Reviewing Applications** 💼
+
+1. 💼 **You** (employer) navigate to "My Jobs" page
+2. 📄 **Page** loads your job listings
+3. 🔌 **API Client** calls: "GET /api/v1/jobs/employer/me" with your token
+4. 🚀 **Backend** checks your token, finds your jobs, returns the list
+5. 📄 **Page** displays your jobs using JobCard components
+6. 👆 **You** click on a job to see its applications
+7. 📄 **Page** navigates to the applications review page
+8. 🔌 **API Client** calls: "GET /api/v1/jobs/{job_id}/applications" with your token
+9. 🚀 **Backend** verifies you own this job, returns all applications
+10. 🧩 **Component** displays each application in a CandidateCard
+11. 👀 **You** review a candidate and click "Shortlist"
+12. 🔌 **API Client** calls: "POST /api/v1/applications/{id}/shortlist" with your token
+13. 🚀 **Backend** updates application status to "SHORTLISTED"
+14. 📧 **Backend** sends email to candidate: "Good news! You've been shortlisted!"
+15. 🔌 **API Client** receives success response
+16. 🧩 **Component** updates the card to show "Shortlisted" badge
+17. 📄 **Page** moves the card to the "Shortlisted" section
+
 **That's it!** The frontend is just a well-organized system that:
 - Shows you pages and forms (UI)
 - Remembers who you are (State)
 - Talks to the backend (API)
 - Makes everything look nice and work smoothly (Components)
+- Works seamlessly for both **Job Seekers** and **Employers**
 
 ---
 
