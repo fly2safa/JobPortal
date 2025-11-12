@@ -520,6 +520,10 @@ class TestingTrackerApp:
         """Handle section jump from dropdown."""
         section = self.section_var.get()
         if section and section in self.section_items:
+            # Save current test first
+            if self.current_test:
+                self.save_current_test()
+            
             section_item = self.section_items[section]
             # Get first test in section
             children = self.tree.get_children(section_item)
@@ -535,6 +539,9 @@ class TestingTrackerApp:
                         self.current_test = test
                         self.display_test(test)
                         break
+            
+            # Reset dropdown to allow another selection
+            self.section_combo.set('')
     
     def display_test(self, test):
         """Display test details."""
