@@ -79,43 +79,43 @@ graph LR
     Storage["💾 File Storage"]
     
     %% Main Flow
-    Client -->|"HTTP Requests"| Frontend
-    Frontend -->|"REST API + JWT"| API
+    Client ==>|"HTTP Requests"| Frontend
+    Frontend ==>|"REST API + JWT"| API
     
     %% API to Services
-    API --> AuthSvc
-    API --> JobSvc
-    API --> AppSvc
-    API --> ResumeSvc
-    API --> AISvc
+    API ==> AuthSvc
+    API ==> JobSvc
+    API ==> AppSvc
+    API ==> ResumeSvc
+    API ==> AISvc
     
     %% Services to Data
-    AuthSvc --> DB
-    JobSvc --> DB
-    AppSvc --> DB
-    ResumeSvc --> DB
+    AuthSvc ==> DB
+    JobSvc ==> DB
+    AppSvc ==> DB
+    ResumeSvc ==> DB
     
     %% Services to AI
-    ResumeSvc --> AISvc
-    JobSvc --> AISvc
+    ResumeSvc ==> AISvc
+    JobSvc ==> AISvc
     
     %% AI to External
-    AISvc --> OpenAI
+    AISvc ==> OpenAI
     
     %% Email Flow
     AppSvc -.->|"Async Trigger"| EmailSvc
-    EmailSvc --> SMTP
+    EmailSvc ==> SMTP
     
     %% File Storage
-    ResumeSvc --> Storage
+    ResumeSvc ==> Storage
     
     %% Styling
-    classDef frontend fill:#61dafb,stroke:#333,stroke-width:2px,color:#000
-    classDef backend fill:#009688,stroke:#333,stroke-width:2px,color:#fff
-    classDef service fill:#4caf50,stroke:#333,stroke-width:2px,color:#fff
-    classDef ai fill:#ff9800,stroke:#333,stroke-width:2px,color:#fff
-    classDef data fill:#2196f3,stroke:#333,stroke-width:2px,color:#fff
-    classDef external fill:#9c27b0,stroke:#333,stroke-width:2px,color:#fff
+    classDef frontend fill:#61dafb,stroke:#333,stroke-width:3px,color:#000
+    classDef backend fill:#009688,stroke:#333,stroke-width:3px,color:#fff
+    classDef service fill:#4caf50,stroke:#333,stroke-width:3px,color:#fff
+    classDef ai fill:#ff9800,stroke:#333,stroke-width:3px,color:#fff
+    classDef data fill:#2196f3,stroke:#333,stroke-width:3px,color:#fff
+    classDef external fill:#9c27b0,stroke:#333,stroke-width:3px,color:#fff
     
     class Client,Frontend frontend
     class API backend
@@ -123,6 +123,9 @@ graph LR
     class AISvc ai
     class DB data
     class OpenAI,SMTP,Storage external
+    
+    %% Link styling for better visibility
+    linkStyle default stroke:#333,stroke-width:3px
 ```
 
 **Simplified Architecture Overview:**
@@ -170,31 +173,34 @@ graph TB
     end
     
     %% Connections
-    Browser --> Pages
-    Mobile --> Pages
-    Pages --> Components
-    Components --> Store
-    Store --> APIClient
-    APIClient -->|REST + JWT| Routes
-    Routes --> Services
-    Services --> AI
-    Services --> MongoDB
-    AI --> OpenAI
-    Services --> SMTP
-    Services --> Files
+    Browser ==> Pages
+    Mobile ==> Pages
+    Pages ==> Components
+    Components ==> Store
+    Store ==> APIClient
+    APIClient ==>|REST + JWT| Routes
+    Routes ==> Services
+    Services ==> AI
+    Services ==> MongoDB
+    AI ==> OpenAI
+    Services ==> SMTP
+    Services ==> Files
     
     %% Styling
-    classDef clientStyle fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
-    classDef frontendStyle fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
-    classDef backendStyle fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    classDef dataStyle fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
-    classDef externalStyle fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    classDef clientStyle fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
+    classDef frontendStyle fill:#e8f5e9,stroke:#388e3c,stroke-width:3px
+    classDef backendStyle fill:#fff3e0,stroke:#f57c00,stroke-width:3px
+    classDef dataStyle fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px
+    classDef externalStyle fill:#fce4ec,stroke:#c2185b,stroke-width:3px
     
     class Client clientStyle
     class Frontend frontendStyle
     class Backend backendStyle
     class Data dataStyle
     class External externalStyle
+    
+    %% Link styling for better visibility
+    linkStyle default stroke:#333,stroke-width:3px
 ```
 
 ### Key Architectural Highlights
