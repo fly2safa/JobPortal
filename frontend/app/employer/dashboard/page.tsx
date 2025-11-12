@@ -9,9 +9,10 @@ import Link from 'next/link';
 import { Briefcase, Users, Calendar, TrendingUp, Eye, CheckCircle } from 'lucide-react';
 import apiClient from '@/lib/api';
 import { Job } from '@/types';
+import { formatDate } from '@/lib/utils';
 
 export default function EmployerDashboardPage() {
-  useAuth(true);
+  const { user } = useAuth(true);
   useRequireRole(['employer']);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,7 +44,9 @@ export default function EmployerDashboardPage() {
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Employer Dashboard</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">
+            Welcome back, {user?.first_name} {user?.last_name}!
+          </h1>
           <p className="text-white">Manage your job postings and review applications</p>
         </div>
 

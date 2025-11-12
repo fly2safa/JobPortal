@@ -31,8 +31,8 @@ export default function ApplicationsPage() {
       setApplications(response.applications || []);
     } catch (error) {
       console.error('Failed to fetch applications:', error);
-      // Show mock data for demo
-      setApplications(getMockApplications());
+      // Set empty array on error
+      setApplications([]);
     } finally {
       setIsLoading(false);
     }

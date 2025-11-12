@@ -42,6 +42,7 @@ export default function RecommendationsPage() {
       setRecommendations(response || []);
     } catch (error) {
       console.error('Failed to fetch recommendations:', error);
+      // Use mock data on error
       setRecommendations(getMockRecommendations());
     } finally {
       setIsLoading(false);

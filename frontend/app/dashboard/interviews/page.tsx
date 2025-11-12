@@ -27,7 +27,7 @@ export default function InterviewsPage() {
       setInterviews(response || []);
     } catch (error) {
       console.error('Failed to fetch interviews:', error);
-      // Show mock data for demo
+      // Show mock data on error
       setInterviews(getMockInterviews());
     } finally {
       setIsLoading(false);

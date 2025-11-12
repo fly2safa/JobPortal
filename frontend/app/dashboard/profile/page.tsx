@@ -78,6 +78,22 @@ export default function ProfilePage() {
       });
     } catch (error) {
       console.error('Failed to fetch profile:', error);
+      // Try to use user data from auth store as fallback
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const userData = JSON.parse(userStr);
+        reset({
+          first_name: userData.first_name || '',
+          last_name: userData.last_name || '',
+          email: userData.email || '',
+          phone: userData.phone || '',
+          location: userData.location || '',
+          experience_years: userData.experience_years || 0,
+          skills: userData.skills?.join(', ') || '',
+          education: userData.education || '',
+          bio: userData.bio || '',
+        });
+      }
     } finally {
       setIsLoadingProfile(false);
     }
@@ -90,6 +106,7 @@ export default function ProfilePage() {
       setResumes(data);
     } catch (error) {
       console.error('Failed to fetch resumes:', error);
+      setResumes([]);
     } finally {
       setIsLoadingResumes(false);
     }
