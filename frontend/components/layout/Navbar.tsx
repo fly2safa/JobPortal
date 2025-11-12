@@ -5,13 +5,50 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/store/authStore';
 import { User, LogOut, Home, FileText, MessageSquare, Calendar } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import apiClient from '@/lib/api';
 
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { isAuthenticated, user, logout } = useAuthStore();
+  const { isAuthenticated, user, logout, _hasHydrated, updateUser } = useAuthStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const hasRefreshedUser = useRef(false);
+
+  // Refresh user data if first_name or last_name is missing (only once after hydration)
+  useEffect(() => {
+    const refreshUserData = async () => {
+      if (_hasHydrated && isAuthenticated && user && (!user.first_name || !user.last_name) && !hasRefreshedUser.current) {
+        hasRefreshedUser.current = true;
+        try {
+          const freshUserData = await apiClient.getCurrentUser();
+          updateUser(freshUserData);
+        } catch (error) {
+          console.error('Failed to refresh user data:', error);
+        }
+      }
+    };
+
+    refreshUserData();
+  }, [_hasHydrated, isAuthenticated, user, updateUser]);
+
+  // Get display name for user
+  const getUserDisplayName = () => {
+    if (!user) return 'User';
+    
+    // Try first_name and last_name
+    if (user.first_name && user.last_name) {
+      return `${user.first_name} ${user.last_name}`;
+    }
+    
+    // Try just first_name
+    if (user.first_name) {
+      return user.first_name;
+    }
+    
+    // Fall back to email
+    return user.email || 'User';
+  };
 
   const handleLogout = () => {
     logout();
@@ -105,10 +142,8 @@ export function Navbar() {
                 )}
                 
                 <div className="flex items-center space-x-2 border-l pl-4 ml-2">
-                  <span className="text-sm text-gray-700">
-                    {user?.first_name && user?.last_name 
-                      ? `${user.first_name} ${user.last_name}`
-                      : user?.email || 'User'}
+                  <span className="text-sm text-gray-700 font-medium">
+                    {getUserDisplayName()}
                   </span>
                   <Button variant="ghost" size="sm" onClick={handleLogout}>
                     <LogOut size={16} className="mr-1" />
@@ -170,6 +205,9 @@ export function Navbar() {
             </Link>
             {isAuthenticated ? (
               <>
+                <div className="px-3 py-2 text-sm font-medium text-gray-900 border-b border-gray-200">
+                  {getUserDisplayName()}
+                </div>
                 <Link
                   href={user?.role === 'job_seeker' ? '/dashboard' : '/employer/dashboard'}
                   className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-gray-50"

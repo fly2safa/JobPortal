@@ -38,19 +38,11 @@ export default function RecommendationsPage() {
   const fetchRecommendations = async () => {
     setIsLoading(true);
     try {
-      // Check if using demo token
-      const token = localStorage.getItem('access_token');
-      if (token && token.startsWith('demo-token-')) {
-        // Use mock data for demo mode
-        setRecommendations(getMockRecommendations());
-        setIsLoading(false);
-        return;
-      }
-
       const response = await apiClient.getJobRecommendations();
       setRecommendations(response || []);
     } catch (error) {
       console.error('Failed to fetch recommendations:', error);
+      // Use mock data on error
       setRecommendations(getMockRecommendations());
     } finally {
       setIsLoading(false);

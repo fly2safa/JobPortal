@@ -23,20 +23,11 @@ export default function InterviewsPage() {
   const fetchInterviews = async () => {
     setIsLoading(true);
     try {
-      // Check if using demo token
-      const token = localStorage.getItem('access_token');
-      if (token && token.startsWith('demo-token-')) {
-        // Use mock data for demo mode
-        setInterviews(getMockInterviews());
-        setIsLoading(false);
-        return;
-      }
-
       const response = await apiClient.getInterviews();
       setInterviews(response || []);
     } catch (error) {
       console.error('Failed to fetch interviews:', error);
-      // Show mock data for demo
+      // Show mock data on error
       setInterviews(getMockInterviews());
     } finally {
       setIsLoading(false);

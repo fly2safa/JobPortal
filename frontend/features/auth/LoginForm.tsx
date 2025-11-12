@@ -32,39 +32,14 @@ export function LoginForm() {
     setError('');
 
     try {
-      // DEMO MODE: Bypass API call and use mock data
-      // Determine role based on email domain for demo
-      const role = data.email.includes('employer') || data.email.includes('company') ? 'employer' : 'job_seeker';
+      // Call the actual backend API
+      const response = await apiClient.login(data.email, data.password);
       
-      const mockUser = {
-        id: '1',
-        email: data.email,
-        full_name: 'Demo User',
-        role: role,
-        is_active: true,
-        created_at: new Date().toISOString(),
-        profile: role === 'job_seeker' ? {
-          bio: 'Experienced professional',
-          phone: '+1234567890',
-          location: 'New York, NY',
-          skills: ['JavaScript', 'React', 'TypeScript'],
-          experience: [],
-          education: [],
-        } : {
-          company_name: 'Demo Company',
-          company_description: 'A leading tech company',
-          website: 'https://example.com',
-          company_size: '50-100',
-          industry: 'Technology',
-        }
-      };
+      // Store authentication data
+      setAuth(response.user, response.access_token);
       
-      const mockToken = 'demo-token-' + Date.now();
-      
-      setAuth(mockUser, mockToken);
-      
-      // Redirect based on role
-      if (role === 'employer') {
+      // Redirect based on user role
+      if (response.user.role === 'employer') {
         router.push('/employer/dashboard');
       } else {
         router.push('/dashboard');

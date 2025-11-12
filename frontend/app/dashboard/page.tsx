@@ -10,7 +10,7 @@ import { Briefcase, FileText, Star, TrendingUp, Clock } from 'lucide-react';
 import { apiClient } from '@/lib/api';
 
 export default function DashboardPage() {
-  useAuth(true);
+  const { user } = useAuth(true);
 
   const [stats, setStats] = useState({ 
     total: 0, 
@@ -28,25 +28,6 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        // Check if using demo token
-        const token = localStorage.getItem('access_token');
-        if (token && token.startsWith('demo-token-')) {
-          // Skip API calls for demo mode, use default empty state
-          setStats({ 
-            total: 0, 
-            pending: 0,
-            reviewing: 0, 
-            shortlisted: 0,
-            interview: 0,
-            rejected: 0,
-            accepted: 0,
-            withdrawn: 0
-          });
-          setRecentApplications([]);
-          setLoading(false);
-          return;
-        }
-
         const statsData = await apiClient.getApplicationStats();
         setStats(statsData);
         
@@ -77,8 +58,10 @@ export default function DashboardPage() {
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Dashboard</h1>
-          <p className="text-white">Welcome back! Here&apos;s your job search overview.</p>
+          <h1 className="text-3xl font-bold text-white mb-2">
+            Welcome back, {user?.first_name} {user?.last_name}!
+          </h1>
+          <p className="text-white">Here&apos;s your job search overview.</p>
         </div>
 
         {/* Stats */}

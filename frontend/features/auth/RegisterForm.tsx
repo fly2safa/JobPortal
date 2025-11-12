@@ -43,42 +43,36 @@ export function RegisterForm() {
     setError('');
 
     try {
-      // DEMO MODE: Bypass API call and use mock data
-      const mockUser = {
-        id: '1',
+      // Call the actual backend API
+      const response = await apiClient.register({
         email: data.email,
-        full_name: `${data.first_name} ${data.last_name}`,
+        password: data.password,
+        first_name: data.first_name,
+        last_name: data.last_name,
         role: data.role,
-        is_active: true,
-        created_at: new Date().toISOString(),
-        profile: data.role === 'job_seeker' ? {
-          bio: '',
-          phone: '',
-          location: '',
-          skills: [],
-          experience: [],
-          education: [],
-        } : {
-          company_name: '',
-          company_description: '',
-          website: '',
-          company_size: '',
-          industry: '',
-        }
-      };
+      });
       
-      const mockToken = 'demo-token-' + Date.now();
+      // Store authentication data
+      setAuth(response.user, response.access_token);
       
-      setAuth(mockUser, mockToken);
-      
-      // Redirect based on role
-      if (data.role === 'employer') {
+      // Redirect based on user role
+      if (response.user.role === 'employer') {
         router.push('/employer/dashboard');
       } else {
         router.push('/dashboard');
       }
     } catch (err: any) {
-      setError(err.response?.data?.detail || err.response?.data?.error || 'Registration failed. Please try again.');
+      console.error('Registration error:', err);
+      // FastAPI returns errors in 'detail' field
+      if (err.response?.data?.detail) {
+        setError(err.response.data.detail);
+      } else if (err.response?.data?.error) {
+        setError(err.response.data.error);
+      } else if (!err.response) {
+        setError('Unable to connect to server. Please check if the backend is running.');
+      } else {
+        setError('Registration failed. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }

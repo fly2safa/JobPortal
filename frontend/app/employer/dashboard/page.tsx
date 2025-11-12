@@ -12,7 +12,7 @@ import { Job } from '@/types';
 import { formatDate } from '@/lib/utils';
 
 export default function EmployerDashboardPage() {
-  useAuth(true);
+  const { user } = useAuth(true);
   useRequireRole(['employer']);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -26,15 +26,6 @@ export default function EmployerDashboardPage() {
     setIsLoading(true);
     setError("");
     try {
-      // Check if using demo token
-      const token = localStorage.getItem('access_token');
-      if (token && token.startsWith('demo-token-')) {
-        // Skip API calls for demo mode, use empty jobs list
-        setJobs([]);
-        setIsLoading(false);
-        return;
-      }
-
       const response = await apiClient.getEmployerJobs();
       setJobs(response.jobs || []);
     } catch (err) {
@@ -53,7 +44,9 @@ export default function EmployerDashboardPage() {
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Employer Dashboard</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">
+            Welcome back, {user?.first_name} {user?.last_name}!
+          </h1>
           <p className="text-white">Manage your job postings and review applications</p>
         </div>
 

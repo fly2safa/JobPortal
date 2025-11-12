@@ -62,29 +62,6 @@ export default function ProfilePage() {
   const fetchProfileData = async () => {
     setIsLoadingProfile(true);
     try {
-      // Check if using demo token
-      const token = localStorage.getItem('access_token');
-      if (token && token.startsWith('demo-token-')) {
-        // Use user data from local storage for demo mode
-        const userStr = localStorage.getItem('user');
-        if (userStr) {
-          const userData = JSON.parse(userStr);
-          reset({
-            first_name: userData.full_name?.split(' ')[0] || '',
-            last_name: userData.full_name?.split(' ').slice(1).join(' ') || '',
-            email: userData.email || '',
-            phone: userData.profile?.phone || '',
-            location: userData.profile?.location || '',
-            experience_years: userData.profile?.experience_years || 0,
-            skills: userData.profile?.skills?.join(', ') || '',
-            education: userData.profile?.education || '',
-            bio: userData.profile?.bio || '',
-          });
-        }
-        setIsLoadingProfile(false);
-        return;
-      }
-
       const profileData = await apiClient.getProfile();
       
       // Update form with fetched data
@@ -101,6 +78,22 @@ export default function ProfilePage() {
       });
     } catch (error) {
       console.error('Failed to fetch profile:', error);
+      // Try to use user data from auth store as fallback
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const userData = JSON.parse(userStr);
+        reset({
+          first_name: userData.first_name || '',
+          last_name: userData.last_name || '',
+          email: userData.email || '',
+          phone: userData.phone || '',
+          location: userData.location || '',
+          experience_years: userData.experience_years || 0,
+          skills: userData.skills?.join(', ') || '',
+          education: userData.education || '',
+          bio: userData.bio || '',
+        });
+      }
     } finally {
       setIsLoadingProfile(false);
     }
@@ -109,19 +102,11 @@ export default function ProfilePage() {
   const fetchResumes = async () => {
     setIsLoadingResumes(true);
     try {
-      // Check if using demo token
-      const token = localStorage.getItem('access_token');
-      if (token && token.startsWith('demo-token-')) {
-        // Empty resumes for demo mode
-        setResumes([]);
-        setIsLoadingResumes(false);
-        return;
-      }
-
       const data = await apiClient.getResumes();
       setResumes(data);
     } catch (error) {
       console.error('Failed to fetch resumes:', error);
+      setResumes([]);
     } finally {
       setIsLoadingResumes(false);
     }
