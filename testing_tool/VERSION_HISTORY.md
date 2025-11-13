@@ -56,8 +56,43 @@ Format: `MAJOR.MINOR.PATCH`
 
 ## Changelog
 
+### v2.0.0 (2024-11-13)
+**MongoDB Integration - Major Release**
+
+**Breaking Changes:**
+- Migrated from file-based storage to MongoDB database
+- Removed backup/ and results/ folders (no longer needed)
+- Requires backend server running on localhost:8000
+
+**New Features:**
+- 🗄️ **Database Integration**: Test results saved to MongoDB via REST API
+- 🎯 **Real/Mockup Mode Toggle**: Practice mode for testing the tracker itself
+- 💾 **Database Actions**: Load/Save from Database buttons
+- 🔄 **Real-time Collaboration**: Multiple testers can work simultaneously
+- ⚠️ **Connection Error Handling**: Helpful messages when backend is unavailable
+- 📊 **Centralized Data**: All test results in one database
+
+**Technical:**
+- Added `requests` library for API calls
+- Backend API endpoints: `/api/v1/testing/*` and `/api/v1/testing/mockup/*`
+- MongoDB collections: `test_sessions` and `test_sessions_mockup`
+- Beanie ODM for database operations
+- RESTful API architecture
+
+**Migration Notes:**
+- Existing JSON files can still be loaded using "Load File" button
+- Legacy file buttons kept for backward compatibility
+- Backend must be running for database features to work
+
+**Removed:**
+- Backup folder functionality (database handles backups)
+- Results folder functionality (replaced by database)
+- File-based team collaboration (replaced by database)
+
+---
+
 ### v1.0.0 (2024-11-13)
-**Initial Release**
+**Initial Release - File-Based Version**
 
 **Features:**
 - 40 comprehensive test cases across 7 sections

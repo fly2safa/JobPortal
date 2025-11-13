@@ -1,8 +1,8 @@
-# TalentNest Testing Tracker - GUI Tool
+# TalentNest Testing Tracker - GUI Tool v2.0
 
 ## Overview
 
-A standalone GUI application for tracking manual testing progress. Perfect for team collaboration where multiple testers can work independently and merge their results.
+A standalone GUI application for tracking manual testing progress with **MongoDB database integration**. Perfect for team collaboration where multiple testers can work simultaneously with real-time data synchronization.
 
 ![Testing Tracker](screenshot.png)
 
@@ -10,13 +10,20 @@ A standalone GUI application for tracking manual testing progress. Perfect for t
 
 ## Features
 
-✅ **Interactive Test List** - All 50+ test cases organized by section  
+### v2.0 - Database Integration
+🗄️ **MongoDB Integration** - Test results saved to centralized database  
+🎯 **Real/Mockup Mode** - Practice mode for testing the tracker itself  
+🔄 **Real-time Collaboration** - Multiple testers work simultaneously  
+💾 **Database Actions** - Load/Save from Database with one click  
+⚠️ **Smart Error Handling** - Helpful messages when backend is unavailable  
+
+### Core Features
+✅ **Interactive Test List** - All 40 test cases organized by 7 sections  
 ✅ **Status Tracking** - Mark tests as Pass/Fail/Blocked/Not Started  
 ✅ **Detailed Test View** - View description, steps, and document results  
 ✅ **Progress Tracking** - Visual progress bar showing completion percentage  
-✅ **Save/Load Progress** - Save your work and continue later  
+✅ **Bug Reporting** - Report and track bugs directly in the application  
 ✅ **Export Reports** - Generate markdown reports for documentation  
-✅ **Team Collaboration** - Each tester saves their own file  
 ✅ **Navigation** - Previous/Next buttons for easy navigation  
 ✅ **Tester Info** - Track who tested what and when  
 
@@ -27,21 +34,29 @@ A standalone GUI application for tracking manual testing progress. Perfect for t
 ### Prerequisites
 
 - **Python 3.8+** (Tkinter comes pre-installed with Python)
-- No additional dependencies required!
+- **Backend Server** (FastAPI) running on `localhost:8000`
+- **MongoDB Atlas** (configured in backend)
+- **requests** library: `pip install requests`
 
 ### Quick Start
 
-1. **Navigate to the testing_tool directory:**
+1. **Start the Backend Server:**
+   ```bash
+   cd JobPortal/backend
+   python -m uvicorn app.main:app --reload
+   ```
+   
+   Wait for: `INFO: Application startup complete.`
+
+2. **Run the Testing Tracker:**
    ```bash
    cd JobPortal/testing_tool
-   ```
-
-2. **Run the application:**
-   ```bash
    python test_tracker.py
    ```
 
-That's it! The GUI will open immediately.
+3. **Enter your name and browser** when prompted
+
+That's it! The GUI will open and connect to the database.
 
 ---
 
@@ -69,23 +84,25 @@ When you first open the application:
 6. **Add notes** if needed (e.g., bug details, screenshots location)
 7. **Click "Next"** to move to the next test
 
-### 3. Saving Progress
+### 3. Saving Progress (Database)
 
 **Important:** Save your progress regularly!
 
-1. Click **"Save Progress"** button
-2. Choose a filename (suggested format: `test_progress_YourName_YYYYMMDD.json`)
-3. Save to a location you can access later
+1. Click **"💾 Save to Database"** button
+2. Your test session will be saved to MongoDB
+3. All team members can access the latest results
 
-**Recommended:** Save your file in the project under `testing_tool/results/`
+**Automatic:** Progress is saved when you navigate between tests
 
-### 4. Loading Progress
+### 4. Loading Progress (Database)
 
 To continue where you left off:
 
-1. Click **"Load Progress"** button
-2. Select your previously saved JSON file
-3. All your test results will be restored
+1. Click **"📥 Load from Database"** button
+2. Latest TEAM_MASTER will be loaded automatically
+3. All team progress will be restored
+
+**Alternative:** Use **"📂 Load File"** button to load legacy JSON files
 
 ### 5. Exporting Reports
 
