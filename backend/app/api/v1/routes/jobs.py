@@ -248,24 +248,30 @@ async def create_job(
     """
     logger.info(f"Job creation attempt by employer: {current_user.email}")
     
-    # Verify company exists
-    company = await Company.get(job_data.company_id)
-    if not company:
-        logger.warning(f"Job creation failed: Company not found - {job_data.company_id}")
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Company not found"
-        )
+    # Use company_name from user profile if no company_id provided
+    company_id = job_data.company_id if job_data.company_id else str(current_user.id)
+    company_name = job_data.company_id if job_data.company_id else (current_user.company_name or f"{current_user.first_name} {current_user.last_name}")
     
-    # Verify user is associated with the company
-    if current_user.company_id != job_data.company_id:
-        logger.warning(
-            f"Job creation failed: User {current_user.email} not authorized for company {job_data.company_id}"
-        )
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not authorized to post jobs for this company"
-        )
+    # If company_id is provided, verify it exists and user has access
+    if job_data.company_id:
+        company = await Company.get(job_data.company_id)
+        if not company:
+            logger.warning(f"Job creation failed: Company not found - {job_data.company_id}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Company not found"
+            )
+        
+        # Verify user is associated with the company
+        if current_user.company_id != job_data.company_id:
+            logger.warning(
+                f"Job creation failed: User {current_user.email} not authorized for company {job_data.company_id}"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You are not authorized to post jobs for this company"
+            )
+        company_name = company.name
     
     # Create job
     job = Job(
@@ -278,8 +284,8 @@ async def create_job(
         preferred_skills=job_data.preferred_skills,
         location=job_data.location,
         is_remote=job_data.is_remote,
-        company_id=job_data.company_id,
-        company_name=company.name,  # Denormalized for faster queries
+        company_id=company_id,
+        company_name=company_name,  # Denormalized for faster queries
         employer_id=str(current_user.id),
         salary_min=job_data.salary_min,
         salary_max=job_data.salary_max,

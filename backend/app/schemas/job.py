@@ -36,7 +36,7 @@ class JobBase(BaseModel):
 
 class JobCreate(JobBase):
     """Schema for creating a new job."""
-    company_id: str
+    company_id: Optional[str] = None  # Optional - will use employer's company_name if not provided
     status: JobStatus = JobStatus.DRAFT
 
 
