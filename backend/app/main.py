@@ -26,6 +26,23 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info(f"Starting {settings.APP_NAME} v{settings.APP_VERSION}")
     await connect_to_mongo()
+    
+    # Initialize AI recommendation system
+    try:
+        from app.services.recommendation_service import recommendation_service
+        from app.ai.rag.embeddings import embeddings_handler
+        
+        if embeddings_handler.is_available:
+            logger.info("Initializing AI recommendation system...")
+            await recommendation_service.initialize_vector_store()
+            vector_count = recommendation_service.vector_store.size()
+            logger.info(f"AI recommendation system initialized with {vector_count} jobs")
+        else:
+            logger.warning("OpenAI API key not configured - AI recommendations will use fallback mode")
+    except Exception as e:
+        logger.error(f"Failed to initialize recommendation system: {str(e)}")
+        logger.warning("Recommendation system will initialize on first use")
+    
     logger.info("Application startup complete")
     
     yield
