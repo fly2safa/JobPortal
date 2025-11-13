@@ -447,6 +447,47 @@ class TestingTrackerApp:
         self.browser_combo.bind('<<ComboboxSelected>>', self.on_browser_selected)
         self.browser_combo.bind('<FocusOut>', self.on_browser_complete)
         
+        # Mode toggle (Real/Mockup) on the right
+        mode_frame = tk.Frame(top_row, bg=self.colors['white'], relief=tk.FLAT, bd=0)
+        mode_frame.pack(side=tk.RIGHT, padx=(10, 0), pady=2)
+        
+        mode_inner = tk.Frame(mode_frame, bg=self.colors['white'])
+        mode_inner.pack(padx=15, pady=8)
+        
+        tk.Label(mode_inner, text="Mode:", 
+                font=("Arial", 10, "bold"),
+                bg=self.colors['white'],
+                fg=self.colors['dark']).grid(row=0, column=0, padx=(0, 10), sticky=tk.W)
+        
+        # Create mode variable
+        self.mode_var = tk.StringVar(value="real")
+        
+        # Real mode radio button
+        real_radio = tk.Radiobutton(mode_inner,
+                                    text="🎯 REAL Testing",
+                                    variable=self.mode_var,
+                                    value="real",
+                                    font=("Arial", 9, "bold"),
+                                    bg=self.colors['white'],
+                                    fg=self.colors['success'],
+                                    selectcolor=self.colors['white'],
+                                    activebackground=self.colors['white'],
+                                    command=self.on_mode_change)
+        real_radio.grid(row=0, column=1, padx=5)
+        
+        # Mockup mode radio button
+        mockup_radio = tk.Radiobutton(mode_inner,
+                                      text="🧪 MOCKUP/Practice",
+                                      variable=self.mode_var,
+                                      value="mockup",
+                                      font=("Arial", 9),
+                                      bg=self.colors['white'],
+                                      fg=self.colors['warning'],
+                                      selectcolor=self.colors['white'],
+                                      activebackground=self.colors['white'],
+                                      command=self.on_mode_change)
+        mockup_radio.grid(row=0, column=2, padx=5)
+        
         # Bottom row - Progress
         progress_frame = tk.Frame(inner_frame, bg=self.colors['primary'])
         progress_frame.pack(fill=tk.X)
@@ -723,23 +764,33 @@ class TestingTrackerApp:
         actions_frame = ttk.Frame(parent)
         actions_frame.grid(row=3, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(10, 0))
         
-        # Left side buttons
+        # Left side buttons - Database actions
         left_frame = ttk.Frame(actions_frame)
         left_frame.grid(row=0, column=0, sticky=tk.W)
         
-        self.load_team_button = ttk.Button(left_frame, text="Load Team File", command=self.load_team_file,
-                  style="Primary.TButton")
-        self.load_team_button.grid(row=0, column=0, padx=5)
+        # Database buttons (v2.0)
+        self.load_db_button = ttk.Button(left_frame, text="📥 Load from Database", 
+                                        command=self.load_from_database,
+                                        style="Primary.TButton")
+        self.load_db_button.grid(row=0, column=0, padx=5)
         
-        self.save_progress_button = ttk.Button(left_frame, text="Save My Progress", command=self.save_my_progress)
-        self.save_progress_button.grid(row=0, column=1, padx=5)
+        self.save_db_button = ttk.Button(left_frame, text="💾 Save to Database", 
+                                        command=self.save_to_database,
+                                        style="Success.TButton")
+        self.save_db_button.grid(row=0, column=1, padx=5)
         
-        self.save_team_button = ttk.Button(left_frame, text="Save to Team File", command=self.save_to_team_file,
-                  style="Success.TButton")
-        self.save_team_button.grid(row=0, column=2, padx=5)
+        # Legacy file buttons (keep for backward compatibility)
+        self.load_file_button = ttk.Button(left_frame, text="📂 Load File", 
+                                          command=self.load_progress)
+        self.load_file_button.grid(row=0, column=2, padx=5)
         
-        self.export_button = ttk.Button(left_frame, text="Export Report", command=self.export_report)
-        self.export_button.grid(row=0, column=3, padx=5)
+        self.save_file_button = ttk.Button(left_frame, text="💾 Save File", 
+                                          command=self.save_progress)
+        self.save_file_button.grid(row=0, column=3, padx=5)
+        
+        self.export_button = ttk.Button(left_frame, text="📄 Export Report", 
+                                       command=self.export_report)
+        self.export_button.grid(row=0, column=4, padx=5)
         
         # Right side buttons
         right_frame = ttk.Frame(actions_frame)
@@ -1198,6 +1249,25 @@ class TestingTrackerApp:
             # Both are filled, activate testing
             self.activate_testing(tester_name)
     
+    def on_mode_change(self):
+        """Handle mode toggle change (Real/Mockup)."""
+        self.mode = self.mode_var.get()
+        
+        # Update title to show current mode
+        if self.mode == "mockup":
+            self.root.title(f"TalentNest Testing Tracker v{self.VERSION} - ⚠️ MOCKUP MODE")
+            messagebox.showinfo(
+                "Mockup Mode Activated",
+                "🧪 You are now in MOCKUP/Practice mode!\n\n"
+                "• Use this to test the testing tracker itself\n"
+                "• Practice the workflow\n"
+                "• Train new team members\n\n"
+                "⚠️ Data will NOT be saved to real testing results.\n"
+                "Switch to REAL mode for actual testing."
+            )
+        else:
+            self.root.title(f"TalentNest Testing Tracker v{self.VERSION}")
+    
     def backup_results_folder(self):
         """Backup all files from results folder to backup folder."""
         import shutil
@@ -1356,13 +1426,16 @@ class TestingTrackerApp:
         if hasattr(self, 'next_button'):
             self.next_button.config(state=tk.DISABLED)
         
-        # Disable action buttons
-        if hasattr(self, 'load_team_button'):
-            self.load_team_button.config(state=tk.DISABLED)
-        if hasattr(self, 'save_progress_button'):
-            self.save_progress_button.config(state=tk.DISABLED)
-        if hasattr(self, 'save_team_button'):
-            self.save_team_button.config(state=tk.DISABLED)
+        # Disable action buttons (database)
+        if hasattr(self, 'load_db_button'):
+            self.load_db_button.config(state=tk.DISABLED)
+        if hasattr(self, 'save_db_button'):
+            self.save_db_button.config(state=tk.DISABLED)
+        # Disable action buttons (file)
+        if hasattr(self, 'load_file_button'):
+            self.load_file_button.config(state=tk.DISABLED)
+        if hasattr(self, 'save_file_button'):
+            self.save_file_button.config(state=tk.DISABLED)
         if hasattr(self, 'export_button'):
             self.export_button.config(state=tk.DISABLED)
         
@@ -1396,13 +1469,16 @@ class TestingTrackerApp:
         if hasattr(self, 'next_button'):
             self.next_button.config(state=tk.NORMAL)
         
-        # Enable action buttons
-        if hasattr(self, 'load_team_button'):
-            self.load_team_button.config(state=tk.NORMAL)
-        if hasattr(self, 'save_progress_button'):
-            self.save_progress_button.config(state=tk.NORMAL)
-        if hasattr(self, 'save_team_button'):
-            self.save_team_button.config(state=tk.NORMAL)
+        # Enable action buttons (database)
+        if hasattr(self, 'load_db_button'):
+            self.load_db_button.config(state=tk.NORMAL)
+        if hasattr(self, 'save_db_button'):
+            self.save_db_button.config(state=tk.NORMAL)
+        # Enable action buttons (file)
+        if hasattr(self, 'load_file_button'):
+            self.load_file_button.config(state=tk.NORMAL)
+        if hasattr(self, 'save_file_button'):
+            self.save_file_button.config(state=tk.NORMAL)
         if hasattr(self, 'export_button'):
             self.export_button.config(state=tk.NORMAL)
         
