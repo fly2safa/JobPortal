@@ -1,0 +1,4 @@
+# This file ensures the backup directory is tracked by Git
+# All backup files (*.json) are ignored
+# This folder is created automatically by the application
+
