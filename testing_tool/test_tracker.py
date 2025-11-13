@@ -3,10 +3,11 @@ TalentNest Testing Tracker - GUI Application
 A standalone GUI tool for tracking manual testing progress.
 """
 import tkinter as tk
-from tkinter import ttk, scrolledtext, messagebox, filedialog
+from tkinter import ttk, scrolledtext, messagebox, filedialog, simpledialog
 import json
 from datetime import datetime
 from pathlib import Path
+import requests
 
 
 class Bug:
@@ -55,7 +56,7 @@ class TestingTrackerApp:
     # - MAJOR: Breaking changes or major new features
     # - MINOR: New features, backward compatible
     # - PATCH: Bug fixes, small improvements
-    VERSION = "1.0.0"
+    VERSION = "2.0.0"
     
     def __init__(self, root):
         self.root = root
@@ -80,6 +81,10 @@ class TestingTrackerApp:
         
         # Configure style
         self.setup_styles()
+        
+        # API configuration for database integration
+        self.api_base_url = "http://localhost:8000/api/v1"
+        self.mode = "real"  # "real" or "mockup"
         
         # Test data
         self.test_cases = self.load_test_cases()
@@ -2094,6 +2099,204 @@ class TestingTrackerApp:
         
         except Exception as e:
             messagebox.showerror("Error", f"Could not merge results:\n{str(e)}")
+    
+    # ========================================================================
+    # DATABASE METHODS (v2.0)
+    # ========================================================================
+    
+    def get_api_endpoint(self):
+        """Get the correct API endpoint based on mode (real or mockup)."""
+        if self.mode == "mockup":
+            return f"{self.api_base_url}/testing/mockup"
+        else:
+            return f"{self.api_base_url}/testing"
+    
+    def save_to_database(self):
+        """Save test session to MongoDB via API."""
+        # Save current test first
+        if self.current_test:
+            self.save_current_test()
+        
+        # Prepare data
+        data = {
+            "session_id": f"{self.tester_entry.get()}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+            "tester_name": self.tester_entry.get(),
+            "browser": self.browser_combo.get(),
+            "test_date": datetime.now().isoformat(),
+            "test_cases": [
+                {
+                    "test_id": test.id,
+                    "section": test.section,
+                    "title": test.title,
+                    "status": test.status,
+                    "actual_results": test.actual_results,
+                    "notes": test.notes,
+                    "tested_date": test.tested_date or None
+                }
+                for test in self.test_cases
+            ],
+            "bugs": [
+                {
+                    "bug_id": bug.bug_id,
+                    "test_id": bug.test_id,
+                    "severity": bug.severity,
+                    "description": bug.description,
+                    "steps_to_reproduce": bug.steps_to_reproduce,
+                    "expected": bug.expected_behavior,
+                    "actual": bug.actual_behavior,
+                    "reported_by": bug.reported_by,
+                    "reported_date": bug.reported_date
+                }
+                for bug in self.bugs
+            ],
+            "is_master": False,
+            "version": self.VERSION
+        }
+        
+        endpoint = self.get_api_endpoint()
+        
+        # Show warning if in mockup mode
+        if self.mode == "mockup":
+            response = messagebox.askyesno(
+                "Mockup Mode",
+                "⚠️ You are in MOCKUP mode!\n\n"
+                "This will NOT save to real testing data.\n"
+                "Continue?"
+            )
+            if not response:
+                return
+        
+        try:
+            response = requests.post(
+                f"{endpoint}/test-sessions",
+                json=data,
+                headers={"Content-Type": "application/json"},
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                self.has_unsaved_changes = False
+                mode_text = "MOCKUP" if self.mode == "mockup" else "database"
+                messagebox.showinfo(
+                    "Success",
+                    f"✅ Session saved to {mode_text}!\n\n"
+                    f"Session ID: {data['session_id']}\n"
+                    f"Tests completed: {sum(1 for t in self.test_cases if t.status != 'Not Started')}/40"
+                )
+            else:
+                messagebox.showerror(
+                    "Error",
+                    f"Failed to save to database:\n{response.text}"
+                )
+        except requests.exceptions.ConnectionError:
+            messagebox.showerror(
+                "Connection Error",
+                "❌ Could not connect to backend server!\n\n"
+                "Please ensure the backend is running:\n"
+                "1. Open terminal in backend folder\n"
+                "2. Run: python -m uvicorn app.main:app --reload\n"
+                "3. Try saving again"
+            )
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to save: {str(e)}")
+    
+    def load_from_database(self):
+        """Load TEAM_MASTER from MongoDB via API."""
+        endpoint = self.get_api_endpoint()
+        
+        try:
+            response = requests.get(
+                f"{endpoint}/test-sessions/master",
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data:
+                    self.load_session_data(data)
+                    mode_text = "MOCKUP_MASTER" if self.mode == "mockup" else "TEAM_MASTER"
+                    self.loaded_filename = f"{mode_text} (from database)"
+                    self.loaded_file_label.config(text=f"📂 {self.loaded_filename}")
+                    
+                    completed = sum(1 for t in self.test_cases if t.status != "Not Started")
+                    messagebox.showinfo(
+                        "Success",
+                        f"✅ Loaded {mode_text}\n\n"
+                        f"Last updated: {data.get('test_date', 'Unknown')}\n"
+                        f"Tests completed: {completed}/40"
+                    )
+                else:
+                    mode_text = "MOCKUP_MASTER" if self.mode == "mockup" else "TEAM_MASTER"
+                    messagebox.showwarning(
+                        "Not Found",
+                        f"No {mode_text} in database yet.\n"
+                        "Start testing to create one!"
+                    )
+            else:
+                messagebox.showerror("Error", f"Failed to load: {response.text}")
+        except requests.exceptions.ConnectionError:
+            messagebox.showerror(
+                "Connection Error",
+                "❌ Could not connect to backend server!\n\n"
+                "Please ensure the backend is running:\n"
+                "1. Open terminal in backend folder\n"
+                "2. Run: python -m uvicorn app.main:app --reload\n"
+                "3. Try loading again"
+            )
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to load: {str(e)}")
+    
+    def load_session_data(self, data):
+        """Load session data into the application (works for both file and database)."""
+        # Load tester info
+        self.tester_entry.delete(0, tk.END)
+        self.tester_entry.insert(0, data.get("tester_name", ""))
+        self.browser_combo.set(data.get("browser", "Chrome"))
+        
+        # Load test cases
+        for test_data in data.get("test_cases", []):
+            for test in self.test_cases:
+                if test.id == test_data["test_id"]:
+                    test.status = test_data.get("status", "Not Started")
+                    test.actual_results = test_data.get("actual_results", "")
+                    test.notes = test_data.get("notes", "")
+                    test.tested_date = test_data.get("tested_date", "")
+                    break
+        
+        # Load bugs
+        self.bugs = []
+        for bug_data in data.get("bugs", []):
+            bug = Bug(
+                bug_id=bug_data.get("bug_id", ""),
+                test_id=bug_data.get("test_id", ""),
+                severity=bug_data.get("severity", "Medium"),
+                description=bug_data.get("description", ""),
+                steps_to_reproduce=bug_data.get("steps_to_reproduce", ""),
+                expected=bug_data.get("expected", ""),
+                actual=bug_data.get("actual", "")
+            )
+            bug.reported_by = bug_data.get("reported_by", "")
+            bug.reported_date = bug_data.get("reported_date", "")
+            self.bugs.append(bug)
+        
+        # Update bug counter
+        if self.bugs:
+            max_bug_num = max([int(bug.bug_id.split('-')[1]) for bug in self.bugs if '-' in bug.bug_id], default=0)
+            self.bug_counter = max_bug_num + 1
+        
+        # Refresh UI
+        self.populate_tree()
+        self.update_progress()
+        
+        if self.current_test:
+            self.display_test(self.current_test)
+        
+        # Reset unsaved changes flag
+        self.has_unsaved_changes = False
+    
+    # ========================================================================
+    # END DATABASE METHODS
+    # ========================================================================
     
     def export_report(self):
         """Export testing report to markdown."""
