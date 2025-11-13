@@ -2,18 +2,22 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
+import { Textarea } from '@/components/ui/Textarea';
 import { useAuth, useRequireRole } from '@/hooks/useAuth';
 import { Application } from '@/types';
 import { formatDate } from '@/lib/utils';
 import { Sparkles, FileText, AlertCircle } from 'lucide-react';
 import apiClient from '@/lib/api';
 import { CandidateCard } from '@/features/employer/applications';
+import { getErrorMessage } from '@/lib/errorHandler';
 
 export default function JobApplicationsPage() {
   useAuth(true);
@@ -36,6 +40,10 @@ export default function JobApplicationsPage() {
   const [rejectingAppId, setRejectingAppId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [schedulingApplication, setSchedulingApplication] = useState<Application | null>(null);
+  const [isScheduling, setIsScheduling] = useState(false);
+  const [scheduleError, setScheduleError] = useState('');
 
   useEffect(() => {
     fetchApplications();
@@ -128,9 +136,54 @@ export default function JobApplicationsPage() {
     }
   };
 
+  const {
+    register: registerSchedule,
+    handleSubmit: handleSubmitSchedule,
+    formState: { errors: scheduleErrors },
+    reset: resetSchedule,
+  } = useForm();
+
   const handleScheduleInterview = (applicationId: string) => {
-    // TODO: Implement interview scheduling (Phase 3)
-    alert('Interview scheduling will be implemented in Phase 3');
+    const application = applications.find(app => app.id === applicationId);
+    if (application) {
+      setSchedulingApplication(application);
+      setShowScheduleModal(true);
+      setScheduleError('');
+      resetSchedule();
+    }
+  };
+
+  const onScheduleSubmit = async (data: any) => {
+    if (!schedulingApplication) return;
+    
+    setIsScheduling(true);
+    setScheduleError('');
+    
+    try {
+      // Format the datetime for the API
+      const scheduledTime = `${data.interview_date}T${data.interview_time}:00Z`;
+      
+      await apiClient.scheduleInterview({
+        job_id: params.id as string,
+        application_id: schedulingApplication.id,
+        scheduled_time: scheduledTime,
+        duration_minutes: parseInt(data.duration_minutes),
+        interview_type: data.interview_type,
+        meeting_link: data.meeting_link || undefined,
+        meeting_location: data.meeting_location || undefined,
+        meeting_instructions: data.meeting_instructions || undefined,
+        notes: data.notes || undefined,
+      });
+      
+      setShowScheduleModal(false);
+      setSchedulingApplication(null);
+      alert('Interview scheduled successfully! Both you and the candidate have been notified.');
+      await fetchApplications();
+    } catch (err: any) {
+      setScheduleError(getErrorMessage(err, 'Failed to schedule interview. Please try again.'));
+    } finally {
+      setIsScheduling(false);
+    }
   };
 
   const filteredApplications = applications;
@@ -390,6 +443,159 @@ export default function JobApplicationsPage() {
               </Button>
             </div>
           </div>
+        </Modal>
+      )}
+
+      {/* Schedule Interview Modal */}
+      {showScheduleModal && schedulingApplication && (
+        <Modal
+          isOpen={showScheduleModal}
+          onClose={() => {
+            setShowScheduleModal(false);
+            setSchedulingApplication(null);
+            setScheduleError('');
+            resetSchedule();
+          }}
+          title="Schedule Interview"
+          size="lg"
+        >
+          <form onSubmit={handleSubmitSchedule(onScheduleSubmit)} className="space-y-4">
+            {scheduleError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                {scheduleError}
+              </div>
+            )}
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+              <p className="text-sm text-blue-900">
+                <strong>Candidate:</strong> {schedulingApplication.applicant_name}
+              </p>
+              <p className="text-sm text-blue-900">
+                <strong>Email:</strong> {schedulingApplication.applicant_email}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Interview Date"
+                type="date"
+                {...registerSchedule('interview_date', { 
+                  required: 'Date is required',
+                  validate: (value) => {
+                    const selectedDate = new Date(value);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    return selectedDate >= today || 'Date cannot be in the past';
+                  }
+                })}
+                error={scheduleErrors.interview_date?.message as string}
+              />
+
+              <Select
+                label="Interview Time"
+                options={[
+                  { value: '', label: 'Select time' },
+                  ...Array.from({ length: 96 }, (_, i) => {
+                    const hours = Math.floor(i / 4);
+                    const minutes = (i % 4) * 15;
+                    const time = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                    const period = hours < 12 ? 'AM' : 'PM';
+                    const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+                    const displayTime = `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+                    return { value: time, label: displayTime };
+                  })
+                ]}
+                {...registerSchedule('interview_time', { required: 'Time is required' })}
+                error={scheduleErrors.interview_time?.message as string}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Duration (minutes)"
+                type="number"
+                placeholder="60"
+                defaultValue="60"
+                {...registerSchedule('duration_minutes', { 
+                  required: 'Duration is required',
+                  min: { value: 15, message: 'Minimum 15 minutes' },
+                  max: { value: 480, message: 'Maximum 8 hours' }
+                })}
+                error={scheduleErrors.duration_minutes?.message as string}
+              />
+
+              <Select
+                label="Interview Type"
+                options={[
+                  { value: 'video', label: 'Video Interview' },
+                  { value: 'phone', label: 'Phone Interview' },
+                  { value: 'in_person', label: 'In-Person' },
+                  { value: 'technical', label: 'Technical Interview' },
+                  { value: 'behavioral', label: 'Behavioral Interview' },
+                  { value: 'final', label: 'Final Interview' }
+                ]}
+                {...registerSchedule('interview_type', { required: 'Interview type is required' })}
+                error={scheduleErrors.interview_type?.message as string}
+              />
+            </div>
+
+            <Input
+              label="Meeting Link (for video interviews)"
+              type="url"
+              placeholder="https://zoom.us/j/..."
+              {...registerSchedule('meeting_link')}
+              error={scheduleErrors.meeting_link?.message as string}
+            />
+
+            <Input
+              label="Meeting Location (for in-person interviews)"
+              type="text"
+              placeholder="123 Main St, Conference Room A"
+              {...registerSchedule('meeting_location')}
+              error={scheduleErrors.meeting_location?.message as string}
+            />
+
+            <Textarea
+              label="Meeting Instructions (Optional)"
+              placeholder="Please bring your ID, park in visitor lot, etc."
+              {...registerSchedule('meeting_instructions')}
+              error={scheduleErrors.meeting_instructions?.message as string}
+              rows={3}
+            />
+
+            <Textarea
+              label="Internal Notes (Optional)"
+              placeholder="These notes are for your reference only and won't be shared with the candidate."
+              {...registerSchedule('notes')}
+              error={scheduleErrors.notes?.message as string}
+              rows={2}
+            />
+
+            <div className="flex space-x-2 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  setShowScheduleModal(false);
+                  setSchedulingApplication(null);
+                  setScheduleError('');
+                  resetSchedule();
+                }}
+                disabled={isScheduling}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                className="flex-1"
+                disabled={isScheduling}
+              >
+                {isScheduling ? 'Scheduling...' : 'Schedule Interview'}
+              </Button>
+            </div>
+          </form>
         </Modal>
       )}
     </DashboardLayout>

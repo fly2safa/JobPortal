@@ -272,15 +272,16 @@ export default function EmployerInterviewsPage() {
 
           <Select
             label="Interview Type"
+            options={[
+              { value: 'video', label: 'Video Interview' },
+              { value: 'phone', label: 'Phone Interview' },
+              { value: 'in_person', label: 'In-Person' },
+              { value: 'technical', label: 'Technical Interview' },
+              { value: 'behavioral', label: 'Behavioral Interview' },
+              { value: 'final', label: 'Final Interview' }
+            ]}
             {...register('interview_type')}
-          >
-            <option value="video">Video Interview</option>
-            <option value="phone">Phone Interview</option>
-            <option value="in_person">In-Person</option>
-            <option value="technical">Technical Interview</option>
-            <option value="behavioral">Behavioral Interview</option>
-            <option value="final">Final Interview</option>
-          </Select>
+          />
 
           <Input
             label="Meeting Link"

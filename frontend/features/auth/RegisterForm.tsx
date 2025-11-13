@@ -17,6 +17,7 @@ interface RegisterFormData {
   password: string;
   confirmPassword: string;
   role: 'job_seeker' | 'employer';
+  company_name?: string;
 }
 
 export function RegisterForm() {
@@ -37,6 +38,7 @@ export function RegisterForm() {
   });
 
   const password = watch('password');
+  const selectedRole = watch('role');
 
   const onSubmit = async (data: RegisterFormData) => {
     setIsLoading(true);
@@ -50,6 +52,7 @@ export function RegisterForm() {
         first_name: data.first_name,
         last_name: data.last_name,
         role: data.role,
+        company_name: data.company_name,
       });
       
       // Store authentication data
@@ -264,6 +267,25 @@ export function RegisterForm() {
             </label>
           </div>
         </div>
+
+        {selectedRole === 'employer' && (
+          <div style={{ fontFamily: 'Playfair Display, serif' }}>
+            <Input
+              label="Company Name"
+              type="text"
+              placeholder="Acme Corporation"
+              {...register('company_name', {
+                required: selectedRole === 'employer' ? 'Company name is required for employers' : false,
+                minLength: {
+                  value: 2,
+                  message: 'Company name must be at least 2 characters',
+                },
+              })}
+              error={errors.company_name?.message}
+              style={{ fontFamily: 'Playfair Display, serif' }}
+            />
+          </div>
+        )}
 
         <button 
           type="submit" 

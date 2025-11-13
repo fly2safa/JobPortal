@@ -13,6 +13,7 @@ import { useAuth, useRequireRole } from '@/hooks/useAuth';
 import { JOB_TYPES, EXPERIENCE_LEVELS } from '@/constants';
 import apiClient from '@/lib/api';
 import { Save, ArrowLeft } from 'lucide-react';
+import { getErrorMessage } from '@/lib/errorHandler';
 
 interface JobFormData {
   title: string;
@@ -96,7 +97,7 @@ export default function EditJobPage() {
       });
       router.push('/employer/jobs');
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to update job. Please try again.');
+      setError(getErrorMessage(err, 'Failed to update job. Please try again.'));
     } finally {
       setIsSubmitting(false);
     }

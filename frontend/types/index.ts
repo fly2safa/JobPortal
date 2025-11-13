@@ -15,6 +15,7 @@ export interface User {
   linkedin_url?: string;
   portfolio_url?: string;
   company_id?: string;
+  company_name?: string;
   job_title?: string;
   is_active?: boolean;
   is_verified?: boolean;
