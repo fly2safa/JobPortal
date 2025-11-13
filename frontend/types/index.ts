@@ -206,12 +206,10 @@ export interface JobRecommendation {
 }
 
 export interface CandidateRecommendation {
-  user_id: string;
-  application_id: string;
-  candidate_name: string;
+  candidate: User;
   match_score: number;
-  skills_match: string[];
-  resume_url: string;
+  reasons: string[];
+  recommended_at: string;
 }
 
 // Chat/Assistant Types

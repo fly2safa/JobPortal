@@ -306,6 +306,15 @@ async def create_job(
     await job.insert()
     logger.info(f"Job created successfully: {job.title} (ID: {job.id}) by {current_user.email}")
     
+    # Update vector store for AI recommendations (async, non-blocking)
+    try:
+        from app.services.recommendation_service import recommendation_service
+        if job.status == JobStatus.ACTIVE:
+            await recommendation_service.refresh_job_in_vector_store(job)
+            logger.debug(f"Vector store updated with new job {job.id}")
+    except Exception as e:
+        logger.warning(f"Failed to update vector store for new job: {str(e)}")
+    
     return JobResponse(
         id=str(job.id),
         title=job.title,
@@ -508,6 +517,14 @@ async def update_job(
     await job.save()
     logger.info(f"Job updated successfully: {job.title} (ID: {job.id})")
     
+    # Update vector store for AI recommendations (async, non-blocking)
+    try:
+        from app.services.recommendation_service import recommendation_service
+        await recommendation_service.refresh_job_in_vector_store(job)
+        logger.debug(f"Vector store updated for job {job.id}")
+    except Exception as e:
+        logger.warning(f"Failed to update vector store for updated job: {str(e)}")
+    
     return JobResponse(
         id=str(job.id),
         title=job.title,
@@ -578,6 +595,12 @@ async def delete_job(
     
     await job.delete()
     logger.info(f"Job deleted successfully: {job.title} (ID: {job_id})")
-
-
+    
+    # Remove from vector store for AI recommendations
+    try:
+        from app.services.recommendation_service import recommendation_service
+        recommendation_service.vector_store.store.remove_by_id(job_id)
+        logger.debug(f"Vector store cleaned up for deleted job {job_id}")
+    except Exception as e:
+        logger.warning(f"Failed to remove deleted job from vector store: {str(e)}")
 
