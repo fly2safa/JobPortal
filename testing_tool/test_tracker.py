@@ -95,10 +95,6 @@ class TestingTrackerApp:
         self.bug_counter = 1  # Auto-increment bug ID
         self._programmatic_selection = False  # Flag to prevent event loops
         self.has_unsaved_changes = False  # Track if there are unsaved changes
-        self.results_dir = Path("results")  # Directory for saving test results
-        self.results_dir.mkdir(exist_ok=True)  # Create if doesn't exist
-        self.backup_dir = Path("backup")  # Directory for backup files
-        self.backup_dir.mkdir(exist_ok=True)  # Create if doesn't exist
         self.loaded_filename = None  # Track which file was loaded
         
         # Setup UI
@@ -812,33 +808,26 @@ class TestingTrackerApp:
         
         actions_frame.columnconfigure(1, weight=1)
         
-        # Info section at the bottom - showing save location
-        info_frame = tk.Frame(parent, bg=self.colors['light'], relief=tk.FLAT, bd=1)
+        # Info section at the bottom - showing database info
+        info_frame = tk.Frame(parent, bg=self.colors['info'], relief=tk.FLAT, bd=1)
         info_frame.grid(row=4, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(5, 0))
         
-        info_container = tk.Frame(info_frame, bg=self.colors['light'])
+        info_container = tk.Frame(info_frame, bg=self.colors['info'])
         info_container.pack(fill=tk.X, padx=10, pady=8)
-        
-        # Get the current working directory and results path
-        current_dir = Path.cwd()
-        results_path = (current_dir / "results").resolve()
         
         # Title
         tk.Label(info_container,
-                text="📁 Save Location:",
+                text="💾 Database Integration (v2.0):",
                 font=("Arial", 10, "bold"),
-                bg=self.colors['light'],
-                fg=self.colors['dark']).pack(side=tk.LEFT, padx=(0, 10))
+                bg=self.colors['info'],
+                fg=self.colors['white']).pack(side=tk.LEFT, padx=(0, 10))
         
-        # Path info
+        # Info
         tk.Label(info_container,
-                text=f"Test results will be saved to: {results_path}",
+                text="Test results are saved to MongoDB. Ensure backend is running on localhost:8000",
                 font=("Arial", 9),
-                bg=self.colors['light'],
-                fg=self.colors['dark']).pack(side=tk.LEFT)
-        
-        # Create results directory if it doesn't exist
-        results_path.mkdir(exist_ok=True)
+                bg=self.colors['info'],
+                fg=self.colors['white']).pack(side=tk.LEFT)
     
     def on_test_select(self, event):
         """Handle test selection."""
@@ -1090,9 +1079,6 @@ class TestingTrackerApp:
                 if response3:
                     self.export_report()
             
-            # Step 4: Save to backup folder
-            self.save_to_backup_folder()
-            
             # Exit the application
             self.root.destroy()
         else:
@@ -1268,89 +1254,6 @@ class TestingTrackerApp:
         else:
             self.root.title(f"TalentNest Testing Tracker v{self.VERSION}")
     
-    def backup_results_folder(self):
-        """Backup all files from results folder to backup folder."""
-        import shutil
-        
-        try:
-            # Copy all files from results to backup
-            for file in self.results_dir.glob("*.json"):
-                backup_file = self.backup_dir / file.name
-                shutil.copy2(file, backup_file)
-                print(f"Backed up: {file.name} → backup/{file.name}")
-        except Exception as e:
-            print(f"Warning: Could not backup results folder: {e}")
-    
-    def save_to_backup_folder(self):
-        """Save personal and team files to backup folder on exit."""
-        import shutil
-        from datetime import datetime
-        
-        try:
-            tester_name = self.tester_entry.get() or 'tester'
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            
-            # Save personal backup to backup folder
-            personal_backup = self.backup_dir / f"test_progress_{tester_name}_{timestamp}.json"
-            
-            # Prepare data
-            data = {
-                "tester_info": self.tester_info,
-                "saved_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "bug_counter": self.bug_counter,
-                "test_cases": [],
-                "bugs": []
-            }
-            
-            # Add test cases
-            for test in self.test_cases:
-                data["test_cases"].append({
-                    "id": test.id,
-                    "section": test.section,
-                    "title": test.title,
-                    "description": test.description,
-                    "steps": test.steps,
-                    "status": test.status,
-                    "actual_results": test.actual_results,
-                    "notes": test.notes,
-                    "tested_by": test.tested_by,
-                    "tested_date": test.tested_date,
-                    "bugs": test.bugs
-                })
-            
-            # Add bugs
-            for bug in self.bugs:
-                data["bugs"].append({
-                    "bug_id": bug.bug_id,
-                    "test_id": bug.test_id,
-                    "title": bug.title,
-                    "severity": bug.severity,
-                    "priority": bug.priority,
-                    "description": bug.description,
-                    "steps_to_reproduce": bug.steps_to_reproduce,
-                    "expected_behavior": bug.expected_behavior,
-                    "actual_behavior": bug.actual_behavior,
-                    "environment": bug.environment,
-                    "screenshot": bug.screenshot,
-                    "reported_by": bug.reported_by,
-                    "reported_date": bug.reported_date
-                })
-            
-            # Save personal backup
-            with open(personal_backup, 'w', encoding='utf-8') as f:
-                json.dump(data, f, indent=2)
-            print(f"Saved personal backup: {personal_backup.name}")
-            
-            # Copy TEAM_MASTER file to backup with renamed prefix
-            team_file = self.results_dir / "TEAM_MASTER_test_results.json"
-            if team_file.exists():
-                backup_team_file = self.backup_dir / f"BACKUP_TEAM_MASTER_test_results_{timestamp}.json"
-                shutil.copy2(team_file, backup_team_file)
-                print(f"Backed up team file: {backup_team_file.name}")
-            
-        except Exception as e:
-            print(f"Warning: Could not save to backup folder: {e}")
-    
     def activate_testing(self, tester_name):
         """Activate testing after both name and browser are provided."""
         # Both name and browser are filled
@@ -1358,51 +1261,23 @@ class TestingTrackerApp:
         self.testing_enabled = True
         self.save_tester_info()
         
-        # Backup existing results folder
-        self.backup_results_folder()
+        # Prompt to load from database
+        response = messagebox.askyesno(
+            "Load Previous Progress?",
+            "Would you like to load previous test progress from the database?\n\n"
+            "• Yes: Load TEAM_MASTER from database\n"
+            "• No: Start fresh"
+        )
         
-        # Check for existing files
-        team_file = self.results_dir / "TEAM_MASTER_test_results.json"
-        personal_files = list(self.results_dir.glob(f"test_progress_{tester_name}_*.json"))
-        
-        # Build prompt based on what files exist
-        if team_file.exists() or personal_files:
-            files_found = []
-            if team_file.exists():
-                files_found.append("• TEAM MASTER file (shared progress)")
-            if personal_files:
-                files_found.append(f"• {len(personal_files)} personal backup(s)")
-            
-            response = messagebox.askyesnocancel(
-                "Load Previous Progress?",
-                f"✅ Welcome, {tester_name}!\n\n"
-                "Found existing test files:\n" + "\n".join(files_found) + "\n\n"
-                "Would you like to load previous progress?\n\n"
-                "• Yes - Load TEAM MASTER (recommended)\n"
-                "• No - Load personal backup\n"
-                "• Cancel - Start fresh\n\n"
-                "You can also load files later using the buttons."
-            )
-            
-            if response is True:  # Yes - Load team file
-                self.load_team_file()
-            elif response is False:  # No - Load personal file
-                self.load_progress()
-            else:  # Cancel - Start fresh
-                messagebox.showinfo(
-                    "Ready to Test!",
-                    "Starting with a fresh session.\n\n"
-                    "Tip: Use 'Load Team File' or 'Load Progress'\n"
-                    "buttons anytime to load previous results."
-                )
+        if response:
+            self.load_from_database()
         else:
-            # No files exist
             messagebox.showinfo(
                 "Ready to Test!",
                 f"✅ Welcome, {tester_name}!\n\n"
                 "You can now start testing!\n\n"
-                "Note: No previous test files found.\n"
-                "You'll be the first to create test results!"
+                "Tip: Use 'Load from Database' button anytime\n"
+                "to load TEAM_MASTER progress."
             )
     
     def disable_testing_controls(self):
