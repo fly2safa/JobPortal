@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -22,20 +22,33 @@ interface RegisterFormData {
 
 export function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { setAuth } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Get role from URL query parameter, default to 'job_seeker'
+  const roleFromUrl = searchParams.get('role') as 'job_seeker' | 'employer' | null;
+  const defaultRole = roleFromUrl === 'employer' ? 'employer' : 'job_seeker';
 
   const {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<RegisterFormData>({
     defaultValues: {
-      role: 'job_seeker',
+      role: defaultRole,
     },
   });
+
+  // Update role when URL changes
+  useEffect(() => {
+    if (roleFromUrl) {
+      setValue('role', roleFromUrl);
+    }
+  }, [roleFromUrl, setValue]);
 
   const password = watch('password');
   const selectedRole = watch('role');
