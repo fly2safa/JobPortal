@@ -14,6 +14,7 @@ import { useAuthStore } from '@/store/authStore';
 import { JOB_TYPES, EXPERIENCE_LEVELS } from '@/constants';
 import apiClient from '@/lib/api';
 import { Save } from 'lucide-react';
+import { getErrorMessage } from '@/lib/errorHandler';
 
 interface JobFormData {
   title: string;
@@ -64,7 +65,7 @@ export default function NewJobPage() {
       });
       router.push('/employer/jobs');
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to create job. Please try again.');
+      setError(getErrorMessage(err, 'Failed to create job. Please try again.'));
     } finally {
       setIsSubmitting(false);
     }

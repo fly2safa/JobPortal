@@ -6,10 +6,11 @@ export const BRAND_COLORS = {
 } as const;
 
 export const JOB_TYPES = [
-  { value: 'full-time', label: 'Full Time' },
-  { value: 'part-time', label: 'Part Time' },
+  { value: 'full_time', label: 'Full Time' },
+  { value: 'part_time', label: 'Part Time' },
   { value: 'contract', label: 'Contract' },
   { value: 'internship', label: 'Internship' },
+  { value: 'temporary', label: 'Temporary' },
 ] as const;
 
 export const EXPERIENCE_LEVELS = [
