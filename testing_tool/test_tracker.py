@@ -1015,69 +1015,43 @@ class TestingTrackerApp:
         completed_tests = sum(1 for test in self.test_cases if test.status != "Not Started")
         
         if completed_tests > 0 and self.has_unsaved_changes:
-            # Step 1: Prompt to save personal backup
-            response1 = messagebox.askyesnocancel(
-                "Save Your Progress?",
+            # Prompt to save to database
+            mode_text = "MOCKUP" if self.mode == "mockup" else "database"
+            response = messagebox.askyesnocancel(
+                "Save Before Exit?",
                 f"You have {completed_tests} completed test(s) with unsaved changes.\n\n"
-                "Would you like to save your personal backup?\n\n"
-                "This creates a backup file with your name:\n"
-                f"test_progress_{self.tester_entry.get() or 'tester'}_YYYYMMDD.json\n\n"
-                "• Yes - Save my backup\n"
-                "• No - Skip personal backup\n"
+                f"Would you like to save to {mode_text}?\n\n"
+                "• Yes - Save to database\n"
+                "• No - Exit without saving\n"
                 "• Cancel - Return to testing"
             )
             
-            if response1 is None:  # Cancel
+            if response is None:  # Cancel
                 return  # Return to app
             
-            personal_saved = False
-            if response1:  # Yes - Save personal backup
-                self.save_my_progress()
-                if not self.has_unsaved_changes:
-                    personal_saved = True
-                else:
-                    return  # User cancelled the save dialog, don't exit
+            if response:  # Yes - Save to database
+                self.save_to_database()
+                # Check if save was successful (has_unsaved_changes should be False)
+                if self.has_unsaved_changes:
+                    # User might have cancelled or error occurred
+                    confirm = messagebox.askyesno(
+                        "Exit Anyway?",
+                        "Save was not completed.\n\n"
+                        "Exit anyway?"
+                    )
+                    if not confirm:
+                        return
             
-            # Step 2: Prompt to save to team file
+            # Offer to export report
             response2 = messagebox.askyesno(
-                "Save to TEAM MASTER File?",
-                f"{'✅ Personal backup saved!\n\n' if personal_saved else ''}"
-                "Would you like to update the TEAM MASTER file?\n\n"
-                "This shares your test results with other team members.\n\n"
-                "File: TEAM_MASTER_test_results.json\n\n"
-                "⭐ Recommended: Yes (for team collaboration)"
+                "Export Test Report?",
+                f"You've completed {completed_tests} test(s).\n\n"
+                "Would you like to export a summary report?\n\n"
+                "This creates a readable markdown file."
             )
             
-            if response2:  # Yes - Save to team file
-                self.save_to_team_file()
-                if self.has_unsaved_changes:
-                    # User cancelled the team save, but already saved personal
-                    # Ask if they still want to exit
-                    if personal_saved:
-                        confirm = messagebox.askyesno(
-                            "Exit Anyway?",
-                            "Team file was not updated.\n\n"
-                            "Your personal backup was saved.\n\n"
-                            "Exit anyway?"
-                        )
-                        if not confirm:
-                            return
-            
-            # Step 3: Offer to export report
-            if completed_tests > 0:
-                response3 = messagebox.askyesno(
-                    "Export Test Report?",
-                    f"You've completed {completed_tests} test(s).\n\n"
-                    "Would you like to export a summary report?\n\n"
-                    "This creates a readable text file with:\n"
-                    "• Test results summary\n"
-                    "• Bug reports\n"
-                    "• Testing statistics\n\n"
-                    "Good for sharing with team or documentation."
-                )
-                
-                if response3:
-                    self.export_report()
+            if response2:
+                self.export_report()
             
             # Exit the application
             self.root.destroy()
