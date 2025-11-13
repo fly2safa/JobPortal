@@ -4,11 +4,16 @@ tester_info.json
 # Personal test results (each tester's individual progress)
 results/test_progress_*.json
 
+# TEAM_MASTER file (use Strategy 3: share via network drive or merge manually)
+# Uncomment the line below to ignore TEAM_MASTER in git
+# results/TEAM_MASTER_test_results.json
+
 # All backup files (personal backups created on startup/exit)
 backup/*.json
 backup/BACKUP_TEAM_MASTER_*.json
 
 # Keep the TEAM_MASTER file (shared team progress) - this should be committed
+# Comment out the line above and uncomment below to track TEAM_MASTER in git
 # !results/TEAM_MASTER_test_results.json
 
 # Python cache
