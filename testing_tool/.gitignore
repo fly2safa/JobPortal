@@ -1,6 +1,16 @@
 # Tester info (personal settings)
 tester_info.json
 
+# Personal test results (each tester's individual progress)
+results/test_progress_*.json
+
+# All backup files (personal backups created on startup/exit)
+backup/*.json
+backup/BACKUP_TEAM_MASTER_*.json
+
+# Keep the TEAM_MASTER file (shared team progress) - this should be committed
+# !results/TEAM_MASTER_test_results.json
+
 # Python cache
 __pycache__/
 *.pyc
@@ -11,3 +21,7 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
+# Exported reports (optional - can be committed if needed for documentation)
+*.md
+!README.md
+!VERSION_HISTORY.md
