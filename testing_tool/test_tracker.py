@@ -62,6 +62,7 @@ class TestingTrackerApp:
         self.tester_info = {}
         self.bugs = []  # List of all bugs
         self.bug_counter = 1  # Auto-increment bug ID
+        self._programmatic_selection = False  # Flag to prevent event loops
         
         # Setup UI
         self.setup_ui()
@@ -287,17 +288,14 @@ class TestingTrackerApp:
         list_frame.columnconfigure(0, weight=1)
         list_frame.rowconfigure(1, weight=1)
         
-        # Jump to section dropdown
-        jump_frame = ttk.Frame(list_frame)
-        jump_frame.grid(row=0, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 5))
+        # Quick jump buttons
+        self.jump_frame = ttk.Frame(list_frame)
+        self.jump_frame.grid(row=0, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 5))
         
-        ttk.Label(jump_frame, text="Jump to:").grid(row=0, column=0, padx=(0, 5))
-        self.section_var = tk.StringVar()
-        self.section_combo = ttk.Combobox(jump_frame, textvariable=self.section_var, 
-                                         state="readonly", width=30)
-        self.section_combo.grid(row=0, column=1, sticky=(tk.W, tk.E))
-        self.section_combo.bind('<<ComboboxSelected>>', self.on_section_jump)
-        jump_frame.columnconfigure(1, weight=1)
+        ttk.Label(self.jump_frame, text="Jump:", font=("Arial", 9, "bold")).grid(row=0, column=0, padx=(0, 5))
+        
+        # Store section buttons
+        self.section_buttons = {}
         
         # Create treeview
         columns = ("ID", "Section", "Title", "Status")
@@ -347,9 +345,33 @@ class TestingTrackerApp:
         # Store section items for jumping
         self.section_items = {}
         
-        # Populate section dropdown
-        section_names = list(sections.keys())
-        self.section_combo['values'] = section_names
+        # Create quick jump buttons (only first time)
+        if not self.section_buttons:
+            col = 1
+            section_list = list(sections.keys())
+            
+            for section in section_list:
+                # Short names for buttons
+                short_names = {
+                    "Authentication": "Auth",
+                    "Job Seeker": "Seeker",
+                    "Employer": "Employer",
+                    "AI Features": "AI",
+                    "Edge Cases": "Edge",
+                    "Responsive": "Resp",
+                    "Performance": "Perf"
+                }
+                btn_text = short_names.get(section, section[:6])
+                
+                # Create button with explicit command
+                def make_command(s):
+                    return lambda: self.jump_to_section(s)
+                
+                btn = ttk.Button(self.jump_frame, text=btn_text, width=8,
+                               command=make_command(section))
+                btn.grid(row=0, column=col, padx=2)
+                self.section_buttons[section] = btn
+                col += 1
         
         # Add to tree
         for section, tests in sections.items():
@@ -473,6 +495,10 @@ class TestingTrackerApp:
     
     def on_test_select(self, event):
         """Handle test selection."""
+        # Skip if this is a programmatic selection
+        if self._programmatic_selection:
+            return
+            
         selection = self.tree.selection()
         if not selection:
             return
@@ -483,8 +509,13 @@ class TestingTrackerApp:
         
         # Get selected item
         item = selection[0]
-        values = self.tree.item(item, 'values')
-        tags = self.tree.item(item, 'tags')
+        
+        # Check if item still exists (handle deletion case)
+        try:
+            values = self.tree.item(item, 'values')
+            tags = self.tree.item(item, 'tags')
+        except:
+            return
         
         # Check if it's a section header
         if not values[0] and "section" in tags:
@@ -492,8 +523,10 @@ class TestingTrackerApp:
             children = self.tree.get_children(item)
             if children:
                 first_child = children[0]
+                self._programmatic_selection = True
                 self.tree.selection_set(first_child)
                 self.tree.see(first_child)
+                self._programmatic_selection = False
                 # Trigger selection event for the first child
                 child_values = self.tree.item(first_child, 'values')
                 test_id = child_values[0]
@@ -516,9 +549,8 @@ class TestingTrackerApp:
                 self.display_test(test)
                 break
     
-    def on_section_jump(self, event):
-        """Handle section jump from dropdown."""
-        section = self.section_var.get()
+    def jump_to_section(self, section):
+        """Jump to a specific section."""
         if section and section in self.section_items:
             # Save current test first
             if self.current_test:
@@ -527,21 +559,33 @@ class TestingTrackerApp:
             section_item = self.section_items[section]
             # Get first test in section
             children = self.tree.get_children(section_item)
+            
             if children:
                 first_child = children[0]
-                self.tree.selection_set(first_child)
-                self.tree.see(first_child)
-                # Trigger display
                 child_values = self.tree.item(first_child, 'values')
                 test_id = child_values[0]
+                
+                # Find the test
                 for test in self.test_cases:
                     if test.id == test_id:
+                        # Use flag to prevent event from firing
+                        self._programmatic_selection = True
+                        
+                        # Select the new item
+                        self.tree.selection_set(first_child)
+                        self.tree.see(first_child)
+                        self.tree.focus(first_child)
+                        
+                        # Reset flag
+                        self._programmatic_selection = False
+                        
+                        # Update current test and display
                         self.current_test = test
                         self.display_test(test)
+                        
+                        # Force UI update
+                        self.root.update_idletasks()
                         break
-            
-            # Reset dropdown to allow another selection
-            self.section_combo.set('')
     
     def display_test(self, test):
         """Display test details."""
