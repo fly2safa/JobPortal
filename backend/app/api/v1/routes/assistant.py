@@ -2,7 +2,7 @@
 AI Assistant routes for chat and cover letter generation.
 """
 from typing import Optional, List
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Request
 from pydantic import BaseModel, Field
 from app.models.user import User
 from app.models.conversation import Conversation, MessageRole
@@ -11,6 +11,7 @@ from app.ai.rag.qa_chain import qa_chain
 from app.ai.providers import get_llm, ProviderError
 from app.core.config import settings
 from app.core.logging import get_logger
+from app.core.rate_limiting import limiter, RATE_LIMIT_AI
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/assistant", tags=["AI Assistant"])
@@ -53,7 +54,9 @@ class ConversationListResponse(BaseModel):
 
 # Endpoints
 @router.post("/chat", response_model=ChatResponse)
+@limiter.limit(RATE_LIMIT_AI)
 async def chat_with_assistant(
+    http_request: Request,
     request: ChatRequest,
     current_user: User = Depends(get_current_user)
 ):
@@ -211,7 +214,9 @@ async def get_conversation(
 
 
 @router.post("/generate-cover-letter", response_model=CoverLetterResponse)
+@limiter.limit(RATE_LIMIT_AI)
 async def generate_cover_letter(
+    http_request: Request,
     request: CoverLetterRequest,
     current_user: User = Depends(get_current_user)
 ):

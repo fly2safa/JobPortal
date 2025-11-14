@@ -2,7 +2,7 @@
 Application routes for job applications.
 """
 from typing import Optional
-from fastapi import APIRouter, HTTPException, status, Depends, Query
+from fastapi import APIRouter, HTTPException, status, Depends, Query, Request
 from app.schemas.application import (
     ApplicationCreate,
     ApplicationResponse,
@@ -18,13 +18,16 @@ from app.api.dependencies import get_current_user, get_current_job_seeker, get_c
 from app.services.application_service import application_service
 from app.repositories.job_repository import JobRepository
 from app.core.logging import get_logger
+from app.core.rate_limiting import limiter, RATE_LIMIT_APPLICATION
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/applications", tags=["Applications"])
 
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=ApplicationResponse)
+@limiter.limit(RATE_LIMIT_APPLICATION)
 async def apply_to_job(
+    request: Request,
     application_data: ApplicationCreate,
     current_user: User = Depends(get_current_job_seeker)
 ):

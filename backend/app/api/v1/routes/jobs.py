@@ -3,7 +3,7 @@ Job routes for job postings and management.
 """
 from datetime import datetime
 from typing import List, Optional
-from fastapi import APIRouter, HTTPException, status, Depends, Query
+from fastapi import APIRouter, HTTPException, status, Depends, Query, Request
 from beanie import PydanticObjectId
 from app.schemas.job import (
     JobCreate,
@@ -19,6 +19,7 @@ from app.models.company import Company
 from app.api.dependencies import get_current_user, get_current_employer
 from app.services.search_service import SearchService
 from app.core.logging import get_logger
+from app.core.rate_limiting import limiter, RATE_LIMIT_JOB_POSTING
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
@@ -229,7 +230,9 @@ async def get_all_jobs(
 
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=JobResponse)
+@limiter.limit(RATE_LIMIT_JOB_POSTING)
 async def create_job(
+    request: Request,
     job_data: JobCreate,
     current_user: User = Depends(get_current_employer)
 ):
