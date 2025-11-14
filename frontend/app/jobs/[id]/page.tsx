@@ -148,7 +148,7 @@ export default function JobDetailPage() {
               <div className="mt-6">
                 <h2 className="text-xl font-semibold mb-3">Requirements</h2>
                 <ul className="space-y-2">
-                  {job.requirements.map((req, index) => (
+                  {(Array.isArray(job.requirements) ? job.requirements : [job.requirements]).map((req, index) => (
                     <li key={index} className="flex items-start">
                       <Check size={20} className="text-green-500 mr-2 mt-0.5 flex-shrink-0" />
                       <span className="text-gray-700">{req}</span>
@@ -160,7 +160,7 @@ export default function JobDetailPage() {
               <div className="mt-6">
                 <h2 className="text-xl font-semibold mb-3">Required Skills</h2>
                 <div className="flex flex-wrap gap-2">
-                  {job.skills.map((skill) => (
+                  {(Array.isArray(job.skills) ? job.skills : []).map((skill) => (
                     <Badge key={skill} variant="primary">
                       {skill}
                     </Badge>

@@ -98,14 +98,6 @@ export function ApplyModal({
     }
   };
 
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    watch,
-    formState: { errors },
-  } = useForm<ApplyFormData>();
-
   const onSubmit = async (data: ApplyFormData) => {
     setIsSubmitting(true);
     setError('');

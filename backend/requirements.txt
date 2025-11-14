@@ -37,14 +37,15 @@ aiofiles>=23.2.1
 # Email SMTP (Required for email notifications)
 aiosmtplib>=3.0.1
 
-# AI Orchestration & Vector Store (Required for AI recommendations and matching)
-langchain>=0.1.4
-langchain-openai>=0.0.5
-langchain-community>=0.0.20
-chromadb>=0.4.22
-tiktoken>=0.5.2
-numpy>=1.26.0
-sentence-transformers>=2.2.2  # For fallback embeddings
+# Optional - Advanced AI features (uncomment if needed)
+# langchain>=0.1.4
+# langchain-openai>=0.0.5
+# chromadb>=0.4.22
+# tiktoken>=0.5.2
+# numpy>=1.26.0
+
+# Optional - for email notifications
+# aiosmtplib>=3.0.1
 
 # Optional - for background tasks
 # celery>=5.3.6
