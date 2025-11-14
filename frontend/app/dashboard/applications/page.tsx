@@ -109,7 +109,7 @@ export default function ApplicationsPage() {
                           'warning'
                         }
                       >
-                        {APPLICATION_STATUS[application.status].label}
+                        {APPLICATION_STATUS[application.status]?.label || application.status}
                       </Badge>
                     </div>
 
