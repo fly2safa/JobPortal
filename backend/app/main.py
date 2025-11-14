@@ -10,8 +10,8 @@ from app.core.logging import setup_logging, get_logger
 from app.db.init_db import connect_to_mongo, close_mongo_connection
 from app.api.v1.routes import auth, jobs, applications, users, resumes, assistant, interviews
 
-# Setup logging
-setup_logging(level="DEBUG" if settings.DEBUG else "INFO")
+# Setup logging from settings
+setup_logging(level=settings.LOG_LEVEL)
 logger = get_logger(__name__)
 
 # ANSI color codes for console output

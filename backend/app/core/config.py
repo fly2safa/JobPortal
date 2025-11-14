@@ -49,6 +49,8 @@ class Settings(BaseSettings):
     APP_NAME: str = "JobPortal"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
+    LOG_LEVEL: str = "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+    UVICORN_LOG_LEVEL: str = "info"  # Uvicorn's own log level (lowercase: debug, info, warning, error, critical)
     
     # Server Configuration
     HOST: str = "127.0.0.1"  # Use 0.0.0.0 for Docker/production to accept external connections
