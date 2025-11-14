@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 from app.core.config import settings
 from app.core.logging import setup_logging, get_logger
 from app.db.init_db import connect_to_mongo, close_mongo_connection
-from app.api.v1.routes import auth, jobs, applications, users, resumes, assistant, interviews, recommendations
+from app.api.v1.routes import auth, jobs, applications, users, resumes, assistant, interviews, recommendations, candidate_matching
 
 # Setup logging from settings
 setup_logging(level=settings.LOG_LEVEL)
@@ -112,6 +112,7 @@ app.include_router(resumes.router, prefix="/api/v1")
 app.include_router(assistant.router, prefix="/api/v1")
 app.include_router(interviews.router, prefix="/api/v1")
 app.include_router(recommendations.router, prefix="/api/v1/recommendations", tags=["recommendations"])
+app.include_router(candidate_matching.router, prefix="/api/v1", tags=["candidate-matching"])
 
 
 # Health check endpoints
