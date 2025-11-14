@@ -1,7 +1,13 @@
 """
-Embedding utilities for RAG system using OpenAI and fallback models.
-Provides text-to-vector conversion for semantic search.
+Embeddings module for generating vector embeddings from text.
+
+This module provides a unified interface for generating embeddings using:
+1. OpenAI text-embedding-3-small (primary)
+2. HuggingFace sentence-transformers (fallback)
+
+The embeddings are used for semantic search in job recommendations and candidate matching.
 """
+
 from typing import List, Optional
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.embeddings import HuggingFaceEmbeddings
@@ -11,90 +17,132 @@ from app.core.logging import get_logger
 logger = get_logger(__name__)
 
 
-class EmbeddingService:
+class EmbeddingsProvider:
     """
-    Service for generating text embeddings using OpenAI or fallback models.
+    Provides embeddings with automatic fallback between OpenAI and HuggingFace.
     """
     
-    def __init__(self, use_openai: bool = True):
-        """
-        Initialize embedding service.
-        
-        Args:
-            use_openai: If True, use OpenAI embeddings; otherwise use HuggingFace
-        """
-        self.use_openai = use_openai and bool(settings.OPENAI_API_KEY)
-        
-        if self.use_openai:
+    def __init__(self):
+        self._openai_embeddings: Optional[OpenAIEmbeddings] = None
+        self._huggingface_embeddings: Optional[HuggingFaceEmbeddings] = None
+        self._current_provider: Optional[str] = None
+        self._initialize_embeddings()
+    
+    def _initialize_embeddings(self):
+        """Initialize embeddings providers based on available API keys."""
+        # Try OpenAI first (primary provider)
+        if settings.OPENAI_API_KEY:
             try:
-                # Use OpenAI text-embedding-3-small (as per spec)
-                self.embeddings = OpenAIEmbeddings(
+                self._openai_embeddings = OpenAIEmbeddings(
                     model="text-embedding-3-small",
                     openai_api_key=settings.OPENAI_API_KEY
                 )
-                logger.info("Initialized OpenAI embeddings (text-embedding-3-small)")
+                self._current_provider = "openai"
+                logger.info("✅ Initialized OpenAI embeddings (text-embedding-3-small)")
             except Exception as e:
-                logger.warning(f"Failed to initialize OpenAI embeddings: {e}. Falling back to HuggingFace.")
-                self.use_openai = False
+                logger.warning(f"⚠️ Failed to initialize OpenAI embeddings: {e}")
         
-        if not self.use_openai:
-            # Fallback to open-source model (all-MiniLM-L6-v2 as per spec)
+        # Initialize HuggingFace as fallback
+        try:
+            self._huggingface_embeddings = HuggingFaceEmbeddings(
+                model_name="all-MiniLM-L6-v2",  # Fast, efficient model
+                model_kwargs={'device': 'cpu'},  # Use CPU for compatibility
+                encode_kwargs={'normalize_embeddings': True}
+            )
+            if not self._current_provider:
+                self._current_provider = "huggingface"
+                logger.info("✅ Using HuggingFace embeddings (all-MiniLM-L6-v2) as primary")
+        except Exception as e:
+            logger.error(f"❌ Failed to initialize HuggingFace embeddings: {e}")
+            if not self._current_provider:
+                raise RuntimeError("No embedding provider available")
+    
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        """
+        Generate embeddings for a list of documents.
+        
+        Args:
+            texts: List of text documents to embed
+            
+        Returns:
+            List of embedding vectors (each vector is a list of floats)
+        """
+        if not texts:
+            return []
+        
+        # Try OpenAI first
+        if self._openai_embeddings:
             try:
-                self.embeddings = HuggingFaceEmbeddings(
-                    model_name="sentence-transformers/all-MiniLM-L6-v2",
-                    model_kwargs={'device': 'cpu'},
-                    encode_kwargs={'normalize_embeddings': True}
-                )
-                logger.info("Initialized HuggingFace embeddings (all-MiniLM-L6-v2)")
+                embeddings = self._openai_embeddings.embed_documents(texts)
+                logger.debug(f"Generated {len(embeddings)} embeddings using OpenAI")
+                return embeddings
             except Exception as e:
-                logger.error(f"Failed to initialize HuggingFace embeddings: {e}")
+                logger.warning(f"⚠️ OpenAI embeddings failed, falling back to HuggingFace: {e}")
+        
+        # Fallback to HuggingFace
+        if self._huggingface_embeddings:
+            try:
+                embeddings = self._huggingface_embeddings.embed_documents(texts)
+                logger.debug(f"Generated {len(embeddings)} embeddings using HuggingFace")
+                return embeddings
+            except Exception as e:
+                logger.error(f"❌ HuggingFace embeddings failed: {e}")
                 raise
+        
+        raise RuntimeError("No embedding provider available")
     
-    def embed_text(self, text: str) -> List[float]:
+    def embed_query(self, text: str) -> List[float]:
         """
-        Generate embedding for a single text.
+        Generate embedding for a single query text.
         
         Args:
-            text: Text to embed
+            text: Query text to embed
             
         Returns:
-            List of floats representing the embedding vector
+            Embedding vector (list of floats)
         """
-        try:
-            return self.embeddings.embed_query(text)
-        except Exception as e:
-            logger.error(f"Error generating embedding: {e}")
-            raise
-    
-    def embed_texts(self, texts: List[str]) -> List[List[float]]:
-        """
-        Generate embeddings for multiple texts.
+        if not text:
+            raise ValueError("Text cannot be empty")
         
-        Args:
-            texts: List of texts to embed
-            
-        Returns:
-            List of embedding vectors
-        """
-        try:
-            return self.embeddings.embed_documents(texts)
-        except Exception as e:
-            logger.error(f"Error generating embeddings: {e}")
-            raise
-    
-    def get_embedding_dimension(self) -> int:
-        """
-        Get the dimension of the embedding vectors.
+        # Try OpenAI first
+        if self._openai_embeddings:
+            try:
+                embedding = self._openai_embeddings.embed_query(text)
+                logger.debug(f"Generated query embedding using OpenAI")
+                return embedding
+            except Exception as e:
+                logger.warning(f"⚠️ OpenAI embeddings failed, falling back to HuggingFace: {e}")
         
-        Returns:
-            Dimension of embedding vectors
-        """
-        if self.use_openai:
-            return 1536  # text-embedding-3-small dimension
-        else:
-            return 384  # all-MiniLM-L6-v2 dimension
+        # Fallback to HuggingFace
+        if self._huggingface_embeddings:
+            try:
+                embedding = self._huggingface_embeddings.embed_query(text)
+                logger.debug(f"Generated query embedding using HuggingFace")
+                return embedding
+            except Exception as e:
+                logger.error(f"❌ HuggingFace embeddings failed: {e}")
+                raise
+        
+        raise RuntimeError("No embedding provider available")
+    
+    def get_current_provider(self) -> str:
+        """Get the name of the current primary embedding provider."""
+        return self._current_provider or "none"
 
 
-# Global embedding service instance
-embedding_service = EmbeddingService()
+# Global embeddings instance
+_embeddings_provider: Optional[EmbeddingsProvider] = None
+
+
+def get_embeddings() -> EmbeddingsProvider:
+    """
+    Get the global embeddings provider instance.
+    
+    Returns:
+        EmbeddingsProvider instance
+    """
+    global _embeddings_provider
+    if _embeddings_provider is None:
+        _embeddings_provider = EmbeddingsProvider()
+    return _embeddings_provider
 
