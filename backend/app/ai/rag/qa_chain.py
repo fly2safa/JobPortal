@@ -6,9 +6,9 @@ from typing import List, Optional, Dict, Any
 from app.ai.rag.loader import DocumentLoader, Document
 from app.ai.rag.splitter import TextSplitter
 from app.ai.rag.retriever import Retriever
+from app.ai.providers import get_llm, ProviderError
 from app.core.config import settings
 from app.core.logging import get_logger
-import openai
 
 logger = get_logger(__name__)
 
@@ -80,21 +80,19 @@ class QAChain:
             # Add current question
             messages.append({"role": "user", "content": question})
             
-            # Call OpenAI API
-            if not settings.OPENAI_API_KEY:
+            # Get LLM with automatic fallback
+            try:
+                llm = get_llm(temperature=0.7, max_tokens=500)
+                
+                # Invoke LLM
+                answer = llm.invoke(messages).content
+                logger.info(f"Generated answer for question: {question[:50]}...")
+                
+                return answer
+                
+            except ProviderError as e:
+                logger.error(f"All AI providers failed: {e}")
                 return self._fallback_response(question, relevant_docs)
-            
-            response = await openai.ChatCompletion.acreate(
-                model="gpt-4o",
-                messages=messages,
-                temperature=0.7,
-                max_tokens=500
-            )
-            
-            answer = response.choices[0].message.content
-            logger.info(f"Generated answer for question: {question[:50]}...")
-            
-            return answer
             
         except Exception as e:
             logger.error(f"Error answering question: {e}")

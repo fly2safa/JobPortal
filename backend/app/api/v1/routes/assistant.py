@@ -8,9 +8,9 @@ from app.models.user import User
 from app.models.conversation import Conversation, MessageRole
 from app.api.dependencies import get_current_user
 from app.ai.rag.qa_chain import qa_chain
+from app.ai.providers import get_llm, ProviderError
 from app.core.config import settings
 from app.core.logging import get_logger
-import openai
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/assistant", tags=["AI Assistant"])
@@ -228,12 +228,6 @@ async def generate_cover_letter(
     logger.info(f"Cover letter generation request from {current_user.email} for job {request.job_id}")
     
     try:
-        if not settings.OPENAI_API_KEY:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="AI service is not configured. Please write your cover letter manually."
-            )
-        
         # Build prompt for cover letter generation
         prompt = f"""Generate a professional cover letter for the following job application:
 
@@ -257,10 +251,11 @@ Instructions:
 
 Generate the cover letter now:"""
 
-        # Call OpenAI API
-        response = await openai.ChatCompletion.acreate(
-            model="gpt-4o",
-            messages=[
+        # Get LLM with automatic fallback
+        try:
+            llm = get_llm(temperature=0.8, max_tokens=800)
+            
+            messages = [
                 {
                     "role": "system",
                     "content": "You are an expert career coach and professional writer specializing in cover letters."
@@ -269,16 +264,21 @@ Generate the cover letter now:"""
                     "role": "user",
                     "content": prompt
                 }
-            ],
-            temperature=0.8,
-            max_tokens=800
-        )
-        
-        cover_letter = response.choices[0].message.content
-        
-        logger.info(f"Generated cover letter for user {current_user.email}")
-        
-        return CoverLetterResponse(cover_letter=cover_letter)
+            ]
+            
+            # Invoke LLM
+            cover_letter = llm.invoke(messages).content
+            
+            logger.info(f"Generated cover letter for user {current_user.email}")
+            
+            return CoverLetterResponse(cover_letter=cover_letter)
+            
+        except ProviderError as e:
+            logger.error(f"All AI providers failed: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="AI service is temporarily unavailable. Please write your cover letter manually or try again later."
+            )
         
     except HTTPException:
         raise
