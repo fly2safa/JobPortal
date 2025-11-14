@@ -1,190 +1,344 @@
 """
-ChromaDB vector store for semantic search and retrieval.
-Stores document embeddings and performs similarity search.
+Vector store module using ChromaDB for semantic search.
+
+This module provides vector storage and similarity search for:
+1. Job postings - for job recommendations to job seekers
+2. User profiles - for candidate matching for employers
+
+Uses ChromaDB as the vector database with embeddings from OpenAI or HuggingFace.
 """
-from typing import List, Optional, Dict, Any
+
+from typing import List, Dict, Any, Optional
 import chromadb
 from chromadb.config import Settings
-from langchain_community.vectorstores import Chroma
-from langchain.schema import Document
-from app.ai.rag.embeddings import embedding_service
+from app.ai.rag.embeddings import get_embeddings
+from app.core.config import settings
 from app.core.logging import get_logger
-from pathlib import Path
 
 logger = get_logger(__name__)
 
 
 class VectorStore:
     """
-    ChromaDB-based vector store for document embeddings and similarity search.
+    Manages vector storage and similarity search using ChromaDB.
     """
     
-    def __init__(
-        self,
-        collection_name: str = "jobportal_docs",
-        persist_directory: Optional[str] = None
-    ):
-        """
-        Initialize ChromaDB vector store.
-        
-        Args:
-            collection_name: Name of the ChromaDB collection
-            persist_directory: Directory to persist the database (None for in-memory)
-        """
-        self.collection_name = collection_name
-        
-        # Set up persist directory
-        if persist_directory is None:
-            persist_directory = str(Path(__file__).parent.parent.parent / "data" / "chroma_db")
-        
-        self.persist_directory = persist_directory
-        Path(self.persist_directory).mkdir(parents=True, exist_ok=True)
-        
+    def __init__(self):
+        self.embeddings = get_embeddings()
+        self.client: Optional[chromadb.Client] = None
+        self.jobs_collection: Optional[chromadb.Collection] = None
+        self.profiles_collection: Optional[chromadb.Collection] = None
+        self._initialize_client()
+    
+    def _initialize_client(self):
+        """Initialize ChromaDB client and collections."""
         try:
-            # Initialize ChromaDB client
-            self.client = chromadb.PersistentClient(
-                path=self.persist_directory,
-                settings=Settings(
-                    anonymized_telemetry=False,
-                    allow_reset=True
-                )
+            # Initialize ChromaDB client (in-memory for development, persistent for production)
+            chroma_settings = Settings(
+                anonymized_telemetry=False,
+                allow_reset=True
             )
             
-            # Initialize LangChain Chroma wrapper
-            self.vectorstore = Chroma(
-                client=self.client,
-                collection_name=self.collection_name,
-                embedding_function=embedding_service.embeddings,
-                persist_directory=self.persist_directory
+            # Use persistent storage if CHROMADB_PATH is set, otherwise in-memory
+            chromadb_path = getattr(settings, 'CHROMADB_PATH', None)
+            if chromadb_path:
+                self.client = chromadb.PersistentClient(path=chromadb_path, settings=chroma_settings)
+                logger.info(f"✅ Initialized ChromaDB with persistent storage at {chromadb_path}")
+            else:
+                self.client = chromadb.Client(chroma_settings)
+                logger.info("✅ Initialized ChromaDB with in-memory storage")
+            
+            # Get or create collections
+            self.jobs_collection = self.client.get_or_create_collection(
+                name="job_postings",
+                metadata={"description": "Job postings for semantic search and recommendations"}
             )
             
-            logger.info(f"Initialized ChromaDB vector store: {collection_name} at {persist_directory}")
+            self.profiles_collection = self.client.get_or_create_collection(
+                name="user_profiles",
+                metadata={"description": "User profiles for candidate matching"}
+            )
+            
+            logger.info(f"✅ ChromaDB collections ready: jobs={self.jobs_collection.count()}, profiles={self.profiles_collection.count()}")
             
         except Exception as e:
-            logger.error(f"Failed to initialize ChromaDB: {e}")
+            logger.error(f"❌ Failed to initialize ChromaDB: {e}")
             raise
     
-    def add_documents(
-        self,
-        documents: List[Document],
-        ids: Optional[List[str]] = None
-    ) -> List[str]:
+    def add_job(self, job_id: str, job_data: Dict[str, Any]) -> bool:
         """
-        Add documents to the vector store.
+        Add or update a job posting in the vector store.
         
         Args:
-            documents: List of LangChain Document objects
-            ids: Optional list of document IDs
+            job_id: Unique job identifier
+            job_data: Job data dictionary containing title, description, skills, etc.
             
         Returns:
-            List of document IDs
+            True if successful, False otherwise
         """
         try:
-            doc_ids = self.vectorstore.add_documents(documents=documents, ids=ids)
-            logger.info(f"Added {len(documents)} documents to vector store")
-            return doc_ids
-        except Exception as e:
-            logger.error(f"Error adding documents to vector store: {e}")
-            raise
-    
-    def similarity_search(
-        self,
-        query: str,
-        k: int = 4,
-        filter: Optional[Dict[str, Any]] = None
-    ) -> List[Document]:
-        """
-        Perform similarity search for a query.
-        
-        Args:
-            query: Search query
-            k: Number of results to return
-            filter: Optional metadata filter
+            # Create a rich text representation for embedding
+            job_text = self._create_job_text(job_data)
             
-        Returns:
-            List of relevant documents
-        """
-        try:
-            results = self.vectorstore.similarity_search(
-                query=query,
-                k=k,
-                filter=filter
+            # Generate embedding
+            embedding = self.embeddings.embed_query(job_text)
+            
+            # Store in ChromaDB
+            self.jobs_collection.upsert(
+                ids=[job_id],
+                embeddings=[embedding],
+                documents=[job_text],
+                metadatas=[{
+                    "job_id": job_id,
+                    "title": job_data.get("title", ""),
+                    "company": job_data.get("company_name", ""),
+                    "location": job_data.get("location", ""),
+                    "skills": ",".join(job_data.get("skills", [])),
+                    "experience_level": job_data.get("experience_level", ""),
+                }]
             )
-            logger.info(f"Similarity search returned {len(results)} results for query: {query[:50]}...")
-            return results
+            
+            logger.debug(f"Added job {job_id} to vector store")
+            return True
+            
         except Exception as e:
-            logger.error(f"Error performing similarity search: {e}")
+            logger.error(f"Failed to add job {job_id} to vector store: {e}")
+            return False
+    
+    def add_profile(self, user_id: str, profile_data: Dict[str, Any]) -> bool:
+        """
+        Add or update a user profile in the vector store.
+        
+        Args:
+            user_id: Unique user identifier
+            profile_data: User profile data containing skills, experience, education, etc.
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Create a rich text representation for embedding
+            profile_text = self._create_profile_text(profile_data)
+            
+            # Generate embedding
+            embedding = self.embeddings.embed_query(profile_text)
+            
+            # Store in ChromaDB
+            self.profiles_collection.upsert(
+                ids=[user_id],
+                embeddings=[embedding],
+                documents=[profile_text],
+                metadatas=[{
+                    "user_id": user_id,
+                    "name": profile_data.get("full_name", ""),
+                    "email": profile_data.get("email", ""),
+                    "skills": ",".join(profile_data.get("skills", [])),
+                    "experience_years": str(profile_data.get("experience_years", 0)),
+                }]
+            )
+            
+            logger.debug(f"Added profile {user_id} to vector store")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to add profile {user_id} to vector store: {e}")
+            return False
+    
+    def search_jobs(self, query_text: str, n_results: int = 10) -> List[Dict[str, Any]]:
+        """
+        Search for similar jobs using semantic similarity.
+        
+        Args:
+            query_text: Query text (user profile summary or search query)
+            n_results: Number of results to return
+            
+        Returns:
+            List of job matches with similarity scores
+        """
+        try:
+            if self.jobs_collection.count() == 0:
+                logger.warning("Jobs collection is empty")
+                return []
+            
+            # Generate query embedding
+            query_embedding = self.embeddings.embed_query(query_text)
+            
+            # Search ChromaDB
+            results = self.jobs_collection.query(
+                query_embeddings=[query_embedding],
+                n_results=min(n_results, self.jobs_collection.count())
+            )
+            
+            # Format results
+            matches = []
+            if results['ids'] and len(results['ids'][0]) > 0:
+                for i in range(len(results['ids'][0])):
+                    matches.append({
+                        'job_id': results['ids'][0][i],
+                        'distance': results['distances'][0][i] if 'distances' in results else 0,
+                        'similarity_score': 1 - results['distances'][0][i] if 'distances' in results else 1.0,
+                        'metadata': results['metadatas'][0][i] if 'metadatas' in results else {},
+                        'document': results['documents'][0][i] if 'documents' in results else ""
+                    })
+            
+            logger.debug(f"Found {len(matches)} job matches for query")
+            return matches
+            
+        except Exception as e:
+            logger.error(f"Failed to search jobs: {e}")
             return []
     
-    def similarity_search_with_score(
-        self,
-        query: str,
-        k: int = 4,
-        filter: Optional[Dict[str, Any]] = None
-    ) -> List[tuple[Document, float]]:
+    def search_profiles(self, query_text: str, n_results: int = 10) -> List[Dict[str, Any]]:
         """
-        Perform similarity search with relevance scores.
+        Search for similar user profiles using semantic similarity.
         
         Args:
-            query: Search query
-            k: Number of results to return
-            filter: Optional metadata filter
+            query_text: Query text (job description or requirements)
+            n_results: Number of results to return
             
         Returns:
-            List of (document, score) tuples
+            List of profile matches with similarity scores
         """
         try:
-            results = self.vectorstore.similarity_search_with_score(
-                query=query,
-                k=k,
-                filter=filter
+            if self.profiles_collection.count() == 0:
+                logger.warning("Profiles collection is empty")
+                return []
+            
+            # Generate query embedding
+            query_embedding = self.embeddings.embed_query(query_text)
+            
+            # Search ChromaDB
+            results = self.profiles_collection.query(
+                query_embeddings=[query_embedding],
+                n_results=min(n_results, self.profiles_collection.count())
             )
-            logger.info(f"Similarity search with scores returned {len(results)} results")
-            return results
+            
+            # Format results
+            matches = []
+            if results['ids'] and len(results['ids'][0]) > 0:
+                for i in range(len(results['ids'][0])):
+                    matches.append({
+                        'user_id': results['ids'][0][i],
+                        'distance': results['distances'][0][i] if 'distances' in results else 0,
+                        'similarity_score': 1 - results['distances'][0][i] if 'distances' in results else 1.0,
+                        'metadata': results['metadatas'][0][i] if 'metadatas' in results else {},
+                        'document': results['documents'][0][i] if 'documents' in results else ""
+                    })
+            
+            logger.debug(f"Found {len(matches)} profile matches for query")
+            return matches
+            
         except Exception as e:
-            logger.error(f"Error performing similarity search with scores: {e}")
+            logger.error(f"Failed to search profiles: {e}")
             return []
     
-    def delete_collection(self):
-        """Delete the entire collection."""
+    def delete_job(self, job_id: str) -> bool:
+        """Delete a job from the vector store."""
         try:
-            self.client.delete_collection(name=self.collection_name)
-            logger.info(f"Deleted collection: {self.collection_name}")
+            self.jobs_collection.delete(ids=[job_id])
+            logger.debug(f"Deleted job {job_id} from vector store")
+            return True
         except Exception as e:
-            logger.warning(f"Error deleting collection: {e}")
+            logger.error(f"Failed to delete job {job_id}: {e}")
+            return False
     
-    def get_collection_count(self) -> int:
-        """
-        Get the number of documents in the collection.
-        
-        Returns:
-            Number of documents
-        """
+    def delete_profile(self, user_id: str) -> bool:
+        """Delete a user profile from the vector store."""
         try:
-            collection = self.client.get_collection(name=self.collection_name)
-            return collection.count()
+            self.profiles_collection.delete(ids=[user_id])
+            logger.debug(f"Deleted profile {user_id} from vector store")
+            return True
         except Exception as e:
-            logger.error(f"Error getting collection count: {e}")
-            return 0
+            logger.error(f"Failed to delete profile {user_id}: {e}")
+            return False
     
-    def as_retriever(self, search_kwargs: Optional[Dict[str, Any]] = None):
-        """
-        Get a LangChain retriever interface.
+    def _create_job_text(self, job_data: Dict[str, Any]) -> str:
+        """Create a rich text representation of a job for embedding."""
+        parts = []
         
-        Args:
-            search_kwargs: Optional search parameters (e.g., {'k': 4})
-            
-        Returns:
-            LangChain retriever
-        """
-        if search_kwargs is None:
-            search_kwargs = {'k': 4}
+        if job_data.get("title"):
+            parts.append(f"Job Title: {job_data['title']}")
         
-        return self.vectorstore.as_retriever(search_kwargs=search_kwargs)
+        if job_data.get("company_name"):
+            parts.append(f"Company: {job_data['company_name']}")
+        
+        if job_data.get("location"):
+            parts.append(f"Location: {job_data['location']}")
+        
+        if job_data.get("description"):
+            parts.append(f"Description: {job_data['description']}")
+        
+        if job_data.get("requirements"):
+            requirements = job_data['requirements']
+            if isinstance(requirements, list):
+                parts.append(f"Requirements: {', '.join(requirements)}")
+            else:
+                parts.append(f"Requirements: {requirements}")
+        
+        if job_data.get("skills"):
+            skills = job_data['skills']
+            if isinstance(skills, list):
+                parts.append(f"Required Skills: {', '.join(skills)}")
+            else:
+                parts.append(f"Required Skills: {skills}")
+        
+        if job_data.get("experience_level"):
+            parts.append(f"Experience Level: {job_data['experience_level']}")
+        
+        if job_data.get("job_type"):
+            parts.append(f"Job Type: {job_data['job_type']}")
+        
+        return "\n".join(parts)
+    
+    def _create_profile_text(self, profile_data: Dict[str, Any]) -> str:
+        """Create a rich text representation of a user profile for embedding."""
+        parts = []
+        
+        if profile_data.get("full_name"):
+            parts.append(f"Name: {profile_data['full_name']}")
+        
+        if profile_data.get("skills"):
+            skills = profile_data['skills']
+            if isinstance(skills, list):
+                parts.append(f"Skills: {', '.join(skills)}")
+            else:
+                parts.append(f"Skills: {skills}")
+        
+        if profile_data.get("experience_years") is not None:
+            parts.append(f"Years of Experience: {profile_data['experience_years']}")
+        
+        if profile_data.get("education"):
+            parts.append(f"Education: {profile_data['education']}")
+        
+        if profile_data.get("work_experience"):
+            parts.append(f"Work Experience: {profile_data['work_experience']}")
+        
+        if profile_data.get("summary"):
+            parts.append(f"Professional Summary: {profile_data['summary']}")
+        
+        return "\n".join(parts)
+    
+    def get_stats(self) -> Dict[str, int]:
+        """Get statistics about the vector store."""
+        return {
+            "jobs_count": self.jobs_collection.count() if self.jobs_collection else 0,
+            "profiles_count": self.profiles_collection.count() if self.profiles_collection else 0,
+        }
 
 
-# Global vector store instances
-job_vectorstore = VectorStore(collection_name="jobs", persist_directory=None)
-user_vectorstore = VectorStore(collection_name="users", persist_directory=None)
-docs_vectorstore = VectorStore(collection_name="docs", persist_directory=None)
+# Global vector store instance
+_vector_store: Optional[VectorStore] = None
+
+
+def get_vector_store() -> VectorStore:
+    """
+    Get the global vector store instance.
+    
+    Returns:
+        VectorStore instance
+    """
+    global _vector_store
+    if _vector_store is None:
+        _vector_store = VectorStore()
+    return _vector_store
 
