@@ -88,14 +88,22 @@ export interface Job {
 export interface Application {
   id: string;
   job_id: string;
+  applicant_id?: string;
   job_title?: string;
   company_name?: string;
+  company_id?: string;
   user_id: string;
+  applicant_name?: string;
+  applicant_email?: string;
   resume_url: string;
   cover_letter?: string;
   status: 'pending' | 'reviewing' | 'shortlisted' | 'rejected' | 'accepted';
-  applied_date: string;
+  applied_date?: string;
+  applied_at?: string;
   updated_at: string;
+  employer_notes?: string;
+  rejection_reason?: string;
+  additional_info?: Record<string, any>;
 }
 
 // Resume Types
@@ -206,11 +214,26 @@ export interface JobRecommendation {
 
 export interface CandidateRecommendation {
   user_id: string;
-  application_id: string;
-  candidate_name: string;
+  full_name: string;
+  email: string;
   match_score: number;
-  skills_match: string[];
-  resume_url: string;
+  reasons: string[];
+  application_id: string;
+  application_status: 'pending' | 'reviewing' | 'shortlisted' | 'rejected' | 'accepted';
+  applied_at?: string;
+  resume?: {
+    resume_id: string;
+    file_url: string;
+    skills: string[];
+    uploaded_at?: string;
+  };
+}
+
+export interface CandidateRecommendationResponse {
+  job_id: string;
+  job_title: string;
+  total_candidates: number;
+  candidates: CandidateRecommendation[];
 }
 
 // Chat/Assistant Types

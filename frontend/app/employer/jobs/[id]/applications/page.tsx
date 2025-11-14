@@ -11,9 +11,11 @@ import { Input } from '@/components/ui/Input';
 import { useAuth, useRequireRole } from '@/hooks/useAuth';
 import { Application } from '@/types';
 import { formatDate } from '@/lib/utils';
-import { Sparkles, FileText, AlertCircle } from 'lucide-react';
+import { Sparkles, FileText, AlertCircle, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 import apiClient from '@/lib/api';
 import { CandidateCard } from '@/features/employer/applications';
+import { CandidateRecommendationCard } from '@/features/employer/candidate-recommendations';
+import { CandidateRecommendation } from '@/types';
 
 export default function JobApplicationsPage() {
   useAuth(true);
@@ -36,10 +38,15 @@ export default function JobApplicationsPage() {
   const [rejectingAppId, setRejectingAppId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [recommendations, setRecommendations] = useState<CandidateRecommendation[]>([]);
+  const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
+  const [showRecommendations, setShowRecommendations] = useState(true);
+  const [recommendationsError, setRecommendationsError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchApplications();
     fetchJobDetails();
+    fetchRecommendations();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id, filter]);
 
@@ -128,9 +135,30 @@ export default function JobApplicationsPage() {
     }
   };
 
+  const fetchRecommendations = async () => {
+    setIsLoadingRecommendations(true);
+    setRecommendationsError(null);
+    try {
+      const response = await apiClient.getRecommendedCandidates(params.id as string, { limit: 10 });
+      setRecommendations(response.candidates || []);
+    } catch (error: any) {
+      console.error('Failed to fetch candidate recommendations:', error);
+      setRecommendationsError(error.response?.data?.detail || 'Failed to load AI recommendations');
+    } finally {
+      setIsLoadingRecommendations(false);
+    }
+  };
+
   const handleScheduleInterview = (applicationId: string) => {
-    // TODO: Implement interview scheduling (Phase 3)
-    alert('Interview scheduling will be implemented in Phase 3');
+    // Navigate to interview scheduling or open modal
+    router.push(`/employer/interviews/new?applicationId=${applicationId}`);
+  };
+
+  const handleViewApplication = (applicationId: string) => {
+    const application = applications.find(app => app.id === applicationId);
+    if (application) {
+      setSelectedApplication(application);
+    }
   };
 
   const filteredApplications = applications;
@@ -189,22 +217,103 @@ export default function JobApplicationsPage() {
           ))}
         </div>
 
-        {/* AI Recommendations */}
-        <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
-          <div className="flex items-start space-x-4">
-            <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
-              <Sparkles className="text-white" size={24} />
+        {/* AI Recommendations Section */}
+        <Card className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border-purple-200 dark:border-purple-800">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-start space-x-4 flex-1">
+              <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <Sparkles className="text-white" size={24} />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                  AI-Recommended Candidates
+                </h3>
+                <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
+                  Based on job requirements, these candidates are ranked by AI-powered matching
+                </p>
+                {recommendations.length > 0 && (
+                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                    {recommendations.length} top match{recommendations.length !== 1 ? 'es' : ''} found
+                  </p>
+                )}
+              </div>
             </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-gray-900 mb-1">AI-Recommended Candidates</h3>
-              <p className="text-sm text-gray-700 mb-3">
-                Based on job requirements, these candidates are the best matches
-              </p>
-              <Button variant="outline" size="sm">
-                View Top Matches
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={fetchRecommendations}
+                disabled={isLoadingRecommendations}
+              >
+                <RefreshCw 
+                  size={14} 
+                  className={`mr-1 ${isLoadingRecommendations ? 'animate-spin' : ''}`} 
+                />
+                Refresh
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowRecommendations(!showRecommendations)}
+              >
+                {showRecommendations ? (
+                  <>
+                    <ChevronUp size={14} className="mr-1" />
+                    Hide
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown size={14} className="mr-1" />
+                    Show
+                  </>
+                )}
               </Button>
             </div>
           </div>
+
+          {/* Recommendations Error */}
+          {recommendationsError && (
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <AlertCircle className="text-red-600 dark:text-red-400" size={16} />
+                <p className="text-sm text-red-800 dark:text-red-300">{recommendationsError}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Recommendations List */}
+          {showRecommendations && (
+            <>
+              {isLoadingRecommendations ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                </div>
+              ) : recommendations.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-600 dark:text-gray-400 mb-2">
+                    No AI recommendations available yet
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-500">
+                    {recommendationsError 
+                      ? 'Try refreshing or check back later'
+                      : 'Candidates will appear here once they apply and profiles are synced'}
+                  </p>
+                </div>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {recommendations.map((recommendation) => (
+                    <CandidateRecommendationCard
+                      key={recommendation.application_id}
+                      recommendation={recommendation}
+                      onViewApplication={handleViewApplication}
+                      onShortlist={handleShortlist}
+                      onScheduleInterview={handleScheduleInterview}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          )}
         </Card>
 
         {/* Error State */}

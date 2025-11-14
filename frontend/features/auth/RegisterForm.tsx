@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { PasswordInput } from '@/components/ui/PasswordInput';
 import { Card } from '@/components/ui/Card';
 import { useAuthStore } from '@/store/authStore';
 import apiClient from '@/lib/api';
@@ -183,9 +184,8 @@ export function RegisterForm() {
         </div>
 
         <div style={{ fontFamily: 'Playfair Display, serif' }}>
-          <Input
+          <PasswordInput
             label="Password"
-            type="password"
             placeholder="••••••••"
             {...register('password', {
               required: 'Password is required',
@@ -200,9 +200,8 @@ export function RegisterForm() {
         </div>
 
         <div style={{ fontFamily: 'Playfair Display, serif' }}>
-          <Input
+          <PasswordInput
             label="Confirm Password"
-            type="password"
             placeholder="••••••••"
             {...register('confirmPassword', {
               required: 'Please confirm your password',
