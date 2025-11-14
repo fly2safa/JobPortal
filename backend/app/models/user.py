@@ -38,6 +38,7 @@ class User(Document):
     
     # Employer specific fields
     company_id: Optional[str] = None
+    company_name: Optional[str] = None  # Simple company name for employers
     job_title: Optional[str] = None
     
     # Metadata

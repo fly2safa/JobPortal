@@ -250,24 +250,30 @@ async def create_job(
     """
     logger.info(f"Job creation attempt by employer: {current_user.email}")
     
-    # Verify company exists
-    company = await Company.get(job_data.company_id)
-    if not company:
-        logger.warning(f"Job creation failed: Company not found - {job_data.company_id}")
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Company not found"
-        )
+    # Use company_name from user profile if no company_id provided
+    company_id = job_data.company_id if job_data.company_id else str(current_user.id)
+    company_name = job_data.company_id if job_data.company_id else (current_user.company_name or f"{current_user.first_name} {current_user.last_name}")
     
-    # Verify user is associated with the company
-    if current_user.company_id != job_data.company_id:
-        logger.warning(
-            f"Job creation failed: User {current_user.email} not authorized for company {job_data.company_id}"
-        )
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not authorized to post jobs for this company"
-        )
+    # If company_id is provided, verify it exists and user has access
+    if job_data.company_id:
+        company = await Company.get(job_data.company_id)
+        if not company:
+            logger.warning(f"Job creation failed: Company not found - {job_data.company_id}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Company not found"
+            )
+        
+        # Verify user is associated with the company
+        if current_user.company_id != job_data.company_id:
+            logger.warning(
+                f"Job creation failed: User {current_user.email} not authorized for company {job_data.company_id}"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You are not authorized to post jobs for this company"
+            )
+        company_name = company.name
     
     # Create job
     job = Job(
@@ -280,8 +286,8 @@ async def create_job(
         preferred_skills=job_data.preferred_skills,
         location=job_data.location,
         is_remote=job_data.is_remote,
-        company_id=job_data.company_id,
-        company_name=company.name,  # Denormalized for faster queries
+        company_id=company_id,
+        company_name=company_name,  # Denormalized for faster queries
         employer_id=str(current_user.id),
         salary_min=job_data.salary_min,
         salary_max=job_data.salary_max,
@@ -301,6 +307,15 @@ async def create_job(
     
     await job.insert()
     logger.info(f"Job created successfully: {job.title} (ID: {job.id}) by {current_user.email}")
+    
+    # Update vector store for AI recommendations (async, non-blocking)
+    try:
+        from app.services.recommendation_service import recommendation_service
+        if job.status == JobStatus.ACTIVE:
+            await recommendation_service.refresh_job_in_vector_store(job)
+            logger.debug(f"Vector store updated with new job {job.id}")
+    except Exception as e:
+        logger.warning(f"Failed to update vector store for new job: {str(e)}")
     
     return JobResponse(
         id=str(job.id),
@@ -504,6 +519,14 @@ async def update_job(
     await job.save()
     logger.info(f"Job updated successfully: {job.title} (ID: {job.id})")
     
+    # Update vector store for AI recommendations (async, non-blocking)
+    try:
+        from app.services.recommendation_service import recommendation_service
+        await recommendation_service.refresh_job_in_vector_store(job)
+        logger.debug(f"Vector store updated for job {job.id}")
+    except Exception as e:
+        logger.warning(f"Failed to update vector store for updated job: {str(e)}")
+    
     return JobResponse(
         id=str(job.id),
         title=job.title,
@@ -574,84 +597,12 @@ async def delete_job(
     
     await job.delete()
     logger.info(f"Job deleted successfully: {job.title} (ID: {job_id})")
-
-
-# Candidate Matching Response Models
-class CandidateRankingResponse(BaseModel):
-    """Single candidate ranking response."""
-    candidate_id: str
-    candidate_name: str
-    current_role: str
-    match_score: int = Field(..., ge=0, le=100)
-    match_reason: str
-    skills_match: dict
-    experience_relevance: str
-    concerns: str
-
-
-class CandidateRankingsListResponse(BaseModel):
-    """List of candidate rankings."""
-    rankings: List[CandidateRankingResponse]
-    total: int
-    job_id: str
-    job_title: str
-
-
-@router.get("/{job_id}/recommended-candidates", response_model=CandidateRankingsListResponse)
-async def get_recommended_candidates(
-    job_id: str,
-    limit: int = Query(10, ge=1, le=50, description="Maximum number of candidates"),
-    use_ai: bool = Query(True, description="Use AI chain for intelligent ranking"),
-    applicants_only: bool = Query(False, description="Only rank existing applicants"),
-    current_user: User = Depends(get_current_employer)
-):
-    """
-    Get AI-powered candidate recommendations for a job posting.
     
-    Uses vector similarity search and LangChain to analyze candidate profiles
-    against job requirements and provide intelligent rankings with match scores.
-    
-    **Employer only endpoint** - requires employer authentication.
-    """
+    # Remove from vector store for AI recommendations
     try:
-        # Verify the job exists and belongs to the employer
-        job = await Job.get(PydanticObjectId(job_id))
-        if not job:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Job not found"
-            )
-        
-        # Verify ownership
-        if job.employer_id != str(current_user.id):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You are not authorized to view candidates for this job"
-            )
-        
-        # Get candidate rankings
-        rankings = await candidate_matching_service.get_recommended_candidates(
-            job_id=job_id,
-            limit=limit,
-            use_ai=use_ai,
-            include_applicants_only=applicants_only
-        )
-        
-        return CandidateRankingsListResponse(
-            rankings=rankings,
-            total=len(rankings),
-            job_id=job_id,
-            job_title=job.title
-        )
-        
-    except HTTPException:
-        raise
+        from app.services.recommendation_service import recommendation_service
+        recommendation_service.vector_store.store.remove_by_id(job_id)
+        logger.debug(f"Vector store cleaned up for deleted job {job_id}")
     except Exception as e:
-        logger.error(f"Error getting candidate recommendations for job {job_id}: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to generate candidate recommendations. Please try again later."
-        )
-
-
+        logger.warning(f"Failed to remove deleted job from vector store: {str(e)}")
 

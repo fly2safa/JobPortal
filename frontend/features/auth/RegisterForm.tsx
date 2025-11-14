@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -17,26 +17,41 @@ interface RegisterFormData {
   password: string;
   confirmPassword: string;
   role: 'job_seeker' | 'employer';
+  company_name?: string;
 }
 
 export function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { setAuth } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Get role from URL query parameter, default to 'job_seeker'
+  const roleFromUrl = searchParams.get('role') as 'job_seeker' | 'employer' | null;
+  const defaultRole = roleFromUrl === 'employer' ? 'employer' : 'job_seeker';
 
   const {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<RegisterFormData>({
     defaultValues: {
-      role: 'job_seeker',
+      role: defaultRole,
     },
   });
 
+  // Update role when URL changes
+  useEffect(() => {
+    if (roleFromUrl) {
+      setValue('role', roleFromUrl);
+    }
+  }, [roleFromUrl, setValue]);
+
   const password = watch('password');
+  const selectedRole = watch('role');
 
   const onSubmit = async (data: RegisterFormData) => {
     setIsLoading(true);
@@ -50,6 +65,7 @@ export function RegisterForm() {
         first_name: data.first_name,
         last_name: data.last_name,
         role: data.role,
+        company_name: data.company_name,
       });
       
       // Store authentication data
@@ -264,6 +280,25 @@ export function RegisterForm() {
             </label>
           </div>
         </div>
+
+        {selectedRole === 'employer' && (
+          <div style={{ fontFamily: 'Playfair Display, serif' }}>
+            <Input
+              label="Company Name"
+              type="text"
+              placeholder="Acme Corporation"
+              {...register('company_name', {
+                required: selectedRole === 'employer' ? 'Company name is required for employers' : false,
+                minLength: {
+                  value: 2,
+                  message: 'Company name must be at least 2 characters',
+                },
+              })}
+              error={errors.company_name?.message}
+              style={{ fontFamily: 'Playfair Display, serif' }}
+            />
+          </div>
+        )}
 
         <button 
           type="submit" 

@@ -15,6 +15,7 @@ export interface User {
   linkedin_url?: string;
   portfolio_url?: string;
   company_id?: string;
+  company_name?: string;
   job_title?: string;
   is_active?: boolean;
   is_verified?: boolean;
@@ -205,12 +206,10 @@ export interface JobRecommendation {
 }
 
 export interface CandidateRecommendation {
-  user_id: string;
-  application_id: string;
-  candidate_name: string;
+  candidate: User;
   match_score: number;
-  skills_match: string[];
-  resume_url: string;
+  reasons: string[];
+  recommended_at: string;
 }
 
 // Chat/Assistant Types

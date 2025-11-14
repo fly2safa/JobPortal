@@ -145,28 +145,32 @@ export default function JobDetailPage() {
                 <p className="text-gray-700 whitespace-pre-line">{job.description}</p>
               </div>
 
-              <div className="mt-6">
-                <h2 className="text-xl font-semibold mb-3">Requirements</h2>
-                <ul className="space-y-2">
-                  {(Array.isArray(job.requirements) ? job.requirements : [job.requirements]).map((req, index) => (
-                    <li key={index} className="flex items-start">
-                      <Check size={20} className="text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-700">{req}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="mt-6">
-                <h2 className="text-xl font-semibold mb-3">Required Skills</h2>
-                <div className="flex flex-wrap gap-2">
-                  {(Array.isArray(job.skills) ? job.skills : []).map((skill) => (
-                    <Badge key={skill} variant="primary">
-                      {skill}
-                    </Badge>
-                  ))}
+              {job.requirements && (
+                <div className="mt-6">
+                  <h2 className="text-xl font-semibold mb-3">Requirements</h2>
+                  <ul className="space-y-2">
+                    {job.requirements.split('\n').filter(req => req.trim()).map((req, index) => (
+                      <li key={index} className="flex items-start">
+                        <Check size={20} className="text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                        <span className="text-gray-700">{req.trim()}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              </div>
+              )}
+
+              {job.skills && job.skills.length > 0 && (
+                <div className="mt-6">
+                  <h2 className="text-xl font-semibold mb-3">Required Skills</h2>
+                  <div className="flex flex-wrap gap-2">
+                    {job.skills.map((skill) => (
+                      <Badge key={skill} variant="primary">
+                        {skill}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {job.benefits && job.benefits.length > 0 && (
                 <div className="mt-6">
