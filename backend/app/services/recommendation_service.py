@@ -1,30 +1,28 @@
 """
-AI-powered job recommendation service.
-Provides personalized job recommendations for job seekers using vector search and LangChain.
+Job recommendation service using AI to match users with suitable jobs.
 """
 from typing import List, Dict, Any, Optional
-from beanie import PydanticObjectId
+from bson import ObjectId
 from app.models.user import User
 from app.models.job import Job
-from app.ai.chains.recommendation_chain import job_recommendation_chain
-from app.ai.rag.vectorstore import job_vectorstore
+from app.models.resume import Resume
+from app.repositories.job_repository import JobRepository
+from app.ai.providers import get_llm, ProviderError
 from app.core.logging import get_logger
-from langchain.schema import Document
 
 logger = get_logger(__name__)
 
 
 class RecommendationService:
-    """
-    Service for generating AI-powered job recommendations.
-    Combines vector similarity search with LangChain-based analysis.
-    """
+    """Service for generating AI-powered job recommendations."""
+    
+    def __init__(self):
+        self.job_repository = JobRepository()
     
     async def get_recommendations_for_user(
         self,
         user: User,
-        limit: int = 10,
-        use_ai: bool = True
+        limit: int = 10
     ) -> List[Dict[str, Any]]:
         """
         Get personalized job recommendations for a user.
@@ -32,274 +30,232 @@ class RecommendationService:
         Args:
             user: User object
             limit: Maximum number of recommendations
-            use_ai: If True, use AI chain; otherwise use vector search only
             
         Returns:
-            List of recommended jobs with match scores
+            List of job recommendations with match scores
         """
         try:
-            # Build user profile
-            user_profile = self._build_user_profile(user)
+            # Get user's resume for skills and experience
+            resume = await self._get_user_resume(user.id)
             
-            # Get candidate jobs using vector similarity search
-            candidate_jobs = await self._get_candidate_jobs(user_profile, limit * 2)
+            # Get active jobs
+            jobs = await self.job_repository.get_active_jobs(limit=100)
             
-            if not candidate_jobs:
-                logger.info(f"No candidate jobs found for user {user.id}")
+            if not jobs:
+                logger.info(f"No active jobs found for recommendations")
                 return []
             
-            # Use AI chain for intelligent ranking if enabled
-            if use_ai:
-                recommendations = await job_recommendation_chain.get_recommendations(
-                    user_profile=user_profile,
-                    available_jobs=candidate_jobs,
-                    top_k=limit
-                )
-            else:
-                # Fallback to vector similarity scores
-                recommendations = self._vector_based_recommendations(
-                    user_profile,
-                    candidate_jobs,
-                    limit
-                )
+            # Get user profile data
+            user_profile = self._build_user_profile(user, resume)
             
-            logger.info(f"Generated {len(recommendations)} recommendations for user {user.id}")
+            # Score and rank jobs
+            recommendations = await self._score_jobs(user_profile, jobs, limit)
+            
+            logger.info(f"Generated {len(recommendations)} recommendations for user {user.email}")
             return recommendations
             
         except Exception as e:
-            logger.error(f"Error generating recommendations for user {user.id}: {e}")
+            logger.error(f"Error generating recommendations: {e}")
             return []
     
-    async def get_similar_jobs(
-        self,
-        job_id: str,
-        limit: int = 5
-    ) -> List[Dict[str, Any]]:
-        """
-        Get jobs similar to a given job.
-        
-        Args:
-            job_id: ID of the reference job
-            limit: Maximum number of similar jobs
-            
-        Returns:
-            List of similar jobs
-        """
+    async def _get_user_resume(self, user_id: ObjectId) -> Optional[Resume]:
+        """Get user's most recent resume."""
         try:
-            # Fetch the reference job
-            job = await Job.get(PydanticObjectId(job_id))
-            if not job:
-                logger.warning(f"Job {job_id} not found")
-                return []
+            resumes = await Resume.find(
+                Resume.user_id == user_id
+            ).sort(-Resume.created_at).limit(1).to_list()
             
-            # Create search query from job details
-            query = f"{job.title} {job.description} {' '.join(job.required_skills)}"
-            
-            # Perform vector similarity search
-            similar_docs = job_vectorstore.similarity_search_with_score(
-                query=query,
-                k=limit + 1,  # +1 to exclude the reference job itself
-                filter={"status": "active"}
-            )
-            
-            # Filter out the reference job and format results
-            similar_jobs = []
-            for doc, score in similar_docs:
-                doc_job_id = doc.metadata.get("job_id")
-                if doc_job_id != job_id:
-                    similar_jobs.append({
-                        "job_id": doc_job_id,
-                        "job_title": doc.metadata.get("title"),
-                        "company": doc.metadata.get("company_name"),
-                        "similarity_score": float(score),
-                        "location": doc.metadata.get("location")
-                    })
-            
-            return similar_jobs[:limit]
-            
+            return resumes[0] if resumes else None
         except Exception as e:
-            logger.error(f"Error finding similar jobs for {job_id}: {e}")
-            return []
+            logger.error(f"Error fetching user resume: {e}")
+            return None
     
-    async def index_job(self, job: Job):
-        """
-        Index a job in the vector store for recommendations.
-        
-        Args:
-            job: Job object to index
-        """
-        try:
-            # Create document from job
-            doc = Document(
-                page_content=f"{job.title}\n{job.description}\nSkills: {', '.join(job.required_skills)}",
-                metadata={
-                    "job_id": str(job.id),
-                    "title": job.title,
-                    "company_name": job.company_name or "",
-                    "location": job.location or "",
-                    "status": job.status,
-                    "required_skills": job.required_skills
-                }
-            )
-            
-            # Add to vector store
-            job_vectorstore.add_documents([doc], ids=[str(job.id)])
-            logger.info(f"Indexed job {job.id} in vector store")
-            
-        except Exception as e:
-            logger.error(f"Error indexing job {job.id}: {e}")
-    
-    async def index_all_jobs(self):
-        """Index all active jobs in the vector store."""
-        try:
-            # Fetch all active jobs
-            jobs = await Job.find(Job.status == "active").to_list()
-            
-            if not jobs:
-                logger.info("No active jobs to index")
-                return
-            
-            # Create documents
-            documents = []
-            ids = []
-            
-            for job in jobs:
-                doc = Document(
-                    page_content=f"{job.title}\n{job.description}\nSkills: {', '.join(job.required_skills)}",
-                    metadata={
-                        "job_id": str(job.id),
-                        "title": job.title,
-                        "company_name": job.company_name or "",
-                        "location": job.location or "",
-                        "status": job.status,
-                        "required_skills": job.required_skills
-                    }
-                )
-                documents.append(doc)
-                ids.append(str(job.id))
-            
-            # Batch add to vector store
-            job_vectorstore.add_documents(documents, ids=ids)
-            logger.info(f"Indexed {len(jobs)} jobs in vector store")
-            
-        except Exception as e:
-            logger.error(f"Error indexing all jobs: {e}")
-    
-    def _build_user_profile(self, user: User) -> Dict[str, Any]:
-        """Build a user profile dictionary for recommendations."""
-        return {
-            "id": str(user.id),
-            "name": f"{user.first_name} {user.last_name}",
+    def _build_user_profile(self, user: User, resume: Optional[Resume]) -> Dict[str, Any]:
+        """Build user profile for matching."""
+        profile = {
             "email": user.email,
-            "bio": getattr(user, "bio", ""),
-            "skills": getattr(user, "skills", []),
-            "experience": getattr(user, "experience", ""),
-            "preferences": getattr(user, "preferences", {})
+            "full_name": user.full_name,
+            "role": user.role,
+            "skills": [],
+            "experience": "",
+            "education": "",
         }
+        
+        if resume:
+            profile["skills"] = resume.skills_extracted or []
+            profile["experience"] = resume.parsed_data.get("experience", "") if resume.parsed_data else ""
+            profile["education"] = resume.parsed_data.get("education", "") if resume.parsed_data else ""
+        
+        return profile
     
-    async def _get_candidate_jobs(
+    async def _score_jobs(
         self,
         user_profile: Dict[str, Any],
+        jobs: List[Job],
         limit: int
     ) -> List[Dict[str, Any]]:
         """
-        Get candidate jobs using vector similarity search.
+        Score jobs based on user profile using AI.
         
         Args:
             user_profile: User profile data
-            limit: Maximum number of candidates
-            
-        Returns:
-            List of candidate jobs
-        """
-        try:
-            # Build search query from user profile
-            skills = ", ".join(user_profile.get("skills", []))
-            bio = user_profile.get("bio", "")
-            query = f"{bio} Skills: {skills}"
-            
-            # Perform vector search
-            similar_docs = job_vectorstore.similarity_search(
-                query=query,
-                k=limit,
-                filter={"status": "active"}
-            )
-            
-            # Fetch full job details
-            job_ids = [doc.metadata.get("job_id") for doc in similar_docs if doc.metadata.get("job_id")]
-            
-            jobs = []
-            for job_id in job_ids:
-                try:
-                    job = await Job.get(PydanticObjectId(job_id))
-                    if job:
-                        jobs.append({
-                            "id": str(job.id),
-                            "title": job.title,
-                            "company_name": job.company_name,
-                            "location": job.location,
-                            "description": job.description,
-                            "required_skills": job.required_skills,
-                            "salary_range": getattr(job, "salary_range", None)
-                        })
-                except Exception as e:
-                    logger.warning(f"Error fetching job {job_id}: {e}")
-                    continue
-            
-            return jobs
-            
-        except Exception as e:
-            logger.error(f"Error getting candidate jobs: {e}")
-            return []
-    
-    def _vector_based_recommendations(
-        self,
-        user_profile: Dict[str, Any],
-        candidate_jobs: List[Dict[str, Any]],
-        limit: int
-    ) -> List[Dict[str, Any]]:
-        """
-        Generate recommendations based on simple skill matching (fallback).
-        
-        Args:
-            user_profile: User profile data
-            candidate_jobs: List of candidate jobs
+            jobs: List of jobs to score
             limit: Maximum number of recommendations
             
         Returns:
-            List of recommendations
+            List of scored job recommendations
         """
-        user_skills = set(skill.lower() for skill in user_profile.get("skills", []))
-        
         recommendations = []
-        for job in candidate_jobs:
-            job_skills = set(skill.lower() for skill in job.get("required_skills", []))
-            
-            # Calculate skill overlap
-            overlap = len(user_skills & job_skills)
-            total_skills = len(job_skills)
-            
-            if total_skills > 0:
-                match_score = int((overlap / total_skills) * 100)
-            else:
-                match_score = 50  # Default score if no skills listed
-            
-            recommendations.append({
-                "job_id": job.get("id"),
-                "job_title": job.get("title"),
-                "company": job.get("company_name"),
-                "match_score": match_score,
-                "match_reason": f"You have {overlap} matching skills out of {total_skills} required.",
-                "skills_alignment": list(user_skills & job_skills),
-                "growth_potential": "To be determined"
-            })
         
-        # Sort by match score
+        for job in jobs:
+            try:
+                # Calculate match score using AI
+                match_result = await self._calculate_match_score(user_profile, job)
+                
+                if match_result["score"] > 0:
+                    recommendations.append({
+                        "job": job,
+                        "match_score": match_result["score"],
+                        "reasons": match_result["reasons"],
+                    })
+            except Exception as e:
+                logger.error(f"Error scoring job {job.id}: {e}")
+                continue
+        
+        # Sort by match score and return top recommendations
         recommendations.sort(key=lambda x: x["match_score"], reverse=True)
-        
         return recommendations[:limit]
+    
+    async def _calculate_match_score(
+        self,
+        user_profile: Dict[str, Any],
+        job: Job
+    ) -> Dict[str, Any]:
+        """
+        Calculate match score between user and job using AI.
+        
+        Args:
+            user_profile: User profile data
+            job: Job to match against
+            
+        Returns:
+            Dictionary with score and reasons
+        """
+        try:
+            # Build prompt for AI
+            prompt = self._build_matching_prompt(user_profile, job)
+            
+            # Get LLM with automatic fallback
+            llm = get_llm(temperature=0.3, max_tokens=300)
+            
+            messages = [
+                {
+                    "role": "system",
+                    "content": "You are an expert career advisor. Analyze job matches and provide match scores (0-100) with brief reasons."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+            
+            # Invoke LLM
+            response = llm.invoke(messages).content
+            
+            # Parse response
+            match_result = self._parse_match_response(response)
+            
+            return match_result
+            
+        except ProviderError as e:
+            logger.error(f"All AI providers failed for job matching: {e}")
+            # Fallback to simple keyword matching
+            return self._simple_keyword_match(user_profile, job)
+        except Exception as e:
+            logger.error(f"Error calculating match score: {e}")
+            return {"score": 0, "reasons": []}
+    
+    def _build_matching_prompt(self, user_profile: Dict[str, Any], job: Job) -> str:
+        """Build prompt for AI matching."""
+        user_skills = ", ".join(user_profile["skills"][:10]) if user_profile["skills"] else "No skills listed"
+        job_skills = ", ".join(job.skills[:10]) if job.skills else "No specific skills required"
+        
+        prompt = f"""Analyze this job match:
 
+USER PROFILE:
+- Skills: {user_skills}
+- Experience: {user_profile.get('experience', 'Not specified')[:200]}
+- Education: {user_profile.get('education', 'Not specified')[:200]}
 
-# Global recommendation service instance
-recommendation_service = RecommendationService()
+JOB:
+- Title: {job.title}
+- Company: {job.company_name}
+- Required Skills: {job_skills}
+- Description: {job.description[:300]}
+- Location: {job.location}
+- Salary: ${job.salary_min:,} - ${job.salary_max:,}
 
+Provide a match score (0-100) and 2-3 brief reasons. Format:
+SCORE: [number]
+REASONS:
+- [reason 1]
+- [reason 2]
+- [reason 3]"""
+        
+        return prompt
+    
+    def _parse_match_response(self, response: str) -> Dict[str, Any]:
+        """Parse AI response for match score and reasons."""
+        try:
+            lines = response.strip().split('\n')
+            score = 0
+            reasons = []
+            
+            for line in lines:
+                line = line.strip()
+                if line.startswith('SCORE:'):
+                    score_str = line.replace('SCORE:', '').strip()
+                    score = int(''.join(filter(str.isdigit, score_str)))
+                elif line.startswith('-'):
+                    reason = line.lstrip('- ').strip()
+                    if reason:
+                        reasons.append(reason)
+            
+            # Ensure score is within 0-100
+            score = max(0, min(100, score))
+            
+            return {
+                "score": score,
+                "reasons": reasons[:3]  # Limit to 3 reasons
+            }
+        except Exception as e:
+            logger.error(f"Error parsing match response: {e}")
+            return {"score": 0, "reasons": []}
+    
+    def _simple_keyword_match(self, user_profile: Dict[str, Any], job: Job) -> Dict[str, Any]:
+        """Simple keyword-based matching as fallback."""
+        user_skills_lower = set(skill.lower() for skill in user_profile["skills"])
+        job_skills_lower = set(skill.lower() for skill in job.skills)
+        
+        # Calculate skill overlap
+        matching_skills = user_skills_lower.intersection(job_skills_lower)
+        
+        if not job_skills_lower:
+            score = 50  # Neutral score if no skills specified
+        else:
+            score = int((len(matching_skills) / len(job_skills_lower)) * 100)
+        
+        reasons = []
+        if matching_skills:
+            reasons.append(f"Matching skills: {', '.join(list(matching_skills)[:3])}")
+        if score >= 70:
+            reasons.append("Strong skill match")
+        elif score >= 40:
+            reasons.append("Moderate skill match")
+        else:
+            reasons.append("Limited skill overlap")
+        
+        return {
+            "score": score,
+            "reasons": reasons
+        }
