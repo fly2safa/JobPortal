@@ -3,7 +3,7 @@ Base abstract class for AI providers.
 """
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
-from langchain.schema import BaseLanguageModel
+from langchain_core.language_models import BaseLanguageModel
 
 
 class BaseAIProvider(ABC):

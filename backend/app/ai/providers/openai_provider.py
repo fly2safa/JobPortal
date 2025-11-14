@@ -3,7 +3,7 @@ OpenAI provider implementation.
 """
 from typing import Optional
 from langchain_openai import ChatOpenAI
-from langchain.schema import BaseLanguageModel
+from langchain_core.language_models import BaseLanguageModel
 from app.ai.providers.base import BaseAIProvider
 from app.core.logging import get_logger
 

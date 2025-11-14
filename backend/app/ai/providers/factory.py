@@ -2,8 +2,7 @@
 AI Provider Factory with automatic fallback support.
 """
 from typing import Optional
-from langchain.schema import BaseLanguageModel
-from langchain.chat_models.base import BaseChatModel
+from langchain_core.language_models import BaseLanguageModel
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.ai.providers.base import BaseAIProvider
