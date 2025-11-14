@@ -14,6 +14,7 @@ from app.models.resume import Resume
 from app.repositories.job_repository import JobRepository
 from app.ai.providers import get_llm, ProviderError
 from app.ai.rag.vectorstore import get_vector_store
+from app.ai.chains.recommendation_chain import get_recommendation_chain
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -246,7 +247,7 @@ class RecommendationService:
         job: Job
     ) -> Dict[str, Any]:
         """
-        Calculate match score between user and job using AI.
+        Calculate match score between user and job using LangChain recommendation chain.
         
         Args:
             user_profile: User profile data
@@ -256,28 +257,23 @@ class RecommendationService:
             Dictionary with score and reasons
         """
         try:
-            # Build prompt for AI
-            prompt = self._build_matching_prompt(user_profile, job)
+            # Get recommendation chain
+            chain = get_recommendation_chain(temperature=0.3, max_tokens=300)
             
-            # Get LLM with automatic fallback
-            llm = get_llm(temperature=0.3, max_tokens=300)
+            # Prepare job data
+            job_data = {
+                "title": job.title,
+                "company_name": job.company_name,
+                "skills": job.skills,
+                "description": job.description,
+                "experience_level": job.experience_level,
+                "location": job.location,
+                "salary_min": job.salary_min,
+                "salary_max": job.salary_max,
+            }
             
-            messages = [
-                {
-                    "role": "system",
-                    "content": "You are an expert career advisor. Analyze job matches and provide match scores (0-100) with brief reasons."
-                },
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ]
-            
-            # Invoke LLM
-            response = llm.invoke(messages).content
-            
-            # Parse response
-            match_result = self._parse_match_response(response)
+            # Invoke chain
+            match_result = await chain.ainvoke(user_profile, job_data)
             
             return match_result
             
@@ -286,8 +282,9 @@ class RecommendationService:
             # Fallback to simple keyword matching
             return self._simple_keyword_match(user_profile, job)
         except Exception as e:
-            logger.error(f"Error calculating match score: {e}")
-            return {"score": 0, "reasons": []}
+            logger.error(f"Error calculating match score with chain: {e}")
+            # Fallback to simple keyword matching
+            return self._simple_keyword_match(user_profile, job)
     
     def _build_matching_prompt(self, user_profile: Dict[str, Any], job: Job) -> str:
         """Build prompt for AI matching."""
