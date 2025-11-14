@@ -64,7 +64,15 @@ class ApiClient {
 
   // Job endpoints
   async getJobs(params?: any) {
-    const response = await this.client.get('/jobs', { params });
+    // Use search endpoint if any filters are provided
+    const hasFilters = params && Object.keys(params).some(key => params[key]);
+    const endpoint = hasFilters ? '/jobs/search' : '/jobs';
+    const response = await this.client.get(endpoint, { params });
+    return response.data;
+  }
+
+  async searchJobs(params?: any) {
+    const response = await this.client.get('/jobs/search', { params });
     return response.data;
   }
 
