@@ -49,6 +49,12 @@ class Settings(BaseSettings):
     APP_NAME: str = "JobPortal"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
+    
+    # Server Configuration
+    HOST: str = "127.0.0.1"  # Use 0.0.0.0 for Docker/production to accept external connections
+    PORT: int = 8000
+    
+    # CORS
     CORS_ORIGINS: str = "http://localhost:3000"
     
     # File Upload
