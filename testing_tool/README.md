@@ -4,6 +4,8 @@
 
 A standalone GUI application for tracking manual testing progress with **MongoDB database integration**. Perfect for team collaboration where multiple testers can work simultaneously with real-time data synchronization.
 
+> **🚀 v2.0.0 Release**: Major upgrade from file-based to database-integrated testing workflow. See [VERSION_HISTORY.md](VERSION_HISTORY.md) for full release notes.
+
 ![Testing Tracker](screenshot.png)
 
 ---
