@@ -2,18 +2,18 @@
 
 import React, { useState, useEffect } from 'react';
 import { Sparkles, RefreshCw, AlertCircle, Loader2 } from 'lucide-react';
-import DashboardLayout from '@/components/layouts/DashboardLayout';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { RecommendationCard } from '@/features/recommendations';
 import { apiClient } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
+import { JobRecommendation } from '@/types';
 
 export default function RecommendationsPage() {
   useAuth(true); // Require authentication
 
-  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [recommendations, setRecommendations] = useState<JobRecommendation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [useAI, setUseAI] = useState(true);
   const [limit, setLimit] = useState(10);
 
   const fetchRecommendations = async () => {
@@ -21,12 +21,10 @@ export default function RecommendationsPage() {
       setLoading(true);
       setError(null);
       
-      const response = await apiClient.getRecommendations({
-        limit,
-        use_ai: useAI
-      });
+      // Backend returns array directly: List[JobRecommendationResponse]
+      const recommendations = await apiClient.getJobRecommendations(limit);
       
-      setRecommendations(response.recommendations || []);
+      setRecommendations(recommendations || []);
     } catch (err: any) {
       console.error('Error fetching recommendations:', err);
       setError(err.response?.data?.detail || 'Failed to load recommendations. Please try again.');
@@ -37,15 +35,13 @@ export default function RecommendationsPage() {
 
   useEffect(() => {
     fetchRecommendations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleRefresh = () => {
     fetchRecommendations();
   };
 
-  const handleToggleAI = () => {
-    setUseAI(!useAI);
-  };
 
   return (
     <DashboardLayout>
@@ -53,11 +49,11 @@ export default function RecommendationsPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-white mb-2 flex items-center">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2 flex items-center">
               <Sparkles className="mr-3 text-primary" size={32} />
               AI Job Recommendations
             </h1>
-            <p className="text-gray-400">
+            <p className="text-gray-600 dark:text-gray-400">
               Personalized job matches based on your profile, skills, and experience
             </p>
           </div>
@@ -72,27 +68,16 @@ export default function RecommendationsPage() {
           </button>
         </div>
 
-        {/* AI Toggle */}
-        <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-          <div className="flex items-center justify-between">
+        {/* Info Banner */}
+        <div className="bg-primary/10 dark:bg-primary/20 rounded-lg p-4 border border-primary/20">
+          <div className="flex items-start gap-3">
+            <Sparkles className="text-primary flex-shrink-0 mt-0.5" size={20} />
             <div>
-              <h3 className="text-white font-medium mb-1">AI-Powered Ranking</h3>
-              <p className="text-sm text-gray-400">
-                Use advanced AI to analyze and rank job matches
+              <h3 className="text-gray-900 dark:text-gray-100 font-medium mb-1">AI-Powered Recommendations</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                These recommendations use advanced AI with ChromaDB vector similarity search to match your profile, skills, and experience with the best job opportunities.
               </p>
             </div>
-            <button
-              onClick={handleToggleAI}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                useAI ? 'bg-primary' : 'bg-gray-600'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  useAI ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
           </div>
         </div>
 
@@ -111,7 +96,7 @@ export default function RecommendationsPage() {
         {loading && (
           <div className="flex flex-col items-center justify-center py-12">
             <Loader2 className="animate-spin text-primary mb-4" size={48} />
-            <p className="text-gray-400">Analyzing your profile and finding the best matches...</p>
+            <p className="text-gray-600 dark:text-gray-400">Analyzing your profile and finding the best matches...</p>
           </div>
         )}
 
@@ -119,17 +104,17 @@ export default function RecommendationsPage() {
         {!loading && !error && recommendations.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-white">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                 {recommendations.length} Recommended {recommendations.length === 1 ? 'Job' : 'Jobs'}
               </h2>
-              <span className="text-sm text-gray-400">
-                {useAI ? 'AI-Powered Rankings' : 'Skill-Based Rankings'}
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                AI-Powered Rankings
               </span>
             </div>
             
             <div className="grid gap-4">
               {recommendations.map((rec, index) => (
-                <RecommendationCard key={rec.job_id || index} recommendation={rec} />
+                <RecommendationCard key={rec.job?.id || index} recommendation={rec} />
               ))}
             </div>
           </div>
@@ -137,10 +122,10 @@ export default function RecommendationsPage() {
 
         {/* Empty State */}
         {!loading && !error && recommendations.length === 0 && (
-          <div className="bg-gray-800 rounded-lg p-12 text-center border border-gray-700">
-            <Sparkles className="mx-auto text-gray-600 mb-4" size={48} />
-            <h3 className="text-xl font-semibold text-white mb-2">No Recommendations Yet</h3>
-            <p className="text-gray-400 mb-6 max-w-md mx-auto">
+          <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-12 text-center border border-gray-200 dark:border-gray-700">
+            <Sparkles className="mx-auto text-gray-400 dark:text-gray-600 mb-4" size={48} />
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Recommendations Yet</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
               We couldn't find any job recommendations at this time. Try updating your profile with more skills and experience to get better matches.
             </p>
             <button
