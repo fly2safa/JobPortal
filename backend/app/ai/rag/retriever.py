@@ -1,87 +1,117 @@
 """
-Document retriever for RAG system.
-Retrieves relevant documents based on user queries.
+Document retriever for RAG system using vector similarity search.
+Retrieves relevant documents based on semantic similarity using ChromaDB.
 """
-from typing import List, Optional
-from app.ai.rag.loader import Document
+from typing import List, Optional, Dict, Any
+from langchain.schema import Document
+from app.ai.rag.vectorstore import docs_vectorstore
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class Retriever:
     """
-    Simple keyword-based retriever for finding relevant documents.
-    In production, this would use vector embeddings and similarity search.
+    Vector-based retriever using ChromaDB for semantic similarity search.
+    Replaces keyword-based search with embedding-based retrieval.
     """
     
-    def __init__(self, documents: List[Document]):
+    def __init__(self, documents: Optional[List[Document]] = None):
         """
-        Initialize retriever with documents.
+        Initialize retriever with optional documents.
         
         Args:
-            documents: List of documents to search
+            documents: Optional list of documents to index (if not already indexed)
         """
-        self.documents = documents
+        self.vectorstore = docs_vectorstore
+        
+        # Index documents if provided and collection is empty
+        if documents and self.vectorstore.get_collection_count() == 0:
+            try:
+                self.vectorstore.add_documents(documents)
+                logger.info(f"Indexed {len(documents)} documents in vector store")
+            except Exception as e:
+                logger.error(f"Failed to index documents: {e}")
     
-    def retrieve(self, query: str, top_k: int = 3) -> List[Document]:
+    def retrieve(
+        self,
+        query: str,
+        top_k: int = 3,
+        filter: Optional[Dict[str, Any]] = None
+    ) -> List[Document]:
         """
-        Retrieve top-k most relevant documents for a query.
+        Retrieve top-k most relevant documents using semantic similarity.
         
         Args:
             query: User query
             top_k: Number of documents to retrieve
+            filter: Optional metadata filter (e.g., {"category": "job_seeker"})
             
         Returns:
             List of relevant documents
         """
-        # Simple keyword-based scoring
-        query_lower = query.lower()
-        query_words = set(query_lower.split())
-        
-        scored_docs = []
-        
-        for doc in self.documents:
-            content_lower = doc.page_content.lower()
+        try:
+            # Perform vector similarity search
+            results = self.vectorstore.similarity_search(
+                query=query,
+                k=top_k,
+                filter=filter
+            )
             
-            # Calculate relevance score
-            score = 0
+            logger.info(f"Retrieved {len(results)} documents for query: {query[:50]}...")
+            return results
             
-            # Exact phrase match (highest weight)
-            if query_lower in content_lower:
-                score += 10
-            
-            # Individual word matches
-            for word in query_words:
-                if len(word) > 3:  # Ignore short words
-                    count = content_lower.count(word)
-                    score += count * 2
-            
-            # Category boost based on query keywords
-            metadata = doc.metadata
-            if self._is_job_seeker_query(query_lower) and metadata.get("category") == "job_seeker":
-                score += 3
-            elif self._is_employer_query(query_lower) and metadata.get("category") == "employer":
-                score += 3
-            elif self._is_feature_query(query_lower) and metadata.get("category") == "features":
-                score += 3
-            
-            if score > 0:
-                scored_docs.append((score, doc))
-        
-        # Sort by score and return top-k
-        scored_docs.sort(key=lambda x: x[0], reverse=True)
-        return [doc for score, doc in scored_docs[:top_k]]
+        except Exception as e:
+            logger.error(f"Error retrieving documents: {e}")
+            # Fallback to empty results
+            return []
     
-    def _is_job_seeker_query(self, query: str) -> bool:
-        """Check if query is related to job seekers."""
-        keywords = ["apply", "application", "resume", "job search", "find job", "career"]
-        return any(keyword in query for keyword in keywords)
+    def retrieve_with_scores(
+        self,
+        query: str,
+        top_k: int = 3,
+        filter: Optional[Dict[str, Any]] = None
+    ) -> List[tuple[Document, float]]:
+        """
+        Retrieve documents with relevance scores.
+        
+        Args:
+            query: User query
+            top_k: Number of documents to retrieve
+            filter: Optional metadata filter
+            
+        Returns:
+            List of (document, score) tuples
+        """
+        try:
+            results = self.vectorstore.similarity_search_with_score(
+                query=query,
+                k=top_k,
+                filter=filter
+            )
+            
+            logger.info(f"Retrieved {len(results)} documents with scores")
+            return results
+            
+        except Exception as e:
+            logger.error(f"Error retrieving documents with scores: {e}")
+            return []
     
-    def _is_employer_query(self, query: str) -> bool:
-        """Check if query is related to employers."""
-        keywords = ["post job", "employer", "candidate", "hire", "review application", "shortlist"]
-        return any(keyword in query for keyword in keywords)
-    
-    def _is_feature_query(self, query: str) -> bool:
-        """Check if query is related to AI features."""
-        keywords = ["ai", "recommendation", "cover letter", "parse", "match"]
-        return any(keyword in query for keyword in keywords)
+    def add_documents(self, documents: List[Document]) -> List[str]:
+        """
+        Add new documents to the vector store.
+        
+        Args:
+            documents: List of documents to add
+            
+        Returns:
+            List of document IDs
+        """
+        try:
+            doc_ids = self.vectorstore.add_documents(documents)
+            logger.info(f"Added {len(documents)} documents to retriever")
+            return doc_ids
+        except Exception as e:
+            logger.error(f"Error adding documents: {e}")
+            return []
 
