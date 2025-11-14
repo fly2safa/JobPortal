@@ -1,190 +1,211 @@
 """
-LangChain recommendation chain for AI-powered job matching.
-Matches job seekers with relevant jobs based on their profile, skills, and preferences.
+LangChain prompt chain for AI-powered job recommendations.
+
+This module implements a LangChain chain that analyzes user profiles and job descriptions
+to generate match scores and recommendations.
 """
-from typing import List, Dict, Any, Optional
-from langchain.chains import LLMChain
-from langchain.prompts import PromptTemplate
-from langchain_openai import ChatOpenAI
-from app.core.config import settings
+from typing import Dict, Any, List
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import JsonOutputParser
+from langchain_core.runnables import RunnablePassthrough
+from pydantic import BaseModel, Field
+from app.ai.providers import get_llm
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
 
-class JobRecommendationChain:
+class JobMatchOutput(BaseModel):
+    """Output schema for job matching."""
+    match_score: int = Field(
+        description="Match score from 0 to 100 indicating how well the job matches the user's profile",
+        ge=0,
+        le=100
+    )
+    reasons: List[str] = Field(
+        description="List of 2-3 specific reasons explaining why this job is a good match",
+        min_items=1,
+        max_items=3
+    )
+
+
+class RecommendationChain:
     """
-    LangChain-based recommendation system for matching jobs to job seekers.
-    Uses GPT-4o to analyze user profiles and recommend relevant jobs.
+    LangChain chain for generating job recommendations.
+    
+    This chain takes a user profile and job description as input and outputs
+    a structured match score with detailed reasons.
     """
     
-    def __init__(self):
-        """Initialize the recommendation chain with LLM and prompt template."""
-        # Initialize OpenAI LLM
-        self.llm = ChatOpenAI(
-            model="gpt-4o",
-            temperature=0.3,  # Lower temperature for more consistent recommendations
-            openai_api_key=settings.OPENAI_API_KEY
-        )
-        
-        # Define prompt template for job recommendations
-        self.prompt_template = PromptTemplate(
-            input_variables=["user_profile", "user_skills", "user_experience", "job_listings"],
-            template="""You are an AI career advisor helping job seekers find the best job matches.
-
-User Profile:
-{user_profile}
-
-User Skills:
-{user_skills}
-
-User Experience:
-{user_experience}
-
-Available Jobs:
-{job_listings}
-
-Task: Analyze the user's profile, skills, and experience, then rank the available jobs from most to least relevant. For each recommended job, provide:
-1. Job title and company
-2. Match score (0-100)
-3. Why it's a good match (2-3 sentences)
-4. Skills alignment
-5. Growth potential
-
-Format your response as a JSON array of recommendations, ordered by match score (highest first).
-Only recommend jobs with a match score of 60 or higher.
-
-Example format:
-[
-  {{
-    "job_id": "job123",
-    "job_title": "Senior Software Engineer",
-    "company": "Tech Corp",
-    "match_score": 95,
-    "match_reason": "Your 5 years of Python experience and expertise in FastAPI align perfectly with this role. The position offers leadership opportunities that match your career goals.",
-    "skills_alignment": ["Python", "FastAPI", "MongoDB", "Docker"],
-    "growth_potential": "High - Senior role with team leadership responsibilities"
-  }}
-]
-
-Provide your recommendations:"""
-        )
-        
-        # Create the LangChain
-        self.chain = LLMChain(
-            llm=self.llm,
-            prompt=self.prompt_template,
-            verbose=False
-        )
-        
-        logger.info("Initialized JobRecommendationChain with GPT-4o")
-    
-    async def get_recommendations(
-        self,
-        user_profile: Dict[str, Any],
-        available_jobs: List[Dict[str, Any]],
-        top_k: int = 5
-    ) -> List[Dict[str, Any]]:
+    def __init__(self, temperature: float = 0.3, max_tokens: int = 300):
         """
-        Get personalized job recommendations for a user.
+        Initialize the recommendation chain.
         
         Args:
-            user_profile: User profile data (name, bio, preferences, etc.)
-            available_jobs: List of available job postings
-            top_k: Number of top recommendations to return
+            temperature: LLM temperature for response generation
+            max_tokens: Maximum tokens for LLM response
+        """
+        self.temperature = temperature
+        self.max_tokens = max_tokens
+        self.parser = JsonOutputParser(pydantic_object=JobMatchOutput)
+        self.chain = self._build_chain()
+    
+    def _build_chain(self):
+        """Build the LangChain prompt chain."""
+        # Define the prompt template
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", """You are an expert career advisor and job matching AI.
+Your task is to analyze a user's profile against a job description and provide:
+1. A match score from 0-100 (higher = better match)
+2. 2-3 specific, actionable reasons explaining the match
+
+Consider:
+- Skill alignment (technical and soft skills)
+- Experience level match
+- Education requirements
+- Career progression fit
+- Industry relevance
+
+{format_instructions}"""),
+            ("user", """Analyze this job match:
+
+USER PROFILE:
+Name: {user_name}
+Skills: {user_skills}
+Experience: {user_experience}
+Education: {user_education}
+
+JOB:
+Title: {job_title}
+Company: {job_company}
+Required Skills: {job_skills}
+Description: {job_description}
+Experience Level: {job_experience_level}
+Location: {job_location}
+Salary: ${job_salary_min:,} - ${job_salary_max:,}
+
+Provide your analysis as JSON with match_score and reasons.""")
+        ])
+        
+        # Build the chain: prompt -> LLM -> parser
+        chain = (
+            {
+                "user_name": lambda x: x["user_name"],
+                "user_skills": lambda x: x["user_skills"],
+                "user_experience": lambda x: x["user_experience"],
+                "user_education": lambda x: x["user_education"],
+                "job_title": lambda x: x["job_title"],
+                "job_company": lambda x: x["job_company"],
+                "job_skills": lambda x: x["job_skills"],
+                "job_description": lambda x: x["job_description"],
+                "job_experience_level": lambda x: x["job_experience_level"],
+                "job_location": lambda x: x["job_location"],
+                "job_salary_min": lambda x: x["job_salary_min"],
+                "job_salary_max": lambda x: x["job_salary_max"],
+                "format_instructions": lambda x: self.parser.get_format_instructions(),
+            }
+            | prompt
+            | get_llm(temperature=self.temperature, max_tokens=self.max_tokens)
+            | self.parser
+        )
+        
+        return chain
+    
+    def invoke(self, user_profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Invoke the recommendation chain.
+        
+        Args:
+            user_profile: Dictionary containing user profile data
+            job: Dictionary containing job data
             
         Returns:
-            List of recommended jobs with match scores and reasons
+            Dictionary with match_score and reasons
         """
         try:
-            # Format user data
-            user_skills = ", ".join(user_profile.get("skills", []))
-            user_experience = user_profile.get("experience", "Not specified")
-            user_bio = user_profile.get("bio", "No bio provided")
+            # Prepare input data
+            input_data = {
+                "user_name": user_profile.get("full_name", "Unknown"),
+                "user_skills": ", ".join(user_profile.get("skills", [])[:10]) or "No skills listed",
+                "user_experience": str(user_profile.get("experience", "Not specified"))[:200],
+                "user_education": str(user_profile.get("education", "Not specified"))[:200],
+                "job_title": job.get("title", ""),
+                "job_company": job.get("company_name", ""),
+                "job_skills": ", ".join(job.get("skills", [])[:10]) or "No specific skills required",
+                "job_description": str(job.get("description", ""))[:300],
+                "job_experience_level": job.get("experience_level", "Not specified"),
+                "job_location": job.get("location", ""),
+                "job_salary_min": job.get("salary_min", 0),
+                "job_salary_max": job.get("salary_max", 0),
+            }
             
-            # Format job listings
-            job_listings_text = self._format_jobs(available_jobs)
+            # Invoke the chain
+            result = self.chain.invoke(input_data)
             
-            # Run the chain
-            result = await self.chain.arun(
-                user_profile=user_bio,
-                user_skills=user_skills,
-                user_experience=user_experience,
-                job_listings=job_listings_text
-            )
+            logger.debug(f"Recommendation chain generated match score: {result.get('match_score')}")
             
-            # Parse the result (expecting JSON)
-            import json
-            recommendations = json.loads(result)
-            
-            # Limit to top_k
-            recommendations = recommendations[:top_k]
-            
-            logger.info(f"Generated {len(recommendations)} job recommendations")
-            return recommendations
+            return {
+                "score": result.get("match_score", 0),
+                "reasons": result.get("reasons", [])
+            }
             
         except Exception as e:
-            logger.error(f"Error generating job recommendations: {e}")
-            # Return fallback recommendations based on simple matching
-            return self._fallback_recommendations(user_profile, available_jobs, top_k)
+            logger.error(f"Error in recommendation chain: {e}")
+            raise
     
-    def _format_jobs(self, jobs: List[Dict[str, Any]]) -> str:
-        """Format job listings for the prompt."""
-        formatted = []
-        for i, job in enumerate(jobs, 1):
-            job_text = f"""
-Job {i}:
-- ID: {job.get('id', 'N/A')}
-- Title: {job.get('title', 'N/A')}
-- Company: {job.get('company_name', 'N/A')}
-- Location: {job.get('location', 'N/A')}
-- Description: {job.get('description', 'N/A')[:200]}...
-- Required Skills: {', '.join(job.get('required_skills', []))}
-- Salary Range: {job.get('salary_range', 'Not specified')}
-"""
-            formatted.append(job_text)
+    async def ainvoke(self, user_profile: Dict[str, Any], job: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Async invoke the recommendation chain.
         
-        return "\n".join(formatted)
-    
-    def _fallback_recommendations(
-        self,
-        user_profile: Dict[str, Any],
-        available_jobs: List[Dict[str, Any]],
-        top_k: int
-    ) -> List[Dict[str, Any]]:
-        """Provide fallback recommendations using simple skill matching."""
-        user_skills = set(skill.lower() for skill in user_profile.get("skills", []))
-        
-        scored_jobs = []
-        for job in available_jobs:
-            job_skills = set(skill.lower() for skill in job.get("required_skills", []))
+        Args:
+            user_profile: Dictionary containing user profile data
+            job: Dictionary containing job data
             
-            # Calculate skill overlap
-            overlap = len(user_skills & job_skills)
-            total_skills = len(job_skills)
+        Returns:
+            Dictionary with match_score and reasons
+        """
+        try:
+            # Prepare input data
+            input_data = {
+                "user_name": user_profile.get("full_name", "Unknown"),
+                "user_skills": ", ".join(user_profile.get("skills", [])[:10]) or "No skills listed",
+                "user_experience": str(user_profile.get("experience", "Not specified"))[:200],
+                "user_education": str(user_profile.get("education", "Not specified"))[:200],
+                "job_title": job.get("title", ""),
+                "job_company": job.get("company_name", ""),
+                "job_skills": ", ".join(job.get("skills", [])[:10]) or "No specific skills required",
+                "job_description": str(job.get("description", ""))[:300],
+                "job_experience_level": job.get("experience_level", "Not specified"),
+                "job_location": job.get("location", ""),
+                "job_salary_min": job.get("salary_min", 0),
+                "job_salary_max": job.get("salary_max", 0),
+            }
             
-            if total_skills > 0:
-                match_score = int((overlap / total_skills) * 100)
-            else:
-                match_score = 0
+            # Invoke the chain asynchronously
+            result = await self.chain.ainvoke(input_data)
             
-            if match_score >= 30:  # Lower threshold for fallback
-                scored_jobs.append({
-                    "job_id": job.get("id"),
-                    "job_title": job.get("title"),
-                    "company": job.get("company_name"),
-                    "match_score": match_score,
-                    "match_reason": f"You have {overlap} matching skills out of {total_skills} required.",
-                    "skills_alignment": list(user_skills & job_skills),
-                    "growth_potential": "To be determined"
-                })
-        
-        # Sort by match score
-        scored_jobs.sort(key=lambda x: x["match_score"], reverse=True)
-        
-        return scored_jobs[:top_k]
+            logger.debug(f"Recommendation chain generated match score: {result.get('match_score')}")
+            
+            return {
+                "score": result.get("match_score", 0),
+                "reasons": result.get("reasons", [])
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in recommendation chain: {e}")
+            raise
 
 
-# Global recommendation chain instance
-job_recommendation_chain = JobRecommendationChain()
+def get_recommendation_chain(temperature: float = 0.3, max_tokens: int = 300) -> RecommendationChain:
+    """
+    Factory function to get a recommendation chain instance.
+    
+    Args:
+        temperature: LLM temperature for response generation
+        max_tokens: Maximum tokens for LLM response
+        
+    Returns:
+        RecommendationChain instance
+    """
+    return RecommendationChain(temperature=temperature, max_tokens=max_tokens)
 
