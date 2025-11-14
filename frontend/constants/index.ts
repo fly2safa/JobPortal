@@ -15,9 +15,11 @@ export const JOB_TYPES = [
 
 export const EXPERIENCE_LEVELS = [
   { value: 'entry', label: 'Entry Level' },
+  { value: 'junior', label: 'Junior' },
   { value: 'mid', label: 'Mid Level' },
   { value: 'senior', label: 'Senior Level' },
   { value: 'lead', label: 'Lead/Principal' },
+  { value: 'executive', label: 'Executive' },
 ] as const;
 
 export const APPLICATION_STATUS = {
