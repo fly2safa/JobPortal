@@ -1,190 +1,337 @@
 """
-ChromaDB vector store for semantic search and retrieval.
-Stores document embeddings and performs similarity search.
+Vector store for similarity search using embeddings.
+Provides in-memory vector storage and cosine similarity search.
 """
-from typing import List, Optional, Dict, Any
-import chromadb
-from chromadb.config import Settings
-from langchain_community.vectorstores import Chroma
-from langchain.schema import Document
-from app.ai.rag.embeddings import embedding_service
+from typing import List, Dict, Any, Optional, Tuple
+import numpy as np
+from app.ai.rag.embeddings import embeddings_handler
 from app.core.logging import get_logger
-from pathlib import Path
 
 logger = get_logger(__name__)
 
 
 class VectorStore:
     """
-    ChromaDB-based vector store for document embeddings and similarity search.
+    In-memory vector store for similarity search.
+    Stores embeddings and performs cosine similarity calculations.
     """
     
-    def __init__(
+    def __init__(self):
+        """Initialize the vector store."""
+        self.vectors: List[np.ndarray] = []
+        self.metadata: List[Dict[str, Any]] = []
+        self.ids: List[str] = []
+    
+    def add_vectors(
         self,
-        collection_name: str = "jobportal_docs",
-        persist_directory: Optional[str] = None
+        vectors: List[List[float]],
+        metadata: List[Dict[str, Any]],
+        ids: List[str]
     ):
         """
-        Initialize ChromaDB vector store.
+        Add vectors to the store.
         
         Args:
-            collection_name: Name of the ChromaDB collection
-            persist_directory: Directory to persist the database (None for in-memory)
+            vectors: List of embedding vectors
+            metadata: List of metadata dictionaries (one per vector)
+            ids: List of unique IDs (one per vector)
         """
-        self.collection_name = collection_name
+        if len(vectors) != len(metadata) or len(vectors) != len(ids):
+            raise ValueError("vectors, metadata, and ids must have the same length")
         
-        # Set up persist directory
-        if persist_directory is None:
-            persist_directory = str(Path(__file__).parent.parent.parent / "data" / "chroma_db")
+        for vector, meta, vector_id in zip(vectors, metadata, ids):
+            if vector is None:
+                logger.warning(f"Skipping None vector for id {vector_id}")
+                continue
+            
+            self.vectors.append(np.array(vector))
+            self.metadata.append(meta)
+            self.ids.append(vector_id)
         
-        self.persist_directory = persist_directory
-        Path(self.persist_directory).mkdir(parents=True, exist_ok=True)
-        
-        try:
-            # Initialize ChromaDB client
-            self.client = chromadb.PersistentClient(
-                path=self.persist_directory,
-                settings=Settings(
-                    anonymized_telemetry=False,
-                    allow_reset=True
-                )
-            )
-            
-            # Initialize LangChain Chroma wrapper
-            self.vectorstore = Chroma(
-                client=self.client,
-                collection_name=self.collection_name,
-                embedding_function=embedding_service.embeddings,
-                persist_directory=self.persist_directory
-            )
-            
-            logger.info(f"Initialized ChromaDB vector store: {collection_name} at {persist_directory}")
-            
-        except Exception as e:
-            logger.error(f"Failed to initialize ChromaDB: {e}")
-            raise
+        logger.info(f"Added {len(vectors)} vectors to store (total: {len(self.vectors)})")
     
-    def add_documents(
+    def add_vector(
         self,
-        documents: List[Document],
-        ids: Optional[List[str]] = None
-    ) -> List[str]:
+        vector: List[float],
+        metadata: Dict[str, Any],
+        vector_id: str
+    ):
         """
-        Add documents to the vector store.
+        Add a single vector to the store.
         
         Args:
-            documents: List of LangChain Document objects
-            ids: Optional list of document IDs
-            
-        Returns:
-            List of document IDs
+            vector: Embedding vector
+            metadata: Metadata dictionary
+            vector_id: Unique ID
         """
-        try:
-            doc_ids = self.vectorstore.add_documents(documents=documents, ids=ids)
-            logger.info(f"Added {len(documents)} documents to vector store")
-            return doc_ids
-        except Exception as e:
-            logger.error(f"Error adding documents to vector store: {e}")
-            raise
+        if vector is None:
+            logger.warning(f"Skipping None vector for id {vector_id}")
+            return
+        
+        self.vectors.append(np.array(vector))
+        self.metadata.append(metadata)
+        self.ids.append(vector_id)
     
     def similarity_search(
         self,
-        query: str,
-        k: int = 4,
-        filter: Optional[Dict[str, Any]] = None
-    ) -> List[Document]:
+        query_vector: List[float],
+        k: int = 10,
+        filter_metadata: Optional[Dict[str, Any]] = None
+    ) -> List[Tuple[Dict[str, Any], float, str]]:
         """
-        Perform similarity search for a query.
+        Search for similar vectors using cosine similarity.
         
         Args:
-            query: Search query
+            query_vector: Query embedding vector
             k: Number of results to return
-            filter: Optional metadata filter
+            filter_metadata: Optional metadata filters
             
         Returns:
-            List of relevant documents
+            List of (metadata, similarity_score, id) tuples, sorted by score
         """
-        try:
-            results = self.vectorstore.similarity_search(
-                query=query,
-                k=k,
-                filter=filter
-            )
-            logger.info(f"Similarity search returned {len(results)} results for query: {query[:50]}...")
-            return results
-        except Exception as e:
-            logger.error(f"Error performing similarity search: {e}")
+        if not self.vectors:
+            logger.warning("Vector store is empty")
             return []
+        
+        if query_vector is None:
+            logger.error("Query vector is None")
+            return []
+        
+        # Convert query to numpy array
+        query_np = np.array(query_vector)
+        
+        # Calculate cosine similarities
+        similarities = []
+        for i, vector in enumerate(self.vectors):
+            # Apply metadata filters if provided
+            if filter_metadata:
+                match = all(
+                    self.metadata[i].get(key) == value
+                    for key, value in filter_metadata.items()
+                )
+                if not match:
+                    continue
+            
+            # Cosine similarity
+            similarity = self._cosine_similarity(query_np, vector)
+            similarities.append((self.metadata[i], similarity, self.ids[i], i))
+        
+        # Sort by similarity (descending)
+        similarities.sort(key=lambda x: x[1], reverse=True)
+        
+        # Return top k results (metadata, score, id)
+        results = [(meta, score, vector_id) for meta, score, vector_id, _ in similarities[:k]]
+        
+        logger.debug(f"Found {len(results)} similar vectors (requested: {k})")
+        return results
     
-    def similarity_search_with_score(
-        self,
-        query: str,
-        k: int = 4,
-        filter: Optional[Dict[str, Any]] = None
-    ) -> List[tuple[Document, float]]:
+    def _cosine_similarity(self, vec1: np.ndarray, vec2: np.ndarray) -> float:
         """
-        Perform similarity search with relevance scores.
+        Calculate cosine similarity between two vectors.
         
         Args:
-            query: Search query
-            k: Number of results to return
-            filter: Optional metadata filter
+            vec1: First vector
+            vec2: Second vector
             
         Returns:
-            List of (document, score) tuples
+            Similarity score (0-1)
         """
-        try:
-            results = self.vectorstore.similarity_search_with_score(
-                query=query,
-                k=k,
-                filter=filter
-            )
-            logger.info(f"Similarity search with scores returned {len(results)} results")
-            return results
-        except Exception as e:
-            logger.error(f"Error performing similarity search with scores: {e}")
-            return []
-    
-    def delete_collection(self):
-        """Delete the entire collection."""
-        try:
-            self.client.delete_collection(name=self.collection_name)
-            logger.info(f"Deleted collection: {self.collection_name}")
-        except Exception as e:
-            logger.warning(f"Error deleting collection: {e}")
-    
-    def get_collection_count(self) -> int:
-        """
-        Get the number of documents in the collection.
+        # Handle zero vectors
+        norm1 = np.linalg.norm(vec1)
+        norm2 = np.linalg.norm(vec2)
         
+        if norm1 == 0 or norm2 == 0:
+            return 0.0
+        
+        # Cosine similarity
+        similarity = np.dot(vec1, vec2) / (norm1 * norm2)
+        
+        # Ensure result is in [0, 1] range
+        # (cosine similarity is in [-1, 1], we map to [0, 1])
+        return float((similarity + 1) / 2)
+    
+    def get_by_id(self, vector_id: str) -> Optional[Tuple[np.ndarray, Dict[str, Any]]]:
+        """
+        Get a vector and its metadata by ID.
+        
+        Args:
+            vector_id: Vector ID
+            
         Returns:
-            Number of documents
+            (vector, metadata) tuple or None if not found
         """
         try:
-            collection = self.client.get_collection(name=self.collection_name)
-            return collection.count()
-        except Exception as e:
-            logger.error(f"Error getting collection count: {e}")
+            idx = self.ids.index(vector_id)
+            return self.vectors[idx], self.metadata[idx]
+        except ValueError:
+            return None
+    
+    def remove_by_id(self, vector_id: str) -> bool:
+        """
+        Remove a vector by ID.
+        
+        Args:
+            vector_id: Vector ID
+            
+        Returns:
+            True if removed, False if not found
+        """
+        try:
+            idx = self.ids.index(vector_id)
+            del self.vectors[idx]
+            del self.metadata[idx]
+            del self.ids[idx]
+            logger.debug(f"Removed vector {vector_id}")
+            return True
+        except ValueError:
+            return False
+    
+    def clear(self):
+        """Clear all vectors from the store."""
+        self.vectors = []
+        self.metadata = []
+        self.ids = []
+        logger.info("Vector store cleared")
+    
+    def size(self) -> int:
+        """Get the number of vectors in the store."""
+        return len(self.vectors)
+    
+    def update_metadata(self, vector_id: str, metadata: Dict[str, Any]) -> bool:
+        """
+        Update metadata for a vector.
+        
+        Args:
+            vector_id: Vector ID
+            metadata: New metadata
+            
+        Returns:
+            True if updated, False if not found
+        """
+        try:
+            idx = self.ids.index(vector_id)
+            self.metadata[idx] = metadata
+            return True
+        except ValueError:
+            return False
+
+
+class JobVectorStore:
+    """
+    Specialized vector store for job postings.
+    Manages job embeddings and similarity search.
+    """
+    
+    def __init__(self):
+        """Initialize the job vector store."""
+        self.store = VectorStore()
+        self.embeddings = embeddings_handler
+    
+    async def add_job(self, job: Dict[str, Any]) -> bool:
+        """
+        Add a job to the vector store.
+        
+        Args:
+            job: Job dictionary with details
+            
+        Returns:
+            True if added successfully
+        """
+        job_id = str(job.get('id', job.get('_id')))
+        
+        # Create embedding
+        embedding = await self.embeddings.create_job_embedding(job)
+        if not embedding:
+            logger.error(f"Failed to create embedding for job {job_id}")
+            return False
+        
+        # Add to store
+        self.store.add_vector(
+            vector=embedding,
+            metadata=job,
+            vector_id=job_id
+        )
+        
+        logger.debug(f"Added job {job_id} to vector store")
+        return True
+    
+    async def add_jobs_batch(self, jobs: List[Dict[str, Any]]) -> int:
+        """
+        Add multiple jobs to the vector store.
+        
+        Args:
+            jobs: List of job dictionaries
+            
+        Returns:
+            Number of jobs added successfully
+        """
+        if not jobs:
             return 0
+        
+        # Create embeddings for all jobs
+        embedding_texts = [self.embeddings.create_job_embedding_text(job) for job in jobs]
+        embeddings = await self.embeddings.create_embeddings_batch(embedding_texts)
+        
+        # Add to store
+        vectors = []
+        metadata = []
+        ids = []
+        
+        for job, embedding in zip(jobs, embeddings):
+            if embedding:
+                job_id = str(job.get('id', job.get('_id')))
+                vectors.append(embedding)
+                metadata.append(job)
+                ids.append(job_id)
+        
+        if vectors:
+            self.store.add_vectors(vectors, metadata, ids)
+        
+        logger.info(f"Added {len(vectors)}/{len(jobs)} jobs to vector store")
+        return len(vectors)
     
-    def as_retriever(self, search_kwargs: Optional[Dict[str, Any]] = None):
+    async def find_similar_jobs(
+        self,
+        user_profile: Dict[str, Any],
+        k: int = 10,
+        filters: Optional[Dict[str, Any]] = None
+    ) -> List[Tuple[Dict[str, Any], float]]:
         """
-        Get a LangChain retriever interface.
+        Find jobs similar to a user profile.
         
         Args:
-            search_kwargs: Optional search parameters (e.g., {'k': 4})
+            user_profile: User profile dictionary
+            k: Number of results
+            filters: Optional metadata filters
             
         Returns:
-            LangChain retriever
+            List of (job, similarity_score) tuples
         """
-        if search_kwargs is None:
-            search_kwargs = {'k': 4}
+        # Create user profile embedding
+        embedding = await self.embeddings.create_user_profile_embedding(user_profile)
+        if not embedding:
+            logger.error("Failed to create user profile embedding")
+            return []
         
-        return self.vectorstore.as_retriever(search_kwargs=search_kwargs)
+        # Search for similar jobs
+        results = self.store.similarity_search(
+            query_vector=embedding,
+            k=k,
+            filter_metadata=filters
+        )
+        
+        # Return (job, score) tuples
+        return [(metadata, score) for metadata, score, _ in results]
+    
+    def clear(self):
+        """Clear all jobs from the store."""
+        self.store.clear()
+    
+    def size(self) -> int:
+        """Get the number of jobs in the store."""
+        return self.store.size()
 
 
-# Global vector store instances
-job_vectorstore = VectorStore(collection_name="jobs", persist_directory=None)
-user_vectorstore = VectorStore(collection_name="users", persist_directory=None)
-docs_vectorstore = VectorStore(collection_name="docs", persist_directory=None)
+# Global job vector store instance
+job_vector_store = JobVectorStore()
 

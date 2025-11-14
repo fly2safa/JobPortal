@@ -1,190 +1,228 @@
 """
-LangChain recommendation chain for AI-powered job matching.
-Matches job seekers with relevant jobs based on their profile, skills, and preferences.
+LangChain-based recommendation chain for job and candidate matching.
+Uses prompts and LLM to generate intelligent recommendations.
 """
 from typing import List, Dict, Any, Optional
-from langchain.chains import LLMChain
-from langchain.prompts import PromptTemplate
-from langchain_openai import ChatOpenAI
-from app.core.config import settings
+from app.ai.providers.openai_client import openai_client
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
 
-class JobRecommendationChain:
+class RecommendationChain:
     """
-    LangChain-based recommendation system for matching jobs to job seekers.
-    Uses GPT-4o to analyze user profiles and recommend relevant jobs.
+    Chain for generating job recommendations with reasoning.
+    Uses OpenAI to analyze user profiles and job descriptions.
     """
     
     def __init__(self):
-        """Initialize the recommendation chain with LLM and prompt template."""
-        # Initialize OpenAI LLM
-        self.llm = ChatOpenAI(
-            model="gpt-4o",
-            temperature=0.3,  # Lower temperature for more consistent recommendations
-            openai_api_key=settings.OPENAI_API_KEY
-        )
-        
-        # Define prompt template for job recommendations
-        self.prompt_template = PromptTemplate(
-            input_variables=["user_profile", "user_skills", "user_experience", "job_listings"],
-            template="""You are an AI career advisor helping job seekers find the best job matches.
-
-User Profile:
-{user_profile}
-
-User Skills:
-{user_skills}
-
-User Experience:
-{user_experience}
-
-Available Jobs:
-{job_listings}
-
-Task: Analyze the user's profile, skills, and experience, then rank the available jobs from most to least relevant. For each recommended job, provide:
-1. Job title and company
-2. Match score (0-100)
-3. Why it's a good match (2-3 sentences)
-4. Skills alignment
-5. Growth potential
-
-Format your response as a JSON array of recommendations, ordered by match score (highest first).
-Only recommend jobs with a match score of 60 or higher.
-
-Example format:
-[
-  {{
-    "job_id": "job123",
-    "job_title": "Senior Software Engineer",
-    "company": "Tech Corp",
-    "match_score": 95,
-    "match_reason": "Your 5 years of Python experience and expertise in FastAPI align perfectly with this role. The position offers leadership opportunities that match your career goals.",
-    "skills_alignment": ["Python", "FastAPI", "MongoDB", "Docker"],
-    "growth_potential": "High - Senior role with team leadership responsibilities"
-  }}
-]
-
-Provide your recommendations:"""
-        )
-        
-        # Create the LangChain
-        self.chain = LLMChain(
-            llm=self.llm,
-            prompt=self.prompt_template,
-            verbose=False
-        )
-        
-        logger.info("Initialized JobRecommendationChain with GPT-4o")
+        """Initialize the recommendation chain."""
+        self.client = openai_client
     
-    async def get_recommendations(
+    async def generate_job_recommendation_reasons(
         self,
         user_profile: Dict[str, Any],
-        available_jobs: List[Dict[str, Any]],
-        top_k: int = 5
-    ) -> List[Dict[str, Any]]:
+        job: Dict[str, Any],
+        match_score: float
+    ) -> List[str]:
         """
-        Get personalized job recommendations for a user.
+        Generate human-readable reasons for why a job matches a user's profile.
         
         Args:
-            user_profile: User profile data (name, bio, preferences, etc.)
-            available_jobs: List of available job postings
-            top_k: Number of top recommendations to return
+            user_profile: Dictionary with user skills, experience, etc.
+            job: Dictionary with job details
+            match_score: Numerical match score (0-1)
             
         Returns:
-            List of recommended jobs with match scores and reasons
+            List of reason strings explaining the match
         """
+        if not self.client.is_available:
+            logger.warning("OpenAI not available, returning generic reasons")
+            return self._generate_fallback_reasons(user_profile, job, match_score)
+        
         try:
-            # Format user data
-            user_skills = ", ".join(user_profile.get("skills", []))
-            user_experience = user_profile.get("experience", "Not specified")
-            user_bio = user_profile.get("bio", "No bio provided")
+            # Build prompt for LLM
+            prompt = self._build_recommendation_prompt(user_profile, job, match_score)
             
-            # Format job listings
-            job_listings_text = self._format_jobs(available_jobs)
+            messages = [
+                {
+                    "role": "system",
+                    "content": "You are an expert career advisor and job matching specialist. "
+                               "Provide concise, specific reasons why a job matches a candidate's profile. "
+                               "Keep each reason to one short sentence (max 10 words)."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
             
-            # Run the chain
-            result = await self.chain.arun(
-                user_profile=user_bio,
-                user_skills=user_skills,
-                user_experience=user_experience,
-                job_listings=job_listings_text
+            # Get LLM response
+            response = await self.client.chat_completion_async(
+                messages=messages,
+                temperature=0.7,
+                max_tokens=200
             )
             
-            # Parse the result (expecting JSON)
-            import json
-            recommendations = json.loads(result)
+            if not response:
+                logger.warning("No response from LLM, using fallback")
+                return self._generate_fallback_reasons(user_profile, job, match_score)
             
-            # Limit to top_k
-            recommendations = recommendations[:top_k]
+            # Parse response into list of reasons
+            reasons = self._parse_reasons(response)
+            logger.debug(f"Generated {len(reasons)} recommendation reasons")
             
-            logger.info(f"Generated {len(recommendations)} job recommendations")
-            return recommendations
+            return reasons[:3]  # Return top 3 reasons
             
         except Exception as e:
-            logger.error(f"Error generating job recommendations: {e}")
-            # Return fallback recommendations based on simple matching
-            return self._fallback_recommendations(user_profile, available_jobs, top_k)
+            logger.error(f"Error generating recommendation reasons: {str(e)}")
+            return self._generate_fallback_reasons(user_profile, job, match_score)
     
-    def _format_jobs(self, jobs: List[Dict[str, Any]]) -> str:
-        """Format job listings for the prompt."""
-        formatted = []
-        for i, job in enumerate(jobs, 1):
-            job_text = f"""
-Job {i}:
-- ID: {job.get('id', 'N/A')}
-- Title: {job.get('title', 'N/A')}
-- Company: {job.get('company_name', 'N/A')}
-- Location: {job.get('location', 'N/A')}
-- Description: {job.get('description', 'N/A')[:200]}...
-- Required Skills: {', '.join(job.get('required_skills', []))}
-- Salary Range: {job.get('salary_range', 'Not specified')}
-"""
-            formatted.append(job_text)
-        
-        return "\n".join(formatted)
-    
-    def _fallback_recommendations(
+    def _build_recommendation_prompt(
         self,
         user_profile: Dict[str, Any],
-        available_jobs: List[Dict[str, Any]],
-        top_k: int
-    ) -> List[Dict[str, Any]]:
-        """Provide fallback recommendations using simple skill matching."""
-        user_skills = set(skill.lower() for skill in user_profile.get("skills", []))
+        job: Dict[str, Any],
+        match_score: float
+    ) -> str:
+        """Build the prompt for recommendation reasoning."""
+        user_skills = ", ".join(user_profile.get("skills", []))
+        job_skills = ", ".join(job.get("skills", []))
         
-        scored_jobs = []
-        for job in available_jobs:
-            job_skills = set(skill.lower() for skill in job.get("required_skills", []))
+        prompt = f"""Analyze why this job is a good match (score: {match_score:.0%}) for the candidate:
+
+Candidate Profile:
+- Skills: {user_skills or 'Not specified'}
+- Experience: {user_profile.get('experience_years', 'N/A')} years
+- Location: {user_profile.get('location', 'Not specified')}
+- Bio: {user_profile.get('bio', 'Not provided')[:200]}
+
+Job Details:
+- Title: {job.get('title')}
+- Company: {job.get('company_name')}
+- Required Skills: {job_skills or 'Not specified'}
+- Experience Level: {job.get('experience_level')}
+- Location: {job.get('location')}
+- Remote: {job.get('is_remote', False)}
+
+Provide exactly 3 specific, concise reasons (one per line) why this job matches the candidate.
+Format: - Reason text (max 10 words each)"""
+        
+        return prompt
+    
+    def _parse_reasons(self, response: str) -> List[str]:
+        """Parse LLM response into a list of reasons."""
+        reasons = []
+        lines = response.strip().split('\n')
+        
+        for line in lines:
+            line = line.strip()
+            # Remove bullet points, numbers, etc.
+            if line.startswith('-'):
+                line = line[1:].strip()
+            elif line.startswith('•'):
+                line = line[1:].strip()
+            elif len(line) > 2 and line[0].isdigit() and line[1] in ['.', ')']:
+                line = line[2:].strip()
             
-            # Calculate skill overlap
-            overlap = len(user_skills & job_skills)
-            total_skills = len(job_skills)
-            
-            if total_skills > 0:
-                match_score = int((overlap / total_skills) * 100)
+            if line and len(line) > 10:  # Minimum reasonable length
+                reasons.append(line)
+        
+        return reasons
+    
+    def _generate_fallback_reasons(
+        self,
+        user_profile: Dict[str, Any],
+        job: Dict[str, Any],
+        match_score: float
+    ) -> List[str]:
+        """Generate fallback reasons without LLM."""
+        reasons = []
+        
+        # Check skill match
+        user_skills = set(s.lower() for s in user_profile.get("skills", []))
+        job_skills = set(s.lower() for s in job.get("skills", []))
+        matching_skills = user_skills.intersection(job_skills)
+        
+        if matching_skills:
+            top_skills = list(matching_skills)[:2]
+            if len(top_skills) == 1:
+                reasons.append(f"Strong match in {top_skills[0]}")
             else:
-                match_score = 0
+                reasons.append(f"Skills match: {', '.join(top_skills)}")
+        
+        # Check experience match
+        user_exp = user_profile.get("experience_years", 0)
+        job_level = job.get("experience_level", "").lower()
+        
+        if job_level:
+            if ("junior" in job_level or "entry" in job_level) and user_exp <= 3:
+                reasons.append("Experience level aligns well")
+            elif "mid" in job_level and 3 <= user_exp <= 7:
+                reasons.append("Perfect experience level match")
+            elif ("senior" in job_level or "lead" in job_level) and user_exp >= 5:
+                reasons.append("Senior experience matches requirements")
+        
+        # Check location
+        user_loc = user_profile.get("location", "").lower()
+        job_loc = job.get("location", "").lower()
+        
+        if job.get("is_remote"):
+            reasons.append("Remote work opportunity")
+        elif user_loc and job_loc and user_loc in job_loc:
+            reasons.append("Location matches your preferences")
+        
+        # Check salary if available
+        if job.get("salary_max"):
+            reasons.append(f"Competitive salary up to ${int(job['salary_max']):,}")
+        
+        # Default high score reason
+        if match_score >= 0.8 and not reasons:
+            reasons.append("Excellent overall match for your profile")
+        
+        # Ensure we have at least one reason
+        if not reasons:
+            reasons.append("Good fit based on your profile")
+        
+        return reasons[:3]
+    
+    async def rank_candidates_for_job(
+        self,
+        job: Dict[str, Any],
+        candidates: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """
+        Rank candidates for a job position using LLM analysis.
+        
+        Args:
+            job: Job details
+            candidates: List of candidate profiles with match scores
             
-            if match_score >= 30:  # Lower threshold for fallback
-                scored_jobs.append({
-                    "job_id": job.get("id"),
-                    "job_title": job.get("title"),
-                    "company": job.get("company_name"),
-                    "match_score": match_score,
-                    "match_reason": f"You have {overlap} matching skills out of {total_skills} required.",
-                    "skills_alignment": list(user_skills & job_skills),
-                    "growth_potential": "To be determined"
-                })
+        Returns:
+            Ranked list of candidates with enhanced reasoning
+        """
+        if not self.client.is_available:
+            logger.warning("OpenAI not available, returning candidates as-is")
+            return candidates
         
-        # Sort by match score
-        scored_jobs.sort(key=lambda x: x["match_score"], reverse=True)
-        
-        return scored_jobs[:top_k]
+        try:
+            # For each candidate, generate reasoning
+            ranked_candidates = []
+            for candidate in candidates:
+                reasons = await self.generate_job_recommendation_reasons(
+                    user_profile=candidate,
+                    job=job,
+                    match_score=candidate.get("match_score", 0.0)
+                )
+                candidate["match_reasons"] = reasons
+                ranked_candidates.append(candidate)
+            
+            return ranked_candidates
+            
+        except Exception as e:
+            logger.error(f"Error ranking candidates: {str(e)}")
+            return candidates
 
 
 # Global recommendation chain instance
-job_recommendation_chain = JobRecommendationChain()
+recommendation_chain = RecommendationChain()
 

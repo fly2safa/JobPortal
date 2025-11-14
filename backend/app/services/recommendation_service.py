@@ -1,303 +1,424 @@
 """
-AI-powered job recommendation service.
-Provides personalized job recommendations for job seekers using vector search and LangChain.
+Recommendation service for AI-powered job and candidate matching.
+Uses embeddings and similarity search to generate personalized recommendations.
 """
 from typing import List, Dict, Any, Optional
-from beanie import PydanticObjectId
+from datetime import datetime
+from app.models.job import Job, JobStatus
 from app.models.user import User
-from app.models.job import Job
-from app.ai.chains.recommendation_chain import job_recommendation_chain
-from app.ai.rag.vectorstore import job_vectorstore
+from app.ai.rag.vectorstore import job_vector_store
+from app.ai.rag.embeddings import embeddings_handler
+from app.ai.chains.recommendation_chain import recommendation_chain
 from app.core.logging import get_logger
-from langchain.schema import Document
 
 logger = get_logger(__name__)
 
 
 class RecommendationService:
     """
-    Service for generating AI-powered job recommendations.
-    Combines vector similarity search with LangChain-based analysis.
+    Service for generating AI-powered job and candidate recommendations.
     """
     
-    async def get_recommendations_for_user(
+    def __init__(self):
+        """Initialize the recommendation service."""
+        self.vector_store = job_vector_store
+        self.embeddings = embeddings_handler
+        self.chain = recommendation_chain
+        self._vector_store_initialized = False
+    
+    async def initialize_vector_store(self, force_refresh: bool = False):
+        """
+        Initialize or refresh the job vector store with active jobs.
+        
+        Args:
+            force_refresh: Force refresh even if already initialized
+        """
+        if self._vector_store_initialized and not force_refresh:
+            logger.debug("Vector store already initialized")
+            return
+        
+        try:
+            logger.info("Initializing job vector store...")
+            
+            # Clear existing data if force refresh
+            if force_refresh:
+                self.vector_store.clear()
+            
+            # Fetch all active jobs
+            active_jobs = await Job.find(Job.status == JobStatus.ACTIVE).to_list()
+            
+            if not active_jobs:
+                logger.warning("No active jobs found to initialize vector store")
+                self._vector_store_initialized = True
+                return
+            
+            # Convert to dictionaries
+            job_dicts = []
+            for job in active_jobs:
+                job_dict = job.dict()
+                job_dict['id'] = str(job.id)
+                job_dicts.append(job_dict)
+            
+            # Add to vector store
+            added_count = await self.vector_store.add_jobs_batch(job_dicts)
+            
+            logger.info(
+                f"Vector store initialized with {added_count}/{len(active_jobs)} jobs"
+            )
+            self._vector_store_initialized = True
+            
+        except Exception as e:
+            logger.error(f"Error initializing vector store: {str(e)}")
+            raise
+    
+    async def get_job_recommendations_for_user(
         self,
         user: User,
-        limit: int = 10,
-        use_ai: bool = True
+        limit: int = 20,
+        min_score: float = 0.3
     ) -> List[Dict[str, Any]]:
         """
         Get personalized job recommendations for a user.
         
         Args:
-            user: User object
+            user: User model instance
             limit: Maximum number of recommendations
-            use_ai: If True, use AI chain; otherwise use vector search only
+            min_score: Minimum similarity score threshold
             
         Returns:
-            List of recommended jobs with match scores
+            List of job recommendations with match scores and reasons
         """
+        logger.info(f"Generating job recommendations for user {user.email}")
+        
+        # Check if embeddings are available
+        if not self.embeddings.is_available:
+            logger.warning("Embeddings not available, falling back to basic search")
+            return await self._get_basic_recommendations(user, limit)
+        
+        # Initialize vector store if needed
+        await self.initialize_vector_store()
+        
+        if self.vector_store.size() == 0:
+            logger.warning("Vector store is empty, no recommendations available")
+            return []
+        
         try:
-            # Build user profile
-            user_profile = self._build_user_profile(user)
+            # Create user profile dictionary
+            user_profile = {
+                'id': str(user.id),
+                'skills': user.skills,
+                'experience_years': user.experience_years,
+                'location': user.location,
+                'education': user.education,
+                'bio': user.bio,
+                'job_title': user.job_title,
+            }
             
-            # Get candidate jobs using vector similarity search
-            candidate_jobs = await self._get_candidate_jobs(user_profile, limit * 2)
+            # Find similar jobs
+            similar_jobs = await self.vector_store.find_similar_jobs(
+                user_profile=user_profile,
+                k=limit * 2  # Get more than needed for filtering
+            )
             
-            if not candidate_jobs:
-                logger.info(f"No candidate jobs found for user {user.id}")
-                return []
-            
-            # Use AI chain for intelligent ranking if enabled
-            if use_ai:
-                recommendations = await job_recommendation_chain.get_recommendations(
+            # Filter by minimum score and format results
+            recommendations = []
+            for job, score in similar_jobs:
+                if score < min_score:
+                    continue
+                
+                # Generate reasons for recommendation
+                reasons = await self.chain.generate_job_recommendation_reasons(
                     user_profile=user_profile,
-                    available_jobs=candidate_jobs,
-                    top_k=limit
+                    job=job,
+                    match_score=score
                 )
-            else:
-                # Fallback to vector similarity scores
-                recommendations = self._vector_based_recommendations(
-                    user_profile,
-                    candidate_jobs,
-                    limit
-                )
+                
+                recommendation = {
+                    'job': job,
+                    'match_score': round(score, 2),
+                    'reasons': reasons,
+                    'recommended_at': datetime.utcnow()
+                }
+                
+                recommendations.append(recommendation)
+                
+                if len(recommendations) >= limit:
+                    break
             
-            logger.info(f"Generated {len(recommendations)} recommendations for user {user.id}")
+            logger.info(
+                f"Generated {len(recommendations)} recommendations for user {user.email}"
+            )
+            
             return recommendations
             
         except Exception as e:
-            logger.error(f"Error generating recommendations for user {user.id}: {e}")
-            return []
+            logger.error(f"Error generating recommendations: {str(e)}")
+            # Fallback to basic recommendations
+            return await self._get_basic_recommendations(user, limit)
     
-    async def get_similar_jobs(
+    async def _get_basic_recommendations(
         self,
-        job_id: str,
-        limit: int = 5
+        user: User,
+        limit: int = 20
     ) -> List[Dict[str, Any]]:
         """
-        Get jobs similar to a given job.
+        Get basic job recommendations without AI (fallback).
+        Matches based on skills overlap.
         
         Args:
-            job_id: ID of the reference job
-            limit: Maximum number of similar jobs
-            
-        Returns:
-            List of similar jobs
-        """
-        try:
-            # Fetch the reference job
-            job = await Job.get(PydanticObjectId(job_id))
-            if not job:
-                logger.warning(f"Job {job_id} not found")
-                return []
-            
-            # Create search query from job details
-            query = f"{job.title} {job.description} {' '.join(job.required_skills)}"
-            
-            # Perform vector similarity search
-            similar_docs = job_vectorstore.similarity_search_with_score(
-                query=query,
-                k=limit + 1,  # +1 to exclude the reference job itself
-                filter={"status": "active"}
-            )
-            
-            # Filter out the reference job and format results
-            similar_jobs = []
-            for doc, score in similar_docs:
-                doc_job_id = doc.metadata.get("job_id")
-                if doc_job_id != job_id:
-                    similar_jobs.append({
-                        "job_id": doc_job_id,
-                        "job_title": doc.metadata.get("title"),
-                        "company": doc.metadata.get("company_name"),
-                        "similarity_score": float(score),
-                        "location": doc.metadata.get("location")
-                    })
-            
-            return similar_jobs[:limit]
-            
-        except Exception as e:
-            logger.error(f"Error finding similar jobs for {job_id}: {e}")
-            return []
-    
-    async def index_job(self, job: Job):
-        """
-        Index a job in the vector store for recommendations.
-        
-        Args:
-            job: Job object to index
-        """
-        try:
-            # Create document from job
-            doc = Document(
-                page_content=f"{job.title}\n{job.description}\nSkills: {', '.join(job.required_skills)}",
-                metadata={
-                    "job_id": str(job.id),
-                    "title": job.title,
-                    "company_name": job.company_name or "",
-                    "location": job.location or "",
-                    "status": job.status,
-                    "required_skills": job.required_skills
-                }
-            )
-            
-            # Add to vector store
-            job_vectorstore.add_documents([doc], ids=[str(job.id)])
-            logger.info(f"Indexed job {job.id} in vector store")
-            
-        except Exception as e:
-            logger.error(f"Error indexing job {job.id}: {e}")
-    
-    async def index_all_jobs(self):
-        """Index all active jobs in the vector store."""
-        try:
-            # Fetch all active jobs
-            jobs = await Job.find(Job.status == "active").to_list()
-            
-            if not jobs:
-                logger.info("No active jobs to index")
-                return
-            
-            # Create documents
-            documents = []
-            ids = []
-            
-            for job in jobs:
-                doc = Document(
-                    page_content=f"{job.title}\n{job.description}\nSkills: {', '.join(job.required_skills)}",
-                    metadata={
-                        "job_id": str(job.id),
-                        "title": job.title,
-                        "company_name": job.company_name or "",
-                        "location": job.location or "",
-                        "status": job.status,
-                        "required_skills": job.required_skills
-                    }
-                )
-                documents.append(doc)
-                ids.append(str(job.id))
-            
-            # Batch add to vector store
-            job_vectorstore.add_documents(documents, ids=ids)
-            logger.info(f"Indexed {len(jobs)} jobs in vector store")
-            
-        except Exception as e:
-            logger.error(f"Error indexing all jobs: {e}")
-    
-    def _build_user_profile(self, user: User) -> Dict[str, Any]:
-        """Build a user profile dictionary for recommendations."""
-        return {
-            "id": str(user.id),
-            "name": f"{user.first_name} {user.last_name}",
-            "email": user.email,
-            "bio": getattr(user, "bio", ""),
-            "skills": getattr(user, "skills", []),
-            "experience": getattr(user, "experience", ""),
-            "preferences": getattr(user, "preferences", {})
-        }
-    
-    async def _get_candidate_jobs(
-        self,
-        user_profile: Dict[str, Any],
-        limit: int
-    ) -> List[Dict[str, Any]]:
-        """
-        Get candidate jobs using vector similarity search.
-        
-        Args:
-            user_profile: User profile data
-            limit: Maximum number of candidates
-            
-        Returns:
-            List of candidate jobs
-        """
-        try:
-            # Build search query from user profile
-            skills = ", ".join(user_profile.get("skills", []))
-            bio = user_profile.get("bio", "")
-            query = f"{bio} Skills: {skills}"
-            
-            # Perform vector search
-            similar_docs = job_vectorstore.similarity_search(
-                query=query,
-                k=limit,
-                filter={"status": "active"}
-            )
-            
-            # Fetch full job details
-            job_ids = [doc.metadata.get("job_id") for doc in similar_docs if doc.metadata.get("job_id")]
-            
-            jobs = []
-            for job_id in job_ids:
-                try:
-                    job = await Job.get(PydanticObjectId(job_id))
-                    if job:
-                        jobs.append({
-                            "id": str(job.id),
-                            "title": job.title,
-                            "company_name": job.company_name,
-                            "location": job.location,
-                            "description": job.description,
-                            "required_skills": job.required_skills,
-                            "salary_range": getattr(job, "salary_range", None)
-                        })
-                except Exception as e:
-                    logger.warning(f"Error fetching job {job_id}: {e}")
-                    continue
-            
-            return jobs
-            
-        except Exception as e:
-            logger.error(f"Error getting candidate jobs: {e}")
-            return []
-    
-    def _vector_based_recommendations(
-        self,
-        user_profile: Dict[str, Any],
-        candidate_jobs: List[Dict[str, Any]],
-        limit: int
-    ) -> List[Dict[str, Any]]:
-        """
-        Generate recommendations based on simple skill matching (fallback).
-        
-        Args:
-            user_profile: User profile data
-            candidate_jobs: List of candidate jobs
+            user: User model instance
             limit: Maximum number of recommendations
             
         Returns:
-            List of recommendations
+            List of basic job recommendations
         """
-        user_skills = set(skill.lower() for skill in user_profile.get("skills", []))
+        logger.info(f"Using basic recommendations for user {user.email}")
         
-        recommendations = []
-        for job in candidate_jobs:
-            job_skills = set(skill.lower() for skill in job.get("required_skills", []))
+        try:
+            # Find jobs with matching skills
+            user_skills = set(s.lower() for s in user.skills) if user.skills else set()
             
-            # Calculate skill overlap
-            overlap = len(user_skills & job_skills)
-            total_skills = len(job_skills)
+            # Get active jobs
+            all_jobs = await Job.find(Job.status == JobStatus.ACTIVE).limit(100).to_list()
             
-            if total_skills > 0:
-                match_score = int((overlap / total_skills) * 100)
+            # Score jobs by skill overlap
+            scored_jobs = []
+            for job in all_jobs:
+                job_skills = set(s.lower() for s in job.skills) if job.skills else set()
+                
+                # Calculate overlap
+                if user_skills and job_skills:
+                    overlap = len(user_skills.intersection(job_skills))
+                    total = len(user_skills.union(job_skills))
+                    score = overlap / total if total > 0 else 0.0
+                else:
+                    score = 0.5  # Neutral score if no skills
+                
+                if score > 0.1:  # Minimum threshold
+                    scored_jobs.append((job, score))
+            
+            # Sort by score
+            scored_jobs.sort(key=lambda x: x[1], reverse=True)
+            
+            # Format recommendations
+            recommendations = []
+            for job, score in scored_jobs[:limit]:
+                job_dict = job.dict()
+                job_dict['id'] = str(job.id)
+                
+                # Generate basic reasons
+                matching_skills = set(s.lower() for s in user.skills or []).intersection(
+                    set(s.lower() for s in job.skills or [])
+                )
+                
+                reasons = []
+                if matching_skills:
+                    skills_str = ", ".join(list(matching_skills)[:2])
+                    reasons.append(f"Matching skills: {skills_str}")
+                
+                if job.is_remote:
+                    reasons.append("Remote work available")
+                
+                if not reasons:
+                    reasons.append("Good fit based on your profile")
+                
+                recommendation = {
+                    'job': job_dict,
+                    'match_score': round(score, 2),
+                    'reasons': reasons,
+                    'recommended_at': datetime.utcnow()
+                }
+                
+                recommendations.append(recommendation)
+            
+            logger.info(
+                f"Generated {len(recommendations)} basic recommendations for user {user.email}"
+            )
+            
+            return recommendations
+            
+        except Exception as e:
+            logger.error(f"Error generating basic recommendations: {str(e)}")
+            return []
+    
+    async def refresh_job_in_vector_store(self, job: Job):
+        """
+        Refresh a single job in the vector store.
+        
+        Args:
+            job: Job model instance
+        """
+        try:
+            job_dict = job.dict()
+            job_dict['id'] = str(job.id)
+            
+            if job.status == JobStatus.ACTIVE:
+                # Add or update job
+                await self.vector_store.add_job(job_dict)
+                logger.debug(f"Refreshed job {job.id} in vector store")
             else:
-                match_score = 50  # Default score if no skills listed
+                # Remove inactive job
+                self.vector_store.store.remove_by_id(str(job.id))
+                logger.debug(f"Removed inactive job {job.id} from vector store")
+                
+        except Exception as e:
+            logger.error(f"Error refreshing job in vector store: {str(e)}")
+    
+    async def get_candidate_recommendations_for_job(
+        self,
+        job: Job,
+        limit: int = 20,
+        min_score: float = 0.3,
+        include_applied: bool = False
+    ) -> List[Dict[str, Any]]:
+        """
+        Get candidate recommendations for a job posting.
+        
+        Args:
+            job: Job model instance
+            limit: Maximum number of recommendations
+            min_score: Minimum similarity score
+            include_applied: Whether to include candidates who already applied
             
-            recommendations.append({
-                "job_id": job.get("id"),
-                "job_title": job.get("title"),
-                "company": job.get("company_name"),
-                "match_score": match_score,
-                "match_reason": f"You have {overlap} matching skills out of {total_skills} required.",
-                "skills_alignment": list(user_skills & job_skills),
-                "growth_potential": "To be determined"
-            })
+        Returns:
+            List of candidate recommendations with match scores
+        """
+        logger.info(f"Generating candidate recommendations for job {job.id}")
         
-        # Sort by match score
-        recommendations.sort(key=lambda x: x["match_score"], reverse=True)
+        # Check if embeddings are available
+        if not self.embeddings.is_available:
+            logger.warning("Embeddings not available for candidate matching")
+            return []
         
-        return recommendations[:limit]
+        try:
+            # Create job embedding
+            job_dict = job.dict()
+            job_dict['id'] = str(job.id)
+            job_embedding_text = self.embeddings.create_job_embedding_text(job_dict)
+            job_embedding = await self.embeddings.create_embedding(job_embedding_text)
+            
+            if not job_embedding:
+                logger.error("Failed to create job embedding")
+                return []
+            
+            # Get all job seeker users
+            from app.models.user import UserRole
+            job_seekers = await User.find(User.role == UserRole.JOB_SEEKER).to_list()
+            
+            # Optionally filter out candidates who already applied
+            if not include_applied:
+                from app.models.application import Application
+                applications = await Application.find(
+                    Application.job_id == str(job.id)
+                ).to_list()
+                applied_user_ids = {app.applicant_id for app in applications}
+                job_seekers = [
+                    js for js in job_seekers 
+                    if str(js.id) not in applied_user_ids
+                ]
+                logger.debug(
+                    f"Filtered out {len(applied_user_ids)} candidates who already applied"
+                )
+            
+            # Score candidates
+            candidate_scores = []
+            for candidate in job_seekers:
+                # Create candidate profile
+                candidate_profile = {
+                    'id': str(candidate.id),
+                    'name': candidate.full_name,
+                    'email': candidate.email,
+                    'skills': candidate.skills or [],
+                    'experience_years': candidate.experience_years,
+                    'location': candidate.location,
+                    'education': candidate.education,
+                    'bio': candidate.bio,
+                    'job_title': candidate.job_title,
+                    'linkedin_url': candidate.linkedin_url,
+                    'portfolio_url': candidate.portfolio_url,
+                }
+                
+                # Enhance profile with resume data if available
+                from app.models.resume import Resume
+                resume = await Resume.find_one(Resume.user_id == str(candidate.id))
+                if resume:
+                    candidate_profile['resume_text'] = resume.parsed_text
+                    candidate_profile['work_experience'] = resume.work_experience
+                    if resume.skills_extracted:
+                        # Merge skills from resume with profile skills
+                        all_skills = set(candidate_profile['skills'])
+                        all_skills.update(resume.skills_extracted)
+                        candidate_profile['skills'] = list(all_skills)
+                
+                # Create candidate embedding
+                candidate_embedding = await self.embeddings.create_user_profile_embedding(
+                    candidate_profile
+                )
+                
+                if not candidate_embedding:
+                    continue
+                
+                # Calculate similarity
+                import numpy as np
+                job_vec = np.array(job_embedding)
+                candidate_vec = np.array(candidate_embedding)
+                
+                # Cosine similarity
+                norm_job = np.linalg.norm(job_vec)
+                norm_candidate = np.linalg.norm(candidate_vec)
+                
+                if norm_job > 0 and norm_candidate > 0:
+                    similarity = np.dot(job_vec, candidate_vec) / (norm_job * norm_candidate)
+                    score = float((similarity + 1) / 2)  # Map to [0, 1]
+                    
+                    if score >= min_score:
+                        candidate_scores.append((candidate, score, candidate_profile))
+            
+            # Sort by score
+            candidate_scores.sort(key=lambda x: x[1], reverse=True)
+            
+            # Format recommendations
+            recommendations = []
+            for candidate, score, profile in candidate_scores[:limit]:
+                # Generate reasons
+                reasons = await self.chain.generate_job_recommendation_reasons(
+                    user_profile=profile,
+                    job=job_dict,
+                    match_score=score
+                )
+                
+                candidate_dict = candidate.dict()
+                candidate_dict['id'] = str(candidate.id)
+                
+                # Get resume info if available
+                from app.models.resume import Resume
+                resume = await Resume.find_one(Resume.user_id == str(candidate.id))
+                if resume:
+                    candidate_dict['resume'] = {
+                        'id': str(resume.id),
+                        'file_name': resume.file_name,
+                        'file_url': resume.file_url,
+                        'created_at': resume.created_at
+                    }
+                
+                recommendation = {
+                    'candidate': candidate_dict,
+                    'match_score': round(score, 2),
+                    'reasons': reasons,
+                    'recommended_at': datetime.utcnow()
+                }
+                
+                recommendations.append(recommendation)
+            
+            logger.info(
+                f"Generated {len(recommendations)} candidate recommendations for job {job.id}"
+            )
+            
+            return recommendations
+            
+        except Exception as e:
+            logger.error(f"Error generating candidate recommendations: {str(e)}")
+            return []
 
 
 # Global recommendation service instance

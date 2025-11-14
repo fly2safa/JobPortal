@@ -15,6 +15,7 @@ class UserRegister(BaseModel):
     role: UserRole = Field(default=UserRole.JOB_SEEKER)
     phone: Optional[str] = None
     location: Optional[str] = None
+    company_name: Optional[str] = None  # For employers
 
 
 class UserLogin(BaseModel):
