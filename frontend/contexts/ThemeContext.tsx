@@ -35,7 +35,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
-    localStorage.setItem('theme', newTheme);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('theme', newTheme);
+    }
     
     if (newTheme === 'dark') {
       document.documentElement.classList.add('dark');
@@ -48,11 +50,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setTheme(theme === 'light' ? 'dark' : 'light');
   };
 
-  // Prevent flash of unstyled content
-  if (!mounted) {
-    return <>{children}</>;
-  }
-
+  // Always provide context, even before mounting
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
       {children}
