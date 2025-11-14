@@ -310,6 +310,42 @@ class ApiClient {
     const response = await this.client.post(`/interviews/${id}/complete`, data);
     return response.data;
   }
+
+  // Recommendation endpoints
+  async getRecommendations(params?: {
+    limit?: number;
+    use_ai?: boolean;
+  }) {
+    const response = await this.client.get('/recommendations/', { params });
+    return response.data;
+  }
+
+  async getSimilarJobs(jobId: string, limit: number = 5) {
+    const response = await this.client.get(`/recommendations/similar/${jobId}`, {
+      params: { limit }
+    });
+    return response.data;
+  }
+
+  async indexJobs() {
+    const response = await this.client.post('/recommendations/index-jobs');
+    return response.data;
+  }
+
+  async getRecommendationsHealth() {
+    const response = await this.client.get('/recommendations/health');
+    return response.data;
+  }
+
+  // Candidate matching endpoints
+  async getRecommendedCandidates(jobId: string, params?: {
+    limit?: number;
+    use_ai?: boolean;
+    applicants_only?: boolean;
+  }) {
+    const response = await this.client.get(`/jobs/${jobId}/recommended-candidates`, { params });
+    return response.data;
+  }
 }
 
 export const apiClient = new ApiClient();

@@ -24,9 +24,11 @@ export default function RecommendationsPage() {
     minMatchScore: 30,
   });
 
-  useEffect(() => {
-    fetchRecommendations();
-  }, []);
+  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [useAI, setUseAI] = useState(true);
+  const [limit, setLimit] = useState(10);
 
   const fetchRecommendations = async () => {
     setIsLoading(true);
@@ -47,21 +49,13 @@ export default function RecommendationsPage() {
       setError(errorMessage);
       setRecommendations([]);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const toggleSaveJob = (jobId: string) => {
-    setSavedJobs(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(jobId)) {
-        newSet.delete(jobId);
-      } else {
-        newSet.add(jobId);
-      }
-      return newSet;
-    });
-  };
+  useEffect(() => {
+    fetchRecommendations();
+  }, []);
 
   const handleFilterChange = (category: string, value: string) => {
     setFilters(prev => ({
@@ -201,11 +195,26 @@ export default function RecommendationsPage() {
               isLoading={isLoading}
             />
           </div>
-        </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && !error && recommendations.length === 0 && (
+          <div className="bg-gray-800 rounded-lg p-12 text-center border border-gray-700">
+            <Sparkles className="mx-auto text-gray-600 mb-4" size={48} />
+            <h3 className="text-xl font-semibold text-white mb-2">No Recommendations Yet</h3>
+            <p className="text-gray-400 mb-6 max-w-md mx-auto">
+              We couldn't find any job recommendations at this time. Try updating your profile with more skills and experience to get better matches.
+            </p>
+            <button
+              onClick={() => window.location.href = '/dashboard/profile'}
+              className="bg-primary hover:bg-primary-dark text-white font-medium py-2 px-6 rounded-lg transition-colors"
+            >
+              Update Profile
+            </button>
+          </div>
+        )}
       </div>
-      
-      <Footer />
-    </div>
+    </DashboardLayout>
   );
 }
 

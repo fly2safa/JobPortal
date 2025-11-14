@@ -28,11 +28,15 @@ A modern, AI-powered job portal connecting job seekers with employers. Built wit
 - ✅ Application status tracking
 
 #### Phase 3: AI Features ✅
-- ✅ AI job recommendations for job seekers
-- ✅ AI candidate matching for employers
-- ✅ AI cover letter generation (GPT-4o)
-- ✅ RAG-based AI career assistant
-- ✅ Resume parsing with skill extraction
+- ✅ **LangChain Integration** - AI orchestration with prompt chains
+- ✅ **ChromaDB Vector Store** - Semantic search with embeddings
+- ✅ **OpenAI Embeddings** - text-embedding-3-small for vector similarity
+- ✅ **AI Job Recommendations** - Personalized job matching for seekers
+- ✅ **AI Candidate Matching** - Intelligent candidate ranking for employers
+- ✅ **AI Cover Letter Generation** - GPT-4o powered cover letters
+- ✅ **RAG-based AI Career Assistant** - Context-aware chat with vector retrieval
+- ✅ **Resume Parsing with AI** - Skill extraction and profile analysis
+- ✅ **n8n Workflow Automation** - Complex AI workflow orchestration
 
 #### 🚧 In Progress / Planned
 - ⏳ Interview scheduling system
@@ -608,7 +612,13 @@ Think of the frontend as a **restaurant experience**:
 - **Framework**: FastAPI (Python 3.11+) with async/await
 - **Database**: MongoDB Atlas with Beanie ODM
 - **Authentication**: JWT with bcrypt password hashing
-- **AI/ML**: OpenAI GPT-4o for AI features
+- **AI/ML**: 
+  - OpenAI GPT-4o for AI features
+  - **LangChain** for AI orchestration and prompt chains
+  - **ChromaDB** for vector storage and semantic search
+  - **OpenAI Embeddings** (text-embedding-3-small)
+  - **Sentence Transformers** (fallback embeddings)
+- **Workflow Automation**: **n8n** for complex AI workflow orchestration
 - **Email**: SMTP with aiosmtplib for notifications
 - **File Processing**: PyPDF2, python-docx for resume parsing
 - **Validation**: Pydantic v2 for data validation

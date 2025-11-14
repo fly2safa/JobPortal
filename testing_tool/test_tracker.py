@@ -3,10 +3,11 @@ TalentNest Testing Tracker - GUI Application
 A standalone GUI tool for tracking manual testing progress.
 """
 import tkinter as tk
-from tkinter import ttk, scrolledtext, messagebox, filedialog
+from tkinter import ttk, scrolledtext, messagebox, filedialog, simpledialog
 import json
 from datetime import datetime
 from pathlib import Path
+import requests
 
 
 class Bug:
@@ -55,7 +56,7 @@ class TestingTrackerApp:
     # - MAJOR: Breaking changes or major new features
     # - MINOR: New features, backward compatible
     # - PATCH: Bug fixes, small improvements
-    VERSION = "1.0.0"
+    VERSION = "2.0.0"
     
     def __init__(self, root):
         self.root = root
@@ -81,6 +82,10 @@ class TestingTrackerApp:
         # Configure style
         self.setup_styles()
         
+        # API configuration for database integration
+        self.api_base_url = "http://localhost:8000/api/v1"
+        self.mode = "real"  # "real" or "mockup"
+        
         # Test data
         self.test_cases = self.load_test_cases()
         self.current_test = None
@@ -90,10 +95,6 @@ class TestingTrackerApp:
         self.bug_counter = 1  # Auto-increment bug ID
         self._programmatic_selection = False  # Flag to prevent event loops
         self.has_unsaved_changes = False  # Track if there are unsaved changes
-        self.results_dir = Path("results")  # Directory for saving test results
-        self.results_dir.mkdir(exist_ok=True)  # Create if doesn't exist
-        self.backup_dir = Path("backup")  # Directory for backup files
-        self.backup_dir.mkdir(exist_ok=True)  # Create if doesn't exist
         self.loaded_filename = None  # Track which file was loaded
         
         # Setup UI
@@ -442,6 +443,47 @@ class TestingTrackerApp:
         self.browser_combo.bind('<<ComboboxSelected>>', self.on_browser_selected)
         self.browser_combo.bind('<FocusOut>', self.on_browser_complete)
         
+        # Mode toggle (Real/Mockup) on the right
+        mode_frame = tk.Frame(top_row, bg=self.colors['white'], relief=tk.FLAT, bd=0)
+        mode_frame.pack(side=tk.RIGHT, padx=(10, 0), pady=2)
+        
+        mode_inner = tk.Frame(mode_frame, bg=self.colors['white'])
+        mode_inner.pack(padx=15, pady=8)
+        
+        tk.Label(mode_inner, text="Mode:", 
+                font=("Arial", 10, "bold"),
+                bg=self.colors['white'],
+                fg=self.colors['dark']).grid(row=0, column=0, padx=(0, 10), sticky=tk.W)
+        
+        # Create mode variable
+        self.mode_var = tk.StringVar(value="real")
+        
+        # Real mode radio button
+        real_radio = tk.Radiobutton(mode_inner,
+                                    text="🎯 REAL Testing",
+                                    variable=self.mode_var,
+                                    value="real",
+                                    font=("Arial", 9, "bold"),
+                                    bg=self.colors['white'],
+                                    fg=self.colors['success'],
+                                    selectcolor=self.colors['white'],
+                                    activebackground=self.colors['white'],
+                                    command=self.on_mode_change)
+        real_radio.grid(row=0, column=1, padx=5)
+        
+        # Mockup mode radio button
+        mockup_radio = tk.Radiobutton(mode_inner,
+                                      text="🧪 MOCKUP/Practice",
+                                      variable=self.mode_var,
+                                      value="mockup",
+                                      font=("Arial", 9),
+                                      bg=self.colors['white'],
+                                      fg=self.colors['warning'],
+                                      selectcolor=self.colors['white'],
+                                      activebackground=self.colors['white'],
+                                      command=self.on_mode_change)
+        mockup_radio.grid(row=0, column=2, padx=5)
+        
         # Bottom row - Progress
         progress_frame = tk.Frame(inner_frame, bg=self.colors['primary'])
         progress_frame.pack(fill=tk.X)
@@ -718,23 +760,33 @@ class TestingTrackerApp:
         actions_frame = ttk.Frame(parent)
         actions_frame.grid(row=3, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(10, 0))
         
-        # Left side buttons
+        # Left side buttons - Database actions
         left_frame = ttk.Frame(actions_frame)
         left_frame.grid(row=0, column=0, sticky=tk.W)
         
-        self.load_team_button = ttk.Button(left_frame, text="Load Team File", command=self.load_team_file,
-                  style="Primary.TButton")
-        self.load_team_button.grid(row=0, column=0, padx=5)
+        # Database buttons (v2.0)
+        self.load_db_button = ttk.Button(left_frame, text="📥 Load from Database", 
+                                        command=self.load_from_database,
+                                        style="Primary.TButton")
+        self.load_db_button.grid(row=0, column=0, padx=5)
         
-        self.save_progress_button = ttk.Button(left_frame, text="Save My Progress", command=self.save_my_progress)
-        self.save_progress_button.grid(row=0, column=1, padx=5)
+        self.save_db_button = ttk.Button(left_frame, text="💾 Save to Database", 
+                                        command=self.save_to_database,
+                                        style="Success.TButton")
+        self.save_db_button.grid(row=0, column=1, padx=5)
         
-        self.save_team_button = ttk.Button(left_frame, text="Save to Team File", command=self.save_to_team_file,
-                  style="Success.TButton")
-        self.save_team_button.grid(row=0, column=2, padx=5)
+        # Legacy file buttons (keep for backward compatibility)
+        self.load_file_button = ttk.Button(left_frame, text="📂 Load File", 
+                                          command=self.load_progress)
+        self.load_file_button.grid(row=0, column=2, padx=5)
         
-        self.export_button = ttk.Button(left_frame, text="Export Report", command=self.export_report)
-        self.export_button.grid(row=0, column=3, padx=5)
+        self.save_file_button = ttk.Button(left_frame, text="💾 Save File", 
+                                          command=self.save_progress)
+        self.save_file_button.grid(row=0, column=3, padx=5)
+        
+        self.export_button = ttk.Button(left_frame, text="📄 Export Report", 
+                                       command=self.export_report)
+        self.export_button.grid(row=0, column=4, padx=5)
         
         # Right side buttons
         right_frame = ttk.Frame(actions_frame)
@@ -756,33 +808,26 @@ class TestingTrackerApp:
         
         actions_frame.columnconfigure(1, weight=1)
         
-        # Info section at the bottom - showing save location
-        info_frame = tk.Frame(parent, bg=self.colors['light'], relief=tk.FLAT, bd=1)
+        # Info section at the bottom - showing database info
+        info_frame = tk.Frame(parent, bg=self.colors['info'], relief=tk.FLAT, bd=1)
         info_frame.grid(row=4, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(5, 0))
         
-        info_container = tk.Frame(info_frame, bg=self.colors['light'])
+        info_container = tk.Frame(info_frame, bg=self.colors['info'])
         info_container.pack(fill=tk.X, padx=10, pady=8)
-        
-        # Get the current working directory and results path
-        current_dir = Path.cwd()
-        results_path = (current_dir / "results").resolve()
         
         # Title
         tk.Label(info_container,
-                text="📁 Save Location:",
+                text="💾 Database Integration (v2.0):",
                 font=("Arial", 10, "bold"),
-                bg=self.colors['light'],
-                fg=self.colors['dark']).pack(side=tk.LEFT, padx=(0, 10))
+                bg=self.colors['info'],
+                fg=self.colors['white']).pack(side=tk.LEFT, padx=(0, 10))
         
-        # Path info
+        # Info
         tk.Label(info_container,
-                text=f"Test results will be saved to: {results_path}",
+                text="Test results are saved to MongoDB. Ensure backend is running on localhost:8000",
                 font=("Arial", 9),
-                bg=self.colors['light'],
-                fg=self.colors['dark']).pack(side=tk.LEFT)
-        
-        # Create results directory if it doesn't exist
-        results_path.mkdir(exist_ok=True)
+                bg=self.colors['info'],
+                fg=self.colors['white']).pack(side=tk.LEFT)
     
     def on_test_select(self, event):
         """Handle test selection."""
@@ -970,72 +1015,43 @@ class TestingTrackerApp:
         completed_tests = sum(1 for test in self.test_cases if test.status != "Not Started")
         
         if completed_tests > 0 and self.has_unsaved_changes:
-            # Step 1: Prompt to save personal backup
-            response1 = messagebox.askyesnocancel(
-                "Save Your Progress?",
+            # Prompt to save to database
+            mode_text = "MOCKUP" if self.mode == "mockup" else "database"
+            response = messagebox.askyesnocancel(
+                "Save Before Exit?",
                 f"You have {completed_tests} completed test(s) with unsaved changes.\n\n"
-                "Would you like to save your personal backup?\n\n"
-                "This creates a backup file with your name:\n"
-                f"test_progress_{self.tester_entry.get() or 'tester'}_YYYYMMDD.json\n\n"
-                "• Yes - Save my backup\n"
-                "• No - Skip personal backup\n"
+                f"Would you like to save to {mode_text}?\n\n"
+                "• Yes - Save to database\n"
+                "• No - Exit without saving\n"
                 "• Cancel - Return to testing"
             )
             
-            if response1 is None:  # Cancel
+            if response is None:  # Cancel
                 return  # Return to app
             
-            personal_saved = False
-            if response1:  # Yes - Save personal backup
-                self.save_my_progress()
-                if not self.has_unsaved_changes:
-                    personal_saved = True
-                else:
-                    return  # User cancelled the save dialog, don't exit
+            if response:  # Yes - Save to database
+                self.save_to_database()
+                # Check if save was successful (has_unsaved_changes should be False)
+                if self.has_unsaved_changes:
+                    # User might have cancelled or error occurred
+                    confirm = messagebox.askyesno(
+                        "Exit Anyway?",
+                        "Save was not completed.\n\n"
+                        "Exit anyway?"
+                    )
+                    if not confirm:
+                        return
             
-            # Step 2: Prompt to save to team file
+            # Offer to export report
             response2 = messagebox.askyesno(
-                "Save to TEAM MASTER File?",
-                f"{'✅ Personal backup saved!\n\n' if personal_saved else ''}"
-                "Would you like to update the TEAM MASTER file?\n\n"
-                "This shares your test results with other team members.\n\n"
-                "File: TEAM_MASTER_test_results.json\n\n"
-                "⭐ Recommended: Yes (for team collaboration)"
+                "Export Test Report?",
+                f"You've completed {completed_tests} test(s).\n\n"
+                "Would you like to export a summary report?\n\n"
+                "This creates a readable markdown file."
             )
             
-            if response2:  # Yes - Save to team file
-                self.save_to_team_file()
-                if self.has_unsaved_changes:
-                    # User cancelled the team save, but already saved personal
-                    # Ask if they still want to exit
-                    if personal_saved:
-                        confirm = messagebox.askyesno(
-                            "Exit Anyway?",
-                            "Team file was not updated.\n\n"
-                            "Your personal backup was saved.\n\n"
-                            "Exit anyway?"
-                        )
-                        if not confirm:
-                            return
-            
-            # Step 3: Offer to export report
-            if completed_tests > 0:
-                response3 = messagebox.askyesno(
-                    "Export Test Report?",
-                    f"You've completed {completed_tests} test(s).\n\n"
-                    "Would you like to export a summary report?\n\n"
-                    "This creates a readable text file with:\n"
-                    "• Test results summary\n"
-                    "• Bug reports\n"
-                    "• Testing statistics\n\n"
-                    "Good for sharing with team or documentation."
-                )
-                
-                if response3:
-                    self.export_report()
-            
-            # Step 4: Save to backup folder
-            self.save_to_backup_folder()
+            if response2:
+                self.export_report()
             
             # Exit the application
             self.root.destroy()
@@ -1193,88 +1209,24 @@ class TestingTrackerApp:
             # Both are filled, activate testing
             self.activate_testing(tester_name)
     
-    def backup_results_folder(self):
-        """Backup all files from results folder to backup folder."""
-        import shutil
+    def on_mode_change(self):
+        """Handle mode toggle change (Real/Mockup)."""
+        self.mode = self.mode_var.get()
         
-        try:
-            # Copy all files from results to backup
-            for file in self.results_dir.glob("*.json"):
-                backup_file = self.backup_dir / file.name
-                shutil.copy2(file, backup_file)
-                print(f"Backed up: {file.name} → backup/{file.name}")
-        except Exception as e:
-            print(f"Warning: Could not backup results folder: {e}")
-    
-    def save_to_backup_folder(self):
-        """Save personal and team files to backup folder on exit."""
-        import shutil
-        from datetime import datetime
-        
-        try:
-            tester_name = self.tester_entry.get() or 'tester'
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            
-            # Save personal backup to backup folder
-            personal_backup = self.backup_dir / f"test_progress_{tester_name}_{timestamp}.json"
-            
-            # Prepare data
-            data = {
-                "tester_info": self.tester_info,
-                "saved_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "bug_counter": self.bug_counter,
-                "test_cases": [],
-                "bugs": []
-            }
-            
-            # Add test cases
-            for test in self.test_cases:
-                data["test_cases"].append({
-                    "id": test.id,
-                    "section": test.section,
-                    "title": test.title,
-                    "description": test.description,
-                    "steps": test.steps,
-                    "status": test.status,
-                    "actual_results": test.actual_results,
-                    "notes": test.notes,
-                    "tested_by": test.tested_by,
-                    "tested_date": test.tested_date,
-                    "bugs": test.bugs
-                })
-            
-            # Add bugs
-            for bug in self.bugs:
-                data["bugs"].append({
-                    "bug_id": bug.bug_id,
-                    "test_id": bug.test_id,
-                    "title": bug.title,
-                    "severity": bug.severity,
-                    "priority": bug.priority,
-                    "description": bug.description,
-                    "steps_to_reproduce": bug.steps_to_reproduce,
-                    "expected_behavior": bug.expected_behavior,
-                    "actual_behavior": bug.actual_behavior,
-                    "environment": bug.environment,
-                    "screenshot": bug.screenshot,
-                    "reported_by": bug.reported_by,
-                    "reported_date": bug.reported_date
-                })
-            
-            # Save personal backup
-            with open(personal_backup, 'w', encoding='utf-8') as f:
-                json.dump(data, f, indent=2)
-            print(f"Saved personal backup: {personal_backup.name}")
-            
-            # Copy TEAM_MASTER file to backup with renamed prefix
-            team_file = self.results_dir / "TEAM_MASTER_test_results.json"
-            if team_file.exists():
-                backup_team_file = self.backup_dir / f"BACKUP_TEAM_MASTER_test_results_{timestamp}.json"
-                shutil.copy2(team_file, backup_team_file)
-                print(f"Backed up team file: {backup_team_file.name}")
-            
-        except Exception as e:
-            print(f"Warning: Could not save to backup folder: {e}")
+        # Update title to show current mode
+        if self.mode == "mockup":
+            self.root.title(f"TalentNest Testing Tracker v{self.VERSION} - ⚠️ MOCKUP MODE")
+            messagebox.showinfo(
+                "Mockup Mode Activated",
+                "🧪 You are now in MOCKUP/Practice mode!\n\n"
+                "• Use this to test the testing tracker itself\n"
+                "• Practice the workflow\n"
+                "• Train new team members\n\n"
+                "⚠️ Data will NOT be saved to real testing results.\n"
+                "Switch to REAL mode for actual testing."
+            )
+        else:
+            self.root.title(f"TalentNest Testing Tracker v{self.VERSION}")
     
     def activate_testing(self, tester_name):
         """Activate testing after both name and browser are provided."""
@@ -1283,51 +1235,23 @@ class TestingTrackerApp:
         self.testing_enabled = True
         self.save_tester_info()
         
-        # Backup existing results folder
-        self.backup_results_folder()
+        # Prompt to load from database
+        response = messagebox.askyesno(
+            "Load Previous Progress?",
+            "Would you like to load previous test progress from the database?\n\n"
+            "• Yes: Load TEAM_MASTER from database\n"
+            "• No: Start fresh"
+        )
         
-        # Check for existing files
-        team_file = self.results_dir / "TEAM_MASTER_test_results.json"
-        personal_files = list(self.results_dir.glob(f"test_progress_{tester_name}_*.json"))
-        
-        # Build prompt based on what files exist
-        if team_file.exists() or personal_files:
-            files_found = []
-            if team_file.exists():
-                files_found.append("• TEAM MASTER file (shared progress)")
-            if personal_files:
-                files_found.append(f"• {len(personal_files)} personal backup(s)")
-            
-            response = messagebox.askyesnocancel(
-                "Load Previous Progress?",
-                f"✅ Welcome, {tester_name}!\n\n"
-                "Found existing test files:\n" + "\n".join(files_found) + "\n\n"
-                "Would you like to load previous progress?\n\n"
-                "• Yes - Load TEAM MASTER (recommended)\n"
-                "• No - Load personal backup\n"
-                "• Cancel - Start fresh\n\n"
-                "You can also load files later using the buttons."
-            )
-            
-            if response is True:  # Yes - Load team file
-                self.load_team_file()
-            elif response is False:  # No - Load personal file
-                self.load_progress()
-            else:  # Cancel - Start fresh
-                messagebox.showinfo(
-                    "Ready to Test!",
-                    "Starting with a fresh session.\n\n"
-                    "Tip: Use 'Load Team File' or 'Load Progress'\n"
-                    "buttons anytime to load previous results."
-                )
+        if response:
+            self.load_from_database()
         else:
-            # No files exist
             messagebox.showinfo(
                 "Ready to Test!",
                 f"✅ Welcome, {tester_name}!\n\n"
                 "You can now start testing!\n\n"
-                "Note: No previous test files found.\n"
-                "You'll be the first to create test results!"
+                "Tip: Use 'Load from Database' button anytime\n"
+                "to load TEAM_MASTER progress."
             )
     
     def disable_testing_controls(self):
@@ -1351,13 +1275,16 @@ class TestingTrackerApp:
         if hasattr(self, 'next_button'):
             self.next_button.config(state=tk.DISABLED)
         
-        # Disable action buttons
-        if hasattr(self, 'load_team_button'):
-            self.load_team_button.config(state=tk.DISABLED)
-        if hasattr(self, 'save_progress_button'):
-            self.save_progress_button.config(state=tk.DISABLED)
-        if hasattr(self, 'save_team_button'):
-            self.save_team_button.config(state=tk.DISABLED)
+        # Disable action buttons (database)
+        if hasattr(self, 'load_db_button'):
+            self.load_db_button.config(state=tk.DISABLED)
+        if hasattr(self, 'save_db_button'):
+            self.save_db_button.config(state=tk.DISABLED)
+        # Disable action buttons (file)
+        if hasattr(self, 'load_file_button'):
+            self.load_file_button.config(state=tk.DISABLED)
+        if hasattr(self, 'save_file_button'):
+            self.save_file_button.config(state=tk.DISABLED)
         if hasattr(self, 'export_button'):
             self.export_button.config(state=tk.DISABLED)
         
@@ -1391,13 +1318,16 @@ class TestingTrackerApp:
         if hasattr(self, 'next_button'):
             self.next_button.config(state=tk.NORMAL)
         
-        # Enable action buttons
-        if hasattr(self, 'load_team_button'):
-            self.load_team_button.config(state=tk.NORMAL)
-        if hasattr(self, 'save_progress_button'):
-            self.save_progress_button.config(state=tk.NORMAL)
-        if hasattr(self, 'save_team_button'):
-            self.save_team_button.config(state=tk.NORMAL)
+        # Enable action buttons (database)
+        if hasattr(self, 'load_db_button'):
+            self.load_db_button.config(state=tk.NORMAL)
+        if hasattr(self, 'save_db_button'):
+            self.save_db_button.config(state=tk.NORMAL)
+        # Enable action buttons (file)
+        if hasattr(self, 'load_file_button'):
+            self.load_file_button.config(state=tk.NORMAL)
+        if hasattr(self, 'save_file_button'):
+            self.save_file_button.config(state=tk.NORMAL)
         if hasattr(self, 'export_button'):
             self.export_button.config(state=tk.NORMAL)
         
@@ -2094,6 +2024,204 @@ class TestingTrackerApp:
         
         except Exception as e:
             messagebox.showerror("Error", f"Could not merge results:\n{str(e)}")
+    
+    # ========================================================================
+    # DATABASE METHODS (v2.0)
+    # ========================================================================
+    
+    def get_api_endpoint(self):
+        """Get the correct API endpoint based on mode (real or mockup)."""
+        if self.mode == "mockup":
+            return f"{self.api_base_url}/testing/mockup"
+        else:
+            return f"{self.api_base_url}/testing"
+    
+    def save_to_database(self):
+        """Save test session to MongoDB via API."""
+        # Save current test first
+        if self.current_test:
+            self.save_current_test()
+        
+        # Prepare data
+        data = {
+            "session_id": f"{self.tester_entry.get()}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+            "tester_name": self.tester_entry.get(),
+            "browser": self.browser_combo.get(),
+            "test_date": datetime.now().isoformat(),
+            "test_cases": [
+                {
+                    "test_id": test.id,
+                    "section": test.section,
+                    "title": test.title,
+                    "status": test.status,
+                    "actual_results": test.actual_results,
+                    "notes": test.notes,
+                    "tested_date": test.tested_date or None
+                }
+                for test in self.test_cases
+            ],
+            "bugs": [
+                {
+                    "bug_id": bug.bug_id,
+                    "test_id": bug.test_id,
+                    "severity": bug.severity,
+                    "description": bug.description,
+                    "steps_to_reproduce": bug.steps_to_reproduce,
+                    "expected": bug.expected_behavior,
+                    "actual": bug.actual_behavior,
+                    "reported_by": bug.reported_by,
+                    "reported_date": bug.reported_date
+                }
+                for bug in self.bugs
+            ],
+            "is_master": False,
+            "version": self.VERSION
+        }
+        
+        endpoint = self.get_api_endpoint()
+        
+        # Show warning if in mockup mode
+        if self.mode == "mockup":
+            response = messagebox.askyesno(
+                "Mockup Mode",
+                "⚠️ You are in MOCKUP mode!\n\n"
+                "This will NOT save to real testing data.\n"
+                "Continue?"
+            )
+            if not response:
+                return
+        
+        try:
+            response = requests.post(
+                f"{endpoint}/test-sessions",
+                json=data,
+                headers={"Content-Type": "application/json"},
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                self.has_unsaved_changes = False
+                mode_text = "MOCKUP" if self.mode == "mockup" else "database"
+                messagebox.showinfo(
+                    "Success",
+                    f"✅ Session saved to {mode_text}!\n\n"
+                    f"Session ID: {data['session_id']}\n"
+                    f"Tests completed: {sum(1 for t in self.test_cases if t.status != 'Not Started')}/40"
+                )
+            else:
+                messagebox.showerror(
+                    "Error",
+                    f"Failed to save to database:\n{response.text}"
+                )
+        except requests.exceptions.ConnectionError:
+            messagebox.showerror(
+                "Connection Error",
+                "❌ Could not connect to backend server!\n\n"
+                "Please ensure the backend is running:\n"
+                "1. Open terminal in backend folder\n"
+                "2. Run: python -m uvicorn app.main:app --reload\n"
+                "3. Try saving again"
+            )
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to save: {str(e)}")
+    
+    def load_from_database(self):
+        """Load TEAM_MASTER from MongoDB via API."""
+        endpoint = self.get_api_endpoint()
+        
+        try:
+            response = requests.get(
+                f"{endpoint}/test-sessions/master",
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data:
+                    self.load_session_data(data)
+                    mode_text = "MOCKUP_MASTER" if self.mode == "mockup" else "TEAM_MASTER"
+                    self.loaded_filename = f"{mode_text} (from database)"
+                    self.loaded_file_label.config(text=f"📂 {self.loaded_filename}")
+                    
+                    completed = sum(1 for t in self.test_cases if t.status != "Not Started")
+                    messagebox.showinfo(
+                        "Success",
+                        f"✅ Loaded {mode_text}\n\n"
+                        f"Last updated: {data.get('test_date', 'Unknown')}\n"
+                        f"Tests completed: {completed}/40"
+                    )
+                else:
+                    mode_text = "MOCKUP_MASTER" if self.mode == "mockup" else "TEAM_MASTER"
+                    messagebox.showwarning(
+                        "Not Found",
+                        f"No {mode_text} in database yet.\n"
+                        "Start testing to create one!"
+                    )
+            else:
+                messagebox.showerror("Error", f"Failed to load: {response.text}")
+        except requests.exceptions.ConnectionError:
+            messagebox.showerror(
+                "Connection Error",
+                "❌ Could not connect to backend server!\n\n"
+                "Please ensure the backend is running:\n"
+                "1. Open terminal in backend folder\n"
+                "2. Run: python -m uvicorn app.main:app --reload\n"
+                "3. Try loading again"
+            )
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to load: {str(e)}")
+    
+    def load_session_data(self, data):
+        """Load session data into the application (works for both file and database)."""
+        # Load tester info
+        self.tester_entry.delete(0, tk.END)
+        self.tester_entry.insert(0, data.get("tester_name", ""))
+        self.browser_combo.set(data.get("browser", "Chrome"))
+        
+        # Load test cases
+        for test_data in data.get("test_cases", []):
+            for test in self.test_cases:
+                if test.id == test_data["test_id"]:
+                    test.status = test_data.get("status", "Not Started")
+                    test.actual_results = test_data.get("actual_results", "")
+                    test.notes = test_data.get("notes", "")
+                    test.tested_date = test_data.get("tested_date", "")
+                    break
+        
+        # Load bugs
+        self.bugs = []
+        for bug_data in data.get("bugs", []):
+            bug = Bug(
+                bug_id=bug_data.get("bug_id", ""),
+                test_id=bug_data.get("test_id", ""),
+                severity=bug_data.get("severity", "Medium"),
+                description=bug_data.get("description", ""),
+                steps_to_reproduce=bug_data.get("steps_to_reproduce", ""),
+                expected=bug_data.get("expected", ""),
+                actual=bug_data.get("actual", "")
+            )
+            bug.reported_by = bug_data.get("reported_by", "")
+            bug.reported_date = bug_data.get("reported_date", "")
+            self.bugs.append(bug)
+        
+        # Update bug counter
+        if self.bugs:
+            max_bug_num = max([int(bug.bug_id.split('-')[1]) for bug in self.bugs if '-' in bug.bug_id], default=0)
+            self.bug_counter = max_bug_num + 1
+        
+        # Refresh UI
+        self.populate_tree()
+        self.update_progress()
+        
+        if self.current_test:
+            self.display_test(self.current_test)
+        
+        # Reset unsaved changes flag
+        self.has_unsaved_changes = False
+    
+    # ========================================================================
+    # END DATABASE METHODS
+    # ========================================================================
     
     def export_report(self):
         """Export testing report to markdown."""

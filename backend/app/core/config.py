@@ -20,6 +20,14 @@ class Settings(BaseSettings):
     # OpenAI (Optional - for AI features)
     OPENAI_API_KEY: Optional[str] = None
     
+    # n8n Workflow Automation (Optional - for AI orchestration)
+    N8N_BASE_URL: str = "http://localhost:5678"
+    N8N_API_KEY: Optional[str] = None
+    N8N_JOB_RECOMMENDATION_WORKFLOW_ID: str = "job-recommendation"
+    N8N_CANDIDATE_MATCHING_WORKFLOW_ID: str = "candidate-matching"
+    N8N_RESUME_PARSING_WORKFLOW_ID: str = "resume-parsing"
+    N8N_EMAIL_NOTIFICATION_WORKFLOW_ID: str = "email-notification"
+    
     # SMTP (Optional - for email notifications)
     SMTP_HOST: str = "smtp.gmail.com"
     SMTP_PORT: int = 587
