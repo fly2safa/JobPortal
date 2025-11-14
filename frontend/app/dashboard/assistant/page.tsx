@@ -24,6 +24,15 @@ export default function AssistantPage() {
       return response.message;
     } catch (error: any) {
       console.error('Failed to send message:', error);
+      
+      // Handle rate limit errors specifically
+      if (error.isRateLimit || error.response?.status === 429) {
+        const retryAfter = error.retryAfter || 60;
+        throw new Error(
+          `Too many AI requests. Please wait ${retryAfter} seconds before sending another message.`
+        );
+      }
+      
       throw new Error(
         error.response?.data?.detail || 'Failed to send message. Please try again.'
       );

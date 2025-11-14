@@ -50,10 +50,19 @@ export function CoverLetterGenerator({
       setCoverLetter(generatedLetter);
     } catch (err: any) {
       console.error('Failed to generate cover letter:', err);
-      setError(
-        err.response?.data?.detail ||
-          'Failed to generate cover letter. Please try again or write it manually.'
-      );
+      
+      // Handle rate limit errors specifically
+      if (err.isRateLimit || err.response?.status === 429) {
+        const retryAfter = err.retryAfter || 60;
+        setError(
+          `Too many cover letter generation requests. Please wait ${retryAfter} seconds before generating another cover letter.`
+        );
+      } else {
+        setError(
+          err.response?.data?.detail ||
+            'Failed to generate cover letter. Please try again or write it manually.'
+        );
+      }
     } finally {
       setGenerating(false);
     }

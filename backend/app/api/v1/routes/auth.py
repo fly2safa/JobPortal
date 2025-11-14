@@ -107,7 +107,9 @@ async def login(request: Request, credentials: UserLogin):
     Raises:
         HTTPException: If credentials are invalid
     """
-    logger.info(f"Login attempt for email: {credentials.email}")
+    # Log rate limiting check (for debugging)
+    client_ip = request.client.host if request.client else "unknown"
+    logger.info(f"Login attempt for email: {credentials.email} from IP: {client_ip}")
     
     # Find user by email
     user = await User.find_one(User.email == credentials.email)

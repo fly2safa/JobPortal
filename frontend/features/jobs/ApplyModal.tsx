@@ -111,7 +111,13 @@ export function ApplyModal({
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to submit application. Please try again.');
+      // Handle rate limit errors specifically
+      if (err.isRateLimit || err.response?.status === 429) {
+        const retryAfter = err.retryAfter || 60;
+        setError(`Too many applications submitted. Please wait ${retryAfter} seconds before applying to another job.`);
+      } else {
+        setError(err.response?.data?.error || err.response?.data?.detail || 'Failed to submit application. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }

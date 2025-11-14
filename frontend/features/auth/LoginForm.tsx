@@ -46,6 +46,14 @@ export function LoginForm() {
       }
     } catch (err: any) {
       console.error('Login error:', err);
+      
+      // Handle rate limit errors specifically
+      if (err.isRateLimit || err.response?.status === 429) {
+        const retryAfter = err.retryAfter || 60;
+        setError(`Too many login attempts. Please wait ${retryAfter} seconds before trying again.`);
+        return;
+      }
+      
       // FastAPI returns errors in 'detail' field, not 'error'
       if (err.response?.data?.detail) {
         setError(err.response.data.detail);

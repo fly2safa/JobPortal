@@ -71,7 +71,13 @@ export default function NewJobPage() {
       });
       router.push('/employer/jobs');
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to create job. Please try again.');
+      // Handle rate limit errors specifically
+      if (err.isRateLimit || err.response?.status === 429) {
+        const retryAfter = err.retryAfter || 60;
+        setError(`Too many job postings. Please wait ${retryAfter} seconds before posting another job.`);
+      } else {
+        setError(err.response?.data?.detail || 'Failed to create job. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }
