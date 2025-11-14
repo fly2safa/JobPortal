@@ -1,3 +1,0 @@
-# This file ensures the results directory is tracked by Git
-# Personal test files (test_progress_*.json) are ignored
-# Only TEAM_MASTER_test_results.json should be committed

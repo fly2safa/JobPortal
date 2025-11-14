@@ -18,9 +18,7 @@ from app.models.user import User
 from app.models.company import Company
 from app.api.dependencies import get_current_user, get_current_employer
 from app.services.search_service import SearchService
-from app.services.candidate_matching_service import candidate_matching_service
 from app.core.logging import get_logger
-from pydantic import BaseModel, Field
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
@@ -574,84 +572,6 @@ async def delete_job(
     
     await job.delete()
     logger.info(f"Job deleted successfully: {job.title} (ID: {job_id})")
-
-
-# Candidate Matching Response Models
-class CandidateRankingResponse(BaseModel):
-    """Single candidate ranking response."""
-    candidate_id: str
-    candidate_name: str
-    current_role: str
-    match_score: int = Field(..., ge=0, le=100)
-    match_reason: str
-    skills_match: dict
-    experience_relevance: str
-    concerns: str
-
-
-class CandidateRankingsListResponse(BaseModel):
-    """List of candidate rankings."""
-    rankings: List[CandidateRankingResponse]
-    total: int
-    job_id: str
-    job_title: str
-
-
-@router.get("/{job_id}/recommended-candidates", response_model=CandidateRankingsListResponse)
-async def get_recommended_candidates(
-    job_id: str,
-    limit: int = Query(10, ge=1, le=50, description="Maximum number of candidates"),
-    use_ai: bool = Query(True, description="Use AI chain for intelligent ranking"),
-    applicants_only: bool = Query(False, description="Only rank existing applicants"),
-    current_user: User = Depends(get_current_employer)
-):
-    """
-    Get AI-powered candidate recommendations for a job posting.
-    
-    Uses vector similarity search and LangChain to analyze candidate profiles
-    against job requirements and provide intelligent rankings with match scores.
-    
-    **Employer only endpoint** - requires employer authentication.
-    """
-    try:
-        # Verify the job exists and belongs to the employer
-        job = await Job.get(PydanticObjectId(job_id))
-        if not job:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Job not found"
-            )
-        
-        # Verify ownership
-        if job.employer_id != str(current_user.id):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You are not authorized to view candidates for this job"
-            )
-        
-        # Get candidate rankings
-        rankings = await candidate_matching_service.get_recommended_candidates(
-            job_id=job_id,
-            limit=limit,
-            use_ai=use_ai,
-            include_applicants_only=applicants_only
-        )
-        
-        return CandidateRankingsListResponse(
-            rankings=rankings,
-            total=len(rankings),
-            job_id=job_id,
-            job_title=job.title
-        )
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error getting candidate recommendations for job {job_id}: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to generate candidate recommendations. Please try again later."
-        )
 
 
 

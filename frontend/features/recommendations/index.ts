@@ -1,2 +1,0 @@
-export { RecommendationCard } from './RecommendationCard';
-
