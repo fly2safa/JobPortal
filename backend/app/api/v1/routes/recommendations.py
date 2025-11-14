@@ -1,172 +1,340 @@
 """
-API routes for AI-powered job recommendations.
+Recommendations routes for AI-powered job and candidate matching.
 """
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, HTTPException, status, Depends, Query
 from pydantic import BaseModel, Field
+from datetime import datetime
 from app.models.user import User
-from app.api.v1.dependencies import get_current_user
+from app.models.job import Job
+from app.api.dependencies import get_current_user, get_current_employer
 from app.services.recommendation_service import recommendation_service
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
+router = APIRouter(prefix="/recommendations", tags=["Recommendations"])
 
-router = APIRouter(prefix="/recommendations", tags=["recommendations"])
+
+# Response models
+class JobRecommendationResponse(BaseModel):
+    """Job recommendation with match score and reasons."""
+    job: dict
+    match_score: float = Field(..., ge=0.0, le=1.0, description="Match score (0-1)")
+    reasons: List[str] = Field(..., description="Reasons for the recommendation")
+    recommended_at: datetime
 
 
-# Response Models
-class RecommendationResponse(BaseModel):
-    """Single job recommendation response."""
-    job_id: str
-    job_title: str
-    company: str
-    match_score: int = Field(..., ge=0, le=100)
-    match_reason: str
-    skills_alignment: List[str]
-    growth_potential: str
+class CandidateRecommendationResponse(BaseModel):
+    """Candidate recommendation with match score and reasons."""
+    candidate: dict
+    match_score: float = Field(..., ge=0.0, le=1.0, description="Match score (0-1)")
+    reasons: List[str] = Field(..., description="Reasons for the recommendation")
+    recommended_at: datetime
 
 
 class RecommendationsListResponse(BaseModel):
     """List of job recommendations."""
-    recommendations: List[RecommendationResponse]
+    recommendations: List[JobRecommendationResponse]
     total: int
+    user_id: str
 
 
-class SimilarJobResponse(BaseModel):
-    """Similar job response."""
+class CandidateRecommendationsListResponse(BaseModel):
+    """List of candidate recommendations."""
+    recommendations: List[CandidateRecommendationResponse]
+    total: int
     job_id: str
-    job_title: str
-    company: str
-    similarity_score: float
-    location: Optional[str] = None
 
 
-class SimilarJobsListResponse(BaseModel):
-    """List of similar jobs."""
-    similar_jobs: List[SimilarJobResponse]
-    total: int
-
-
-# Routes
-@router.get("/", response_model=RecommendationsListResponse)
-async def get_recommendations(
-    limit: int = Query(10, ge=1, le=50, description="Maximum number of recommendations"),
-    use_ai: bool = Query(True, description="Use AI chain for intelligent ranking"),
-    current_user: User = Depends(get_current_user)
+# Job Seeker Endpoints
+@router.get("/jobs", response_model=List[JobRecommendationResponse])
+async def get_job_recommendations(
+    current_user: User = Depends(get_current_user),
+    limit: int = Query(20, ge=1, le=50, description="Maximum number of recommendations"),
+    min_score: float = Query(0.3, ge=0.0, le=1.0, description="Minimum match score threshold")
 ):
     """
-    Get personalized job recommendations for the current user.
+    Get personalized job recommendations for the current user (Job Seeker only).
     
-    Uses AI-powered matching to analyze user profile, skills, and experience
-    against available jobs and provide ranked recommendations with match scores.
+    Uses AI to analyze the user's profile (skills, experience, preferences) and
+    recommend the most relevant job postings from the database.
+    
+    Args:
+        current_user: Current authenticated user
+        limit: Maximum number of recommendations (default: 20, max: 50)
+        min_score: Minimum similarity score threshold (default: 0.3)
+        
+    Returns:
+        List of job recommendations with match scores and reasons
+        
+    Raises:
+        HTTPException: If user is not a job seeker or service error
     """
+    from app.models.user import UserRole
+    
+    # Verify user is a job seeker
+    if current_user.role != UserRole.JOB_SEEKER:
+        logger.warning(
+            f"Job recommendations requested by non-job seeker: {current_user.email}"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Job recommendations are only available for job seekers"
+        )
+    
+    logger.info(
+        f"Job recommendations requested by user {current_user.email} "
+        f"(limit: {limit}, min_score: {min_score})"
+    )
+    
     try:
-        recommendations = await recommendation_service.get_recommendations_for_user(
+        # Get recommendations from service
+        recommendations = await recommendation_service.get_job_recommendations_for_user(
             user=current_user,
             limit=limit,
-            use_ai=use_ai
+            min_score=min_score
         )
         
-        return RecommendationsListResponse(
-            recommendations=recommendations,
-            total=len(recommendations)
+        logger.info(
+            f"Returning {len(recommendations)} job recommendations for {current_user.email}"
         )
+        
+        return recommendations
         
     except Exception as e:
-        logger.error(f"Error getting recommendations for user {current_user.id}: {e}")
+        logger.error(f"Error getting job recommendations: {str(e)}")
         raise HTTPException(
-            status_code=500,
-            detail="Failed to generate recommendations. Please try again later."
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate job recommendations"
         )
 
 
-@router.get("/similar/{job_id}", response_model=SimilarJobsListResponse)
-async def get_similar_jobs(
+@router.post("/initialize", status_code=status.HTTP_200_OK)
+async def initialize_recommendation_system(
+    force_refresh: bool = Query(False, description="Force refresh the vector store"),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Initialize or refresh the recommendation system's vector store.
+    
+    This endpoint triggers the loading of active jobs into the vector store
+    for similarity search. Typically called during system startup or when
+    refreshing the recommendations database.
+    
+    Args:
+        force_refresh: Force refresh even if already initialized
+        current_user: Current authenticated user (any role)
+        
+    Returns:
+        Status message
+    """
+    logger.info(
+        f"Vector store initialization requested by {current_user.email} "
+        f"(force_refresh: {force_refresh})"
+    )
+    
+    try:
+        await recommendation_service.initialize_vector_store(force_refresh=force_refresh)
+        
+        vector_store_size = recommendation_service.vector_store.size()
+        
+        return {
+            "status": "success",
+            "message": f"Recommendation system initialized with {vector_store_size} jobs",
+            "vector_store_size": vector_store_size
+        }
+        
+    except Exception as e:
+        logger.error(f"Error initializing recommendation system: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to initialize recommendation system"
+        )
+
+
+# Employer Endpoints
+@router.get("/jobs/{job_id}/candidates", response_model=List[CandidateRecommendationResponse])
+async def get_candidate_recommendations_for_job(
     job_id: str,
-    limit: int = Query(5, ge=1, le=20, description="Maximum number of similar jobs"),
+    current_user: User = Depends(get_current_employer),
+    limit: int = Query(20, ge=1, le=50, description="Maximum number of recommendations"),
+    min_score: float = Query(0.3, ge=0.0, le=1.0, description="Minimum match score threshold"),
+    include_applied: bool = Query(False, description="Include candidates who already applied")
+):
+    """
+    Get AI-powered candidate recommendations for a specific job posting (Employer only).
+    
+    Uses AI embeddings to analyze the job requirements and match with the most suitable
+    candidates from the job seeker database. Returns candidates ranked by match score
+    along with specific reasons why each candidate is a good fit.
+    
+    Args:
+        job_id: Job posting ID
+        current_user: Current authenticated employer
+        limit: Maximum number of recommendations (default: 20, max: 50)
+        min_score: Minimum similarity score threshold (default: 0.3)
+        include_applied: Whether to include candidates who already applied (default: False)
+        
+    Returns:
+        List of candidate recommendations with match scores and reasons
+        
+    Raises:
+        HTTPException: If job not found, unauthorized, or service error
+    """
+    logger.info(
+        f"Candidate recommendations requested for job {job_id} by {current_user.email}"
+    )
+    
+    # Get the job
+    job = await Job.get(job_id)
+    if not job:
+        logger.warning(f"Job not found: {job_id}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job not found"
+        )
+    
+    # Verify user owns this job
+    if job.employer_id != str(current_user.id):
+        logger.warning(
+            f"Unauthorized candidate recommendations access: "
+            f"user {current_user.email} for job {job_id}"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not authorized to view recommendations for this job"
+        )
+    
+    # Check if job is active
+    from app.models.job import JobStatus
+    if job.status != JobStatus.ACTIVE:
+        logger.warning(
+            f"Candidate recommendations requested for inactive job {job_id}"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot get candidate recommendations for inactive jobs"
+        )
+    
+    try:
+        # Get recommendations from service
+        recommendations = await recommendation_service.get_candidate_recommendations_for_job(
+            job=job,
+            limit=limit,
+            min_score=min_score,
+            include_applied=include_applied
+        )
+        
+        logger.info(
+            f"Returning {len(recommendations)} candidate recommendations "
+            f"for job {job_id}"
+        )
+        
+        return recommendations
+        
+    except Exception as e:
+        logger.error(f"Error getting candidate recommendations: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate candidate recommendations"
+        )
+
+
+@router.post("/jobs/{job_id}/refresh", status_code=status.HTTP_200_OK)
+async def refresh_job_in_recommendations(
+    job_id: str,
+    current_user: User = Depends(get_current_employer)
+):
+    """
+    Refresh a specific job in the recommendation system (Employer only).
+    
+    Updates the job's embedding in the vector store. Useful after editing
+    a job posting to ensure recommendations reflect the latest changes.
+    
+    Args:
+        job_id: Job posting ID
+        current_user: Current authenticated employer
+        
+    Returns:
+        Status message
+        
+    Raises:
+        HTTPException: If job not found or unauthorized
+    """
+    logger.info(f"Job refresh in vector store requested for {job_id} by {current_user.email}")
+    
+    # Get the job
+    job = await Job.get(job_id)
+    if not job:
+        logger.warning(f"Job not found: {job_id}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job not found"
+        )
+    
+    # Verify user owns this job
+    if job.employer_id != str(current_user.id):
+        logger.warning(
+            f"Unauthorized job refresh: user {current_user.email} for job {job_id}"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not authorized to refresh this job"
+        )
+    
+    try:
+        await recommendation_service.refresh_job_in_vector_store(job)
+        
+        return {
+            "status": "success",
+            "message": f"Job {job_id} refreshed in recommendation system",
+            "job_id": job_id
+        }
+        
+    except Exception as e:
+        logger.error(f"Error refreshing job in recommendations: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to refresh job in recommendation system"
+        )
+
+
+# System Status Endpoint
+@router.get("/status", status_code=status.HTTP_200_OK)
+async def get_recommendation_system_status(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Get jobs similar to a specific job.
+    Get the status of the recommendation system.
     
-    Uses vector similarity search to find jobs with similar titles,
-    descriptions, and required skills.
-    """
-    try:
-        similar_jobs = await recommendation_service.get_similar_jobs(
-            job_id=job_id,
-            limit=limit
-        )
+    Provides information about the vector store, embedding service,
+    and overall system health.
+    
+    Args:
+        current_user: Current authenticated user
         
-        return SimilarJobsListResponse(
-            similar_jobs=similar_jobs,
-            total=len(similar_jobs)
-        )
+    Returns:
+        System status information
+    """
+    logger.debug(f"Recommendation system status requested by {current_user.email}")
+    
+    try:
+        from app.ai.rag.embeddings import embeddings_handler
+        
+        status_info = {
+            "embeddings_available": embeddings_handler.is_available,
+            "vector_store_size": recommendation_service.vector_store.size(),
+            "vector_store_initialized": recommendation_service._vector_store_initialized,
+            "embedding_cache_size": embeddings_handler.get_cache_size(),
+            "status": "operational" if embeddings_handler.is_available else "limited"
+        }
+        
+        return status_info
         
     except Exception as e:
-        logger.error(f"Error getting similar jobs for {job_id}: {e}")
+        logger.error(f"Error getting recommendation system status: {str(e)}")
         raise HTTPException(
-            status_code=500,
-            detail="Failed to find similar jobs. Please try again later."
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get recommendation system status"
         )
-
-
-@router.post("/index-jobs")
-async def index_all_jobs(
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Index all active jobs in the vector store for recommendations.
-    
-    This endpoint is typically called by admins or background jobs
-    to refresh the recommendation system's job index.
-    
-    Note: In production, this should be restricted to admin users only.
-    """
-    try:
-        # TODO: Add admin-only check
-        # if current_user.role != "admin":
-        #     raise HTTPException(status_code=403, detail="Admin access required")
-        
-        await recommendation_service.index_all_jobs()
-        
-        return {
-            "message": "Successfully indexed all active jobs",
-            "status": "success"
-        }
-        
-    except Exception as e:
-        logger.error(f"Error indexing jobs: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to index jobs. Please try again later."
-        )
-
-
-@router.get("/health")
-async def health_check():
-    """
-    Health check endpoint for the recommendation service.
-    
-    Returns the status of the recommendation system components.
-    """
-    try:
-        from app.ai.rag.vectorstore import job_vectorstore
-        
-        # Check vector store
-        job_count = job_vectorstore.get_collection_count()
-        
-        return {
-            "status": "healthy",
-            "indexed_jobs": job_count,
-            "ai_enabled": True
-        }
-        
-    except Exception as e:
-        logger.error(f"Health check failed: {e}")
-        return {
-            "status": "degraded",
-            "error": str(e),
-            "ai_enabled": False
-        }
 
