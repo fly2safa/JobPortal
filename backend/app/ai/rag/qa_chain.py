@@ -9,6 +9,7 @@ from app.ai.rag.retriever import Retriever
 from app.ai.providers import get_llm, ProviderError
 from app.core.config import settings
 from app.core.logging import get_logger
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 
 logger = get_logger(__name__)
 
@@ -70,22 +71,30 @@ class QAChain:
             # Build system prompt
             system_prompt = self._build_system_prompt(context, user_context)
             
-            # Build messages for OpenAI
-            messages = [{"role": "system", "content": system_prompt}]
+            # Build messages for LangChain Chat model
+            lc_messages: List = [SystemMessage(content=system_prompt)]
             
             # Add conversation history (limit to last 10 messages)
             if conversation_history:
-                messages.extend(conversation_history[-10:])
+                for msg in conversation_history[-10:]:
+                    role = msg.get("role")
+                    content = msg.get("content", "")
+                    if not content:
+                        continue
+                    if role == "user":
+                        lc_messages.append(HumanMessage(content=content))
+                    else:
+                        lc_messages.append(AIMessage(content=content))
             
             # Add current question
-            messages.append({"role": "user", "content": question})
+            lc_messages.append(HumanMessage(content=question))
             
             # Get LLM with automatic fallback
             try:
                 llm = get_llm(temperature=0.7, max_tokens=500)
                 
                 # Invoke LLM
-                answer = llm.invoke(messages).content
+                answer = llm.invoke(lc_messages).content
                 logger.info(f"Generated answer for question: {question[:50]}...")
                 
                 return answer

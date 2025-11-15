@@ -106,15 +106,17 @@ export default function ApplicationsPage() {
                           application.status === 'rejected' ? 'danger' :
                           application.status === 'shortlisted' ? 'success' :
                           application.status === 'reviewing' ? 'info' :
+                          application.status === 'interview' ? 'info' :
+                          application.status === 'withdrawn' ? 'secondary' :
                           'warning'
                         }
                       >
-                        {APPLICATION_STATUS[application.status].label}
+                        {APPLICATION_STATUS[application.status as keyof typeof APPLICATION_STATUS]?.label ?? (application.status || 'Unknown')}
                       </Badge>
                     </div>
 
                     <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
-                      <span>Applied: {formatDate(application.applied_date)}</span>
+                      <span>Applied: {formatDate(application.applied_date || application.applied_at || application.updated_at)}</span>
                       <span>•</span>
                       <span>Updated: {formatDate(application.updated_at)}</span>
                     </div>

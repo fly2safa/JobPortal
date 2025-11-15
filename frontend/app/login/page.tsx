@@ -1,5 +1,6 @@
 import { LoginForm } from '@/features/auth/LoginForm';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function LoginPage() {
   return (
@@ -7,17 +8,27 @@ export default function LoginPage() {
       <div className="w-full max-w-2xl">
         {/* Logo */}
         <Link href="/" className="flex items-center justify-center mb-6">
-          <span className="text-4xl">
-            <span style={{ 
-              fontFamily: 'Playfair Display, serif', 
-              fontWeight: 700,
-              background: 'linear-gradient(135deg, #075299 0%, #5a9ab3 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text'
-            }}>TALENT</span>
-            <span style={{ fontFamily: 'Dancing Script, cursive', fontWeight: 700 }} className="text-primary">Nest</span>
-          </span>
+          <div className="flex items-center">
+            <Image
+              src="/logo-bird.png"
+              alt="TalentNest bird logo"
+              width={44}
+              height={44}
+              priority
+              className="mr-2"
+            />
+            <span className="text-4xl">
+              <span style={{ 
+                fontFamily: 'Playfair Display, serif', 
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #075299 0%, #5a9ab3 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text'
+              }}>TALENT</span>
+              <span style={{ fontFamily: 'Dancing Script, cursive', fontWeight: 700 }} className="text-primary">Nest</span>
+            </span>
+          </div>
         </Link>
 
         {/* Welcome Message */}

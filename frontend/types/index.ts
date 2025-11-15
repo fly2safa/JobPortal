@@ -97,7 +97,7 @@ export interface Application {
   applicant_email?: string;
   resume_url: string;
   cover_letter?: string;
-  status: 'pending' | 'reviewing' | 'shortlisted' | 'rejected' | 'accepted';
+  status: 'pending' | 'reviewing' | 'shortlisted' | 'interview' | 'rejected' | 'accepted' | 'withdrawn';
   applied_date?: string;
   applied_at?: string;
   updated_at: string;
