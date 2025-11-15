@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Tuple
 
 from PIL import Image, ImageChops, ImageFilter
+import colorsys
 
 
 def find_bird_hat_bbox(
@@ -68,6 +69,9 @@ def crop_bird_hat(input_path: Path, output_path: Path) -> None:
 	# Make background transparent by flood-filling near-white from edges
 	cropped = make_bg_transparent(cropped)
 
+	# Recolor hat (dark neutral pixels) to bird brand blue
+	cropped = recolor_hat_to_bird_blue(cropped)
+
 	output_path.parent.mkdir(parents=True, exist_ok=True)
 	cropped.save(output_path)
 	print(f"Cropped bird+hat saved to: {output_path}")
@@ -97,6 +101,49 @@ def make_bg_transparent(img: Image.Image, white_threshold: int = 245) -> Image.I
 	result = img.copy()
 	result.putalpha(alpha)
 	return result
+
+
+def recolor_hat_to_bird_blue(
+	img: Image.Image,
+	target_rgb: Tuple[int, int, int] = (7, 82, 153),
+	brightness_thresh: int = 160,
+	saturation_thresh: int = 40,
+) -> Image.Image:
+	"""
+	Recolor hat to brand blue using HSV to catch all dark, low-saturation pixels.
+	- S (saturation) below saturation_thresh considered neutral/gray/black.
+	- V (brightness) below brightness_thresh considered dark.
+	- Preserves alpha. Skips already-blue pixels.
+	"""
+	if img.mode != "RGBA":
+		img = img.convert("RGBA")
+
+	pixels = img.load()
+	w, h = img.size
+
+	tr, tg, tb = target_rgb
+
+	for y in range(h):
+		for x in range(w):
+			r, g, b, a = pixels[x, y]
+			if a == 0:
+				continue
+
+			# Skip pixels that are already blue-ish (to avoid recoloring the bird).
+			# Blue-ish: b is dominant and saturation is moderate.
+			max_ch = max(r, g, b)
+			if b == max_ch and b > 100 and b > r + 20 and b > g + 20:
+				continue
+
+			# Convert to HSV (0..1)
+			hh, ss, vv = colorsys.rgb_to_hsv(r / 255.0, g / 255.0, b / 255.0)
+			S = int(ss * 255)
+			V = int(vv * 255)
+
+			if S <= saturation_thresh and V <= brightness_thresh:
+				pixels[x, y] = (tr, tg, tb, a)
+
+	return img
 
 def main():
 	parser = argparse.ArgumentParser(description="Crop the bird+hat icon from TalentNest.png")
