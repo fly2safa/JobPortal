@@ -14,6 +14,7 @@ from app.models.user import User
 from app.models.resume import Resume
 from app.ai.providers import get_llm, ProviderError
 from app.ai.rag.vectorstore import get_vector_store
+from app.ai.chains.candidate_matching_chain import get_candidate_matching_chain
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -282,7 +283,7 @@ class CandidateMatchingService:
         resume: Optional[Resume]
     ) -> Dict[str, Any]:
         """
-        Calculate match score between job and candidate using AI.
+        Calculate match score between job and candidate using LangChain candidate matching chain.
         
         Args:
             job: Job object
@@ -293,28 +294,28 @@ class CandidateMatchingService:
             Dictionary with score and reasons
         """
         try:
-            # Build prompt for AI
-            prompt = self._build_matching_prompt(job, user, resume)
+            # Get candidate matching chain
+            chain = get_candidate_matching_chain(temperature=0.3, max_tokens=300)
             
-            # Get LLM with automatic fallback
-            llm = get_llm(temperature=0.3, max_tokens=300)
+            # Prepare job data
+            job_data = {
+                "title": job.title,
+                "company_name": job.company_name,
+                "skills": job.skills,
+                "description": job.description,
+                "experience_level": job.experience_level,
+            }
             
-            messages = [
-                {
-                    "role": "system",
-                    "content": "You are an expert recruiter. Analyze candidate matches and provide match scores (0-100) with brief reasons."
-                },
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ]
+            # Prepare candidate profile
+            candidate_profile = {
+                "full_name": user.full_name,
+                "skills": resume.skills_extracted if resume else [],
+                "experience": resume.parsed_data.get("experience", "Not specified") if resume and resume.parsed_data else "Not specified",
+                "education": resume.parsed_data.get("education", "Not specified") if resume and resume.parsed_data else "Not specified",
+            }
             
-            # Invoke LLM
-            response = llm.invoke(messages).content
-            
-            # Parse response
-            match_result = self._parse_match_response(response)
+            # Invoke chain
+            match_result = await chain.ainvoke(job_data, candidate_profile)
             
             return match_result
             
@@ -323,8 +324,9 @@ class CandidateMatchingService:
             # Fallback to simple keyword matching
             return self._simple_keyword_match(job, user, resume)
         except Exception as e:
-            logger.error(f"Error calculating match score: {e}")
-            return {"score": 0, "reasons": []}
+            logger.error(f"Error calculating match score with chain: {e}")
+            # Fallback to simple keyword matching
+            return self._simple_keyword_match(job, user, resume)
     
     def _build_matching_prompt(self, job: Job, user: User, resume: Optional[Resume]) -> str:
         """Build prompt for AI matching."""

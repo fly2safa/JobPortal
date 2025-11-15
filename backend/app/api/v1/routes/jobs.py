@@ -18,9 +18,7 @@ from app.models.user import User
 from app.models.company import Company
 from app.api.dependencies import get_current_user, get_current_employer
 from app.services.search_service import SearchService
-from app.services.candidate_matching_service import candidate_matching_service
 from app.core.logging import get_logger
-from pydantic import BaseModel, Field
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
