@@ -1,6 +1,22 @@
-# JobPortal Implementation Plan
+# JobPortal Project Implementation Plan
 
-## Timeline: 2 Weeks | Team: 6 Developers | Branch Strategy: Feature branches → dev → main
+## 👥 Development Team
+
+**Course:** AI Vibe Coding  
+**Offered by:** Arizona State University (https://www.asu.edu)  
+**Taught through:** Revature (https://www.revature.com)
+
+**Project:** Greenfield / Job Portal  
+**Timeline:** 2 Weeks | Team: 6 Developers  
+**Branch Strategy (GitHub):** Feature branches → dev → main  
+**Company/Product name chosen by Contributors:** TalentNest
+
+**Project Contributors (Alphabetical Order):**
+- Darimar C.
+- Erica H.
+- Jason M.
+- Keith S.
+- Safa M.
 
 ============================================================================
 ## ✅ Implementation Status: **100% Complete**
