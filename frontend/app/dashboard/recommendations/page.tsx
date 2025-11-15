@@ -24,10 +24,9 @@ export default function RecommendationsPage() {
     minMatchScore: 30,
   });
 
-  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [recommendations, setRecommendations] = useState<JobRecommendation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [useAI, setUseAI] = useState(true);
   const [limit, setLimit] = useState(10);
 
   const fetchRecommendations = async () => {
@@ -55,6 +54,7 @@ export default function RecommendationsPage() {
 
   useEffect(() => {
     fetchRecommendations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleFilterChange = (category: string, value: string) => {
@@ -199,10 +199,10 @@ export default function RecommendationsPage() {
 
         {/* Empty State */}
         {!loading && !error && recommendations.length === 0 && (
-          <div className="bg-gray-800 rounded-lg p-12 text-center border border-gray-700">
-            <Sparkles className="mx-auto text-gray-600 mb-4" size={48} />
-            <h3 className="text-xl font-semibold text-white mb-2">No Recommendations Yet</h3>
-            <p className="text-gray-400 mb-6 max-w-md mx-auto">
+          <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-12 text-center border border-gray-200 dark:border-gray-700">
+            <Sparkles className="mx-auto text-gray-400 dark:text-gray-600 mb-4" size={48} />
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Recommendations Yet</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
               We couldn't find any job recommendations at this time. Try updating your profile with more skills and experience to get better matches.
             </p>
             <button

@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
+import { JobRecommendation } from '@/types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -324,12 +325,11 @@ class ApiClient {
   }
 
   // Recommendation endpoints
-  async getRecommendations(params?: {
-    limit?: number;
-    use_ai?: boolean;
-  }) {
-    const response = await this.client.get('/recommendations/', { params });
-    return response.data;
+  async getJobRecommendations(limit: number = 10): Promise<JobRecommendation[]> {
+    const response = await this.client.get('/recommendations/', {
+      params: { limit }
+    });
+    return response.data; // Backend returns List[JobRecommendationResponse] directly
   }
 
   async getSimilarJobs(jobId: string, limit: number = 5) {
