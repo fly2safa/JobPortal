@@ -2,12 +2,13 @@
 Authentication routes for user registration and login.
 """
 from datetime import datetime
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Request
 from app.schemas.auth import UserRegister, UserLogin, Token
 from app.schemas.user import UserResponse
 from app.models.user import User
 from app.core.security import verify_password, get_password_hash, create_access_token
 from app.core.logging import get_logger
+from app.core.rate_limiting import limiter, RATE_LIMIT_AUTH
 from app.api.dependencies import get_current_user
 
 logger = get_logger(__name__)
@@ -15,7 +16,8 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
-async def register(user_data: UserRegister):
+@limiter.limit(RATE_LIMIT_AUTH)
+async def register(request: Request, user_data: UserRegister):
     """
     Register a new user account.
     
@@ -93,7 +95,8 @@ async def register(user_data: UserRegister):
 
 
 @router.post("/login")
-async def login(credentials: UserLogin):
+@limiter.limit(RATE_LIMIT_AUTH)
+async def login(request: Request, credentials: UserLogin):
     """
     Authenticate user and return JWT token and user data.
     
@@ -106,7 +109,9 @@ async def login(credentials: UserLogin):
     Raises:
         HTTPException: If credentials are invalid
     """
-    logger.info(f"Login attempt for email: {credentials.email}")
+    # Log rate limiting check (for debugging)
+    client_ip = request.client.host if request.client else "unknown"
+    logger.info(f"Login attempt for email: {credentials.email} from IP: {client_ip}")
     
     # Find user by email
     user = await User.find_one(User.email == credentials.email)

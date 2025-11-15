@@ -55,7 +55,9 @@ class ConversationListResponse(BaseModel):
 
 # Endpoints
 @router.post("/chat", response_model=ChatResponse)
+@limiter.limit(RATE_LIMIT_AI)
 async def chat_with_assistant(
+    http_request: Request,
     request: ChatRequest,
     current_user: User = Depends(get_current_user)
 ):
@@ -213,7 +215,9 @@ async def get_conversation(
 
 
 @router.post("/generate-cover-letter", response_model=CoverLetterResponse)
+@limiter.limit(RATE_LIMIT_AI)
 async def generate_cover_letter(
+    http_request: Request,
     request: CoverLetterRequest,
     current_user: User = Depends(get_current_user)
 ):

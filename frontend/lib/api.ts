@@ -40,6 +40,18 @@ class ApiClient {
             localStorage.removeItem('user');
             window.location.href = '/login';
           }
+        } else if (error.response?.status === 429) {
+          // Rate limit exceeded - provide user-friendly error message
+          const retryAfter = error.response.headers['retry-after'];
+          const detail = (error.response.data as any)?.detail || 'Too many requests';
+          
+          // Enhance error with retry information
+          const rateLimitError: any = new Error(detail);
+          rateLimitError.response = error.response;
+          rateLimitError.isRateLimit = true;
+          rateLimitError.retryAfter = retryAfter ? parseInt(retryAfter) : 60; // Default 60 seconds
+          
+          return Promise.reject(rateLimitError);
         }
         return Promise.reject(error);
       }

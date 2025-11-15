@@ -79,6 +79,14 @@ export function RegisterForm() {
       }
     } catch (err: any) {
       console.error('Registration error:', err);
+      
+      // Handle rate limit errors specifically
+      if (err.isRateLimit || err.response?.status === 429) {
+        const retryAfter = err.retryAfter || 60;
+        setError(`Too many registration attempts. Please wait ${retryAfter} seconds before trying again.`);
+        return;
+      }
+      
       // FastAPI returns errors in 'detail' field
       if (err.response?.data?.detail) {
         setError(err.response.data.detail);

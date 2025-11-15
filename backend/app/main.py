@@ -4,9 +4,12 @@ Main FastAPI application entry point.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 from app.core.config import settings
 from app.core.logging import setup_logging, get_logger
+from app.core.rate_limiting import limiter
 from app.db.init_db import connect_to_mongo, close_mongo_connection
 from app.api.v1.routes import auth, jobs, applications, users, resumes, assistant, interviews, recommendations
 
@@ -91,6 +94,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add rate limiter to app (if enabled)
+if settings.RATE_LIMIT_ENABLED:
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    logger.info("✅ Rate limiting enabled")
+else:
+    logger.info("⚠️ Rate limiting disabled")
 
 # Register routers
 app.include_router(auth.router, prefix="/api/v1")

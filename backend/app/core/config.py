@@ -59,6 +59,14 @@ class Settings(BaseSettings):
     # CORS
     CORS_ORIGINS: str = "http://localhost:3000"
     
+    # Rate Limiting
+    RATE_LIMIT_ENABLED: bool = True  # Enable/disable rate limiting
+    RATE_LIMIT_PER_MINUTE: int = 100  # Default: 100 requests per minute per IP
+    RATE_LIMIT_AUTH_PER_MINUTE: int = 5  # Auth endpoints: 5 requests per minute (prevent brute force)
+    RATE_LIMIT_JOB_POSTING_PER_MINUTE: int = 10  # Job posting: 10 requests per minute
+    RATE_LIMIT_APPLICATION_PER_MINUTE: int = 20  # Application submission: 20 requests per minute
+    RATE_LIMIT_AI_PER_MINUTE: int = 30  # AI endpoints: 30 requests per minute
+    
     # File Upload
     MAX_UPLOAD_SIZE: int = 10485760  # 10MB
     ALLOWED_EXTENSIONS: str = "pdf,doc,docx"
