@@ -4,7 +4,7 @@ API routes for AI-powered candidate matching for employers.
 from typing import List, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from bson import ObjectId
-from app.dependencies import get_current_user
+from app.api.dependencies import get_current_user
 from app.models.user import User
 from app.models.job import Job
 from app.services.candidate_matching_service import CandidateMatchingService

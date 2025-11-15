@@ -11,6 +11,35 @@ The system will also leverage AI for personalized job recommendations, resume pa
 
 ---
 
+## 🌓 Dark Mode Support (NEW!)
+
+TalentNest now features a **fully-implemented dark mode** with seamless theme switching!
+
+### Features
+
+- ✅ **One-Click Toggle** - Theme toggle button in navbar (desktop & mobile)
+- ✅ **Persistent Preference** - Theme choice saved in localStorage
+- ✅ **System Detection** - Automatically detects system preference on first visit
+- ✅ **Smooth Transitions** - Beautiful animations when switching themes
+- ✅ **Complete Coverage** - All components, pages, and layouts support dark mode
+- ✅ **Accessibility** - Optimized contrast ratios for both themes
+
+### How to Use
+
+1. Look for the **sun/moon icon** in the navigation bar
+2. Click to toggle between light and dark mode
+3. Your preference is automatically saved
+
+### Technical Implementation
+
+- **Strategy**: Tailwind CSS class-based dark mode
+- **Context**: React Context API for theme state management
+- **Persistence**: localStorage for theme preference
+- **Components**: All UI components updated with `dark:` variants
+- **Colors**: Custom CSS variables for consistent theming
+
+---
+
 ## ðŸ¤– AI Provider Configuration (NEW!)
 
 ### Automatic Fallback System
