@@ -14,6 +14,7 @@ import { useAuthStore } from '@/store/authStore';
 import { JOB_TYPES, EXPERIENCE_LEVELS } from '@/constants';
 import apiClient from '@/lib/api';
 import { Save } from 'lucide-react';
+import { getErrorMessage } from '@/lib/errorHandler';
 
 interface JobFormData {
   title: string;
@@ -46,13 +47,6 @@ export default function NewJobPage() {
     setIsSubmitting(true);
     setError('');
 
-    // Check if user has company_id
-    if (!user?.company_id) {
-      setError('You must be associated with a company to post jobs. Please contact support.');
-      setIsSubmitting(false);
-      return;
-    }
-
     try {
       await apiClient.createJob({
         title: data.title,
@@ -66,18 +60,12 @@ export default function NewJobPage() {
         required_skills: data.skills.split(',').map((s) => s.trim()).filter(Boolean),
         requirements: data.requirements,
         benefits: data.benefits ? data.benefits.split('\n').filter(Boolean) : [],
-        company_id: user.company_id,
+        company_id: user?.company_id || undefined,  // Optional - backend will use employer's company_name
         status: 'active',
       });
       router.push('/employer/jobs');
     } catch (err: any) {
-      // Handle rate limit errors specifically
-      if (err.isRateLimit || err.response?.status === 429) {
-        const retryAfter = err.retryAfter || 60;
-        setError(`Too many job postings. Please wait ${retryAfter} seconds before posting another job.`);
-      } else {
-        setError(err.response?.data?.detail || 'Failed to create job. Please try again.');
-      }
+      setError(getErrorMessage(err, 'Failed to create job. Please try again.'));
     } finally {
       setIsSubmitting(false);
     }

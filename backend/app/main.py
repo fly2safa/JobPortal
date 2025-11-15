@@ -11,7 +11,7 @@ from app.core.config import settings
 from app.core.logging import setup_logging, get_logger
 from app.core.rate_limiting import limiter
 from app.db.init_db import connect_to_mongo, close_mongo_connection
-from app.api.v1.routes import auth, jobs, applications, users, resumes, assistant, interviews, recommendations, candidate_matching
+from app.api.v1.routes import auth, jobs, applications, users, resumes, assistant, interviews, recommendations
 
 # Setup logging from settings
 setup_logging(level=settings.LOG_LEVEL)
@@ -46,33 +46,22 @@ async def lifespan(app: FastAPI):
     # Connect to MongoDB
     await connect_to_mongo()
     
-    # Check AI Provider Configuration
-    print(f"\n{Colors.CYAN}🤖 AI Provider Configuration:{Colors.RESET}")
-    from app.ai.providers import AIProviderFactory
-    provider_info = AIProviderFactory.get_provider_info()
+    # Initialize AI recommendation system
+    try:
+        from app.services.recommendation_service import recommendation_service
+        from app.ai.rag.embeddings import embeddings_handler
+        
+        if embeddings_handler.is_available:
+            logger.info("Initializing AI recommendation system...")
+            await recommendation_service.initialize_vector_store()
+            vector_count = recommendation_service.vector_store.size()
+            logger.info(f"AI recommendation system initialized with {vector_count} jobs")
+        else:
+            logger.warning("OpenAI API key not configured - AI recommendations will use fallback mode")
+    except Exception as e:
+        logger.error(f"Failed to initialize recommendation system: {str(e)}")
+        logger.warning("Recommendation system will initialize on first use")
     
-    print(f"{Colors.BLUE}   Primary Provider: {Colors.BOLD}{provider_info['primary']}{Colors.RESET}")
-    print(f"{Colors.BLUE}   Fallback Enabled: {Colors.BOLD}{provider_info['fallback_enabled']}{Colors.RESET}")
-    
-    if provider_info['openai_configured']:
-        print(f"{Colors.GREEN}   ✅ OpenAI: Configured{Colors.RESET}")
-    else:
-        print(f"{Colors.YELLOW}   ⚠️  OpenAI: Not configured{Colors.RESET}")
-    
-    if provider_info['anthropic_configured']:
-        print(f"{Colors.GREEN}   ✅ Anthropic: Configured{Colors.RESET}")
-    else:
-        print(f"{Colors.YELLOW}   ⚠️  Anthropic: Not configured{Colors.RESET}")
-    
-    if provider_info['fallback_available']:
-        print(f"{Colors.GREEN}   🔄 Fallback: Available{Colors.RESET}")
-    else:
-        print(f"{Colors.YELLOW}   ⚠️  Fallback: Not available{Colors.RESET}")
-    
-    # Startup complete
-    print(f"\n{Colors.GREEN}{Colors.BOLD}{'='*60}{Colors.RESET}")
-    print(f"{Colors.GREEN}{Colors.BOLD}✅ Application Startup Complete!{Colors.RESET}")
-    print(f"{Colors.GREEN}{Colors.BOLD}{'='*60}{Colors.RESET}\n")
     logger.info("Application startup complete")
     
     yield
@@ -122,8 +111,7 @@ app.include_router(users.router, prefix="/api/v1")
 app.include_router(resumes.router, prefix="/api/v1")
 app.include_router(assistant.router, prefix="/api/v1")
 app.include_router(interviews.router, prefix="/api/v1")
-app.include_router(recommendations.router, prefix="/api/v1/recommendations", tags=["recommendations"])
-app.include_router(candidate_matching.router, prefix="/api/v1", tags=["candidate-matching"])
+app.include_router(recommendations.router, prefix="/api/v1")
 
 
 # Health check endpoints

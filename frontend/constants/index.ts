@@ -6,17 +6,20 @@ export const BRAND_COLORS = {
 } as const;
 
 export const JOB_TYPES = [
-  { value: 'full-time', label: 'Full Time' },
-  { value: 'part-time', label: 'Part Time' },
+  { value: 'full_time', label: 'Full Time' },
+  { value: 'part_time', label: 'Part Time' },
   { value: 'contract', label: 'Contract' },
   { value: 'internship', label: 'Internship' },
+  { value: 'temporary', label: 'Temporary' },
 ] as const;
 
 export const EXPERIENCE_LEVELS = [
   { value: 'entry', label: 'Entry Level' },
+  { value: 'junior', label: 'Junior' },
   { value: 'mid', label: 'Mid Level' },
   { value: 'senior', label: 'Senior Level' },
   { value: 'lead', label: 'Lead/Principal' },
+  { value: 'executive', label: 'Executive' },
 ] as const;
 
 export const APPLICATION_STATUS = {

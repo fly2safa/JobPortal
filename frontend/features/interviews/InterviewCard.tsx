@@ -119,9 +119,9 @@ export const InterviewCard: React.FC<InterviewCardProps> = ({
         )}
       </div>
 
-      {interview.notes && isUpcoming && (
+      {interview.notes && isUpcoming && isEmployer && (
         <div className="bg-yellow-50 rounded-lg p-3 mb-4 border-l-4 border-yellow-400">
-          <p className="text-sm font-medium text-yellow-900 mb-1">Interview Notes:</p>
+          <p className="text-sm font-medium text-yellow-900 mb-1">Internal Notes (Employer Only):</p>
           <p className="text-sm text-yellow-800">{interview.notes}</p>
         </div>
       )}
@@ -133,9 +133,9 @@ export const InterviewCard: React.FC<InterviewCardProps> = ({
         </div>
       )}
 
-      {interview.feedback && isPast && (
+      {interview.feedback && isPast && isEmployer && (
         <div className="bg-gray-50 rounded-lg p-3 mb-4">
-          <p className="text-sm font-medium text-gray-900 mb-1">Feedback:</p>
+          <p className="text-sm font-medium text-gray-900 mb-1">Interview Feedback (Employer Only):</p>
           <p className="text-sm text-gray-700">{interview.feedback}</p>
         </div>
       )}
