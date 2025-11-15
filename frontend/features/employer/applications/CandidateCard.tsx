@@ -161,7 +161,8 @@ export function CandidateCard({
                 </>
               )}
 
-              {application.status === 'shortlisted' && (
+              {(application.status === 'shortlisted' || 
+                (application.status !== 'rejected' && application.status !== 'pending')) && (
                 <Button
                   variant="primary"
                   size="sm"
