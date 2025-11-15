@@ -1,82 +1,82 @@
-﻿# TalentNest Job Portal
+# TalentNest Job Portal
 
 A modern, AI-powered job portal connecting job seekers with employers. Built with FastAPI, Next.js 14, MongoDB, and OpenAI GPT-4o.
 
-## ≡ƒôè Project Status
+## 📊 Project Status
 
 **Current Phase:** Phase 3 Complete | **Next:** Phase 4 (Polish & Testing)
 
-### Γ£à Implemented Features
+### ✅ Implemented Features
 
-#### Phase 1: Foundation Γ£à
-- Γ£à FastAPI backend with async/await
-- Γ£à Next.js 14 frontend with App Router
-- Γ£à MongoDB Atlas integration with Beanie ODM
-- Γ£à JWT authentication (register, login, logout)
-- Γ£à Role-based access control (Job Seeker / Employer)
-- Γ£à Docker containerization with docker-compose
-- Γ£à Comprehensive documentation
+#### Phase 1: Foundation ✅
+- ✅ FastAPI backend with async/await
+- ✅ Next.js 14 frontend with App Router
+- ✅ MongoDB Atlas integration with Beanie ODM
+- ✅ JWT authentication (register, login, logout)
+- ✅ Role-based access control (Job Seeker / Employer)
+- ✅ Docker containerization with docker-compose
+- ✅ Comprehensive documentation
 
-#### Phase 2: Core Features Γ£à
-- Γ£à Job seeker profile management
-- Γ£à Resume upload and AI parsing (PDF/DOCX)
-- Γ£à Job search with filters (location, type, experience)
-- Γ£à Job application system with cover letters
-- Γ£à Employer job posting (CRUD operations)
-- Γ£à Application review and management
-- Γ£à Email notification system (SMTP)
-- Γ£à Application status tracking
+#### Phase 2: Core Features ✅
+- ✅ Job seeker profile management
+- ✅ Resume upload and AI parsing (PDF/DOCX)
+- ✅ Job search with filters (location, type, experience)
+- ✅ Job application system with cover letters
+- ✅ Employer job posting (CRUD operations)
+- ✅ Application review and management
+- ✅ Email notification system (SMTP)
+- ✅ Application status tracking
 
-#### Phase 3: AI Features Γ£à
-- Γ£à AI job recommendations for job seekers
-- Γ£à AI candidate matching for employers
-- Γ£à AI cover letter generation (GPT-4o)
-- Γ£à RAG-based AI career assistant
-- Γ£à Resume parsing with skill extraction
+#### Phase 3: AI Features ✅
+- ✅ AI job recommendations for job seekers
+- ✅ AI candidate matching for employers
+- ✅ AI cover letter generation (GPT-4o)
+- ✅ RAG-based AI career assistant
+- ✅ Resume parsing with skill extraction
 
-#### ≡ƒÜº In Progress / Planned
-- ΓÅ│ Interview scheduling system
-- ΓÅ│ UI/UX polish and responsive design
-- ΓÅ│ Comprehensive testing suite
-- ΓÅ│ Architecture and ERD diagrams
-- ΓÅ│ Production deployment optimization
+#### 🚧 In Progress / Planned
+- ⏳ Interview scheduling system
+- ⏳ UI/UX polish and responsive design
+- ⏳ Comprehensive testing suite
+- ⏳ Architecture and ERD diagrams
+- ⏳ Production deployment optimization
 
 ---
 
-## ≡ƒÅù∩╕Å System Architecture
+## 🏗️ System Architecture
 
-> **≡ƒôî Note**: The diagrams below are best viewed on GitHub or using a Mermaid-compatible viewer. In your IDE, you can zoom in on the preview or view the raw Mermaid code for details.
+> **📌 Note**: The diagrams below are best viewed on GitHub or using a Mermaid-compatible viewer. In your IDE, you can zoom in on the preview or view the raw Mermaid code for details.
 
 ### System Flow Diagram
 
 ```mermaid
 graph LR
     %% Client Layer
-    Client[≡ƒæñ Web Browser]
+    Client[👤 Web Browser]
     
     %% Frontend Layer
-    Frontend["ΓÜ¢∩╕Å Next.js 14 Frontend<br/>- App Router<br/>- TypeScript<br/>- Tailwind CSS"]
+    Frontend["⚛️ Next.js 14 Frontend<br/>- App Router<br/>- TypeScript<br/>- Tailwind CSS"]
     
     %% API Gateway
-    API["≡ƒÜÇ FastAPI Backend<br/>- REST API<br/>- JWT Auth<br/>- Async/Await"]
+    API["🚀 FastAPI Backend<br/>- REST API<br/>- JWT Auth<br/>- Async/Await"]
     
     %% Service Layer
-    AuthSvc["≡ƒöÉ Auth Service<br/>JWT + Bcrypt"]
-    JobSvc["≡ƒÆ╝ Job Service<br/>CRUD + Search"]
-    AppSvc["≡ƒôï Application Service<br/>Status Management"]
-    ResumeSvc["≡ƒôä Resume Service<br/>AI Parsing"]
-    EmailSvc["≡ƒôº Email Service<br/>SMTP"]
+    AuthSvc["🔐 Auth Service<br/>JWT + Bcrypt"]
+    JobSvc["💼 Job Service<br/>CRUD + Search"]
+    AppSvc["📋 Application Service<br/>Status Management"]
+    ResumeSvc["📄 Resume Service<br/>AI Parsing"]
+    EmailSvc["📧 Email Service<br/>SMTP"]
     
     %% AI Layer
-    AISvc["≡ƒñû AI Services<br/>- Cover Letters<br/>- Recommendations<br/>- RAG Assistant"]
+    AISvc["🤖 AI Services<br/>- Cover Letters<br/>- Recommendations<br/>- RAG Assistant"]
     
     %% Data Layer
-    DB[("≡ƒùä∩╕Å MongoDB Atlas<br/>- Users<br/>- Jobs<br/>- Applications<br/>- Resumes")]
+    DB[("🗄️ MongoDB Atlas<br/>- Users<br/>- Jobs<br/>- Applications<br/>- Resumes")]
     
     %% External Services
-    OpenAI["≡ƒºá OpenAI GPT-4o"]
-    SMTP["≡ƒô« SMTP Server"]
-    Storage["≡ƒÆ╛ File Storage"]
+    OpenAI["🧠 OpenAI GPT-4o"]
+    SMTP["📮 SMTP Server"]
+    Storage["💾 File Storage"]
     
     %% Main Flow
     Client ==>|"HTTP Requests"| Frontend
@@ -130,13 +130,13 @@ graph LR
 
 **Simplified Architecture Overview:**
 
-1. **Client** ΓåÆ Makes HTTP requests to frontend
-2. **Frontend (Next.js)** ΓåÆ Sends REST API calls with JWT to backend
-3. **Backend (FastAPI)** ΓåÆ Routes requests to appropriate services
-4. **Services Layer** ΓåÆ Handles business logic (Auth, Jobs, Applications, Resume, Email)
-5. **AI Services** ΓåÆ Processes AI features (GPT-4o integration)
-6. **Database** ΓåÆ MongoDB Atlas stores all application data
-7. **External Services** ΓåÆ OpenAI API, SMTP server, File storage
+1. **Client** → Makes HTTP requests to frontend
+2. **Frontend (Next.js)** → Sends REST API calls with JWT to backend
+3. **Backend (FastAPI)** → Routes requests to appropriate services
+4. **Services Layer** → Handles business logic (Auth, Jobs, Applications, Resume, Email)
+5. **AI Services** → Processes AI features (GPT-4o integration)
+6. **Database** → MongoDB Atlas stores all application data
+7. **External Services** → OpenAI API, SMTP server, File storage
 
 ### Detailed System Architecture Diagram
 
@@ -145,29 +145,29 @@ For a more detailed view, here's the complete architecture broken down by layers
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#ffffff','primaryTextColor':'#000000','primaryBorderColor':'#000000','lineColor':'#333333','secondaryColor':'#f4f4f4','tertiaryColor':'#ffffff','clusterBkg':'#f9f9f9','clusterBorder':'#333333','titleColor':'#000000','edgeLabelBackground':'#ffffff'}}}%%
 graph TB
-    subgraph Client["<b>≡ƒæÑ CLIENT LAYER</b>"]
+    subgraph Client["<b>👥 CLIENT LAYER</b>"]
         Browser["Web Browser"]
         Mobile["Mobile Browser"]
     end
     
-    subgraph Frontend["<b>ΓÜ¢∩╕Å FRONTEND LAYER - Next.js 14</b>"]
-        Pages["≡ƒôä Pages<br/>Public & Protected Routes"]
-        Components["≡ƒº⌐ Components<br/>UI & Features"]
-        Store["≡ƒÆ╛ State Management<br/>Zustand"]
-        APIClient["≡ƒöî API Client<br/>Axios + JWT"]
+    subgraph Frontend["<b>⚛️ FRONTEND LAYER - Next.js 14</b>"]
+        Pages["📄 Pages<br/>Public & Protected Routes"]
+        Components["🧩 Components<br/>UI & Features"]
+        Store["💾 State Management<br/>Zustand"]
+        APIClient["🔌 API Client<br/>Axios + JWT"]
     end
     
-    subgraph Backend["<b>≡ƒÜÇ BACKEND LAYER - FastAPI</b>"]
-        Routes["≡ƒ¢ú∩╕Å API Routes<br/>/api/v1/*"]
-        Services["ΓÜÖ∩╕Å Business Services"]
-        AI["≡ƒñû AI Layer<br/>OpenAI Integration"]
+    subgraph Backend["<b>🚀 BACKEND LAYER - FastAPI</b>"]
+        Routes["🛣️ API Routes<br/>/api/v1/*"]
+        Services["⚙️ Business Services"]
+        AI["🤖 AI Layer<br/>OpenAI Integration"]
     end
     
-    subgraph Data["<b>≡ƒùä∩╕Å DATA LAYER</b>"]
+    subgraph Data["<b>🗄️ DATA LAYER</b>"]
         MongoDB[("MongoDB Atlas<br/>Collections:<br/>Users, Jobs,<br/>Applications,<br/>Resumes")]
     end
     
-    subgraph External["<b>≡ƒîÉ EXTERNAL SERVICES</b>"]
+    subgraph External["<b>🌐 EXTERNAL SERVICES</b>"]
         OpenAI["OpenAI GPT-4o"]
         SMTP["SMTP Email"]
         Files["File Storage"]
@@ -206,48 +206,48 @@ graph TB
 
 ### Key Architectural Highlights
 
-#### ≡ƒÄ» **Separation of Concerns**
+#### 🎯 **Separation of Concerns**
 - **Frontend (Next.js 14)**: Handles UI/UX, client-side routing, and state management
 - **Backend (FastAPI)**: Manages business logic, data validation, and API endpoints
 - **Database (MongoDB)**: Stores all application data with flexible schema
 - **AI Layer**: Isolated AI services for resume parsing, recommendations, and chat
 
-#### ≡ƒöÉ **Security Architecture**
+#### 🔐 **Security Architecture**
 - **JWT Authentication**: Stateless authentication with Bearer tokens
 - **Password Hashing**: Bcrypt with salt rounds for secure password storage
 - **Role-Based Access Control (RBAC)**: Separate permissions for Job Seekers and Employers
 - **CORS Configuration**: Controlled cross-origin resource sharing
 - **Environment Variables**: Sensitive credentials isolated in `.env` files
 
-#### ≡ƒÜÇ **Performance Optimizations**
+#### 🚀 **Performance Optimizations**
 - **Async/Await**: FastAPI uses async operations for non-blocking I/O
 - **Connection Pooling**: MongoDB connection pooling for efficient database access
 - **Next.js App Router**: Automatic code splitting and optimized loading
 - **Docker Multi-Stage Builds**: Minimal production image sizes
 - **Caching**: API client caching for repeated requests
 
-#### ≡ƒñû **AI Integration**
+#### 🤖 **AI Integration**
 - **OpenAI GPT-4o**: Powers resume parsing, cover letter generation, and recommendations
 - **RAG Pipeline**: Retrieval-Augmented Generation for context-aware AI assistant
 - **Graceful Degradation**: AI features optional; app works without OpenAI API key
 - **Background Processing**: AI tasks run asynchronously to avoid blocking
 
-#### ≡ƒôº **Communication Layer**
+#### 📧 **Communication Layer**
 - **SMTP Email Service**: Automated notifications for application events
 - **HTML Email Templates**: Professional, responsive email designs
 - **Background Tasks**: Email sending happens asynchronously
 - **Error Handling**: Graceful fallback if email service unavailable
 
-#### ≡ƒôè **Data Flow**
-1. **User Action** ΓåÆ Frontend captures input
-2. **API Request** ΓåÆ Axios sends HTTP request with JWT
-3. **Backend Processing** ΓåÆ FastAPI validates, processes, and applies business logic
-4. **Database Operation** ΓåÆ MongoDB stores/retrieves data via Beanie ODM
-5. **AI Processing** (if needed) ΓåÆ OpenAI API called for AI features
-6. **Response** ΓåÆ Backend returns structured JSON response
-7. **UI Update** ΓåÆ Frontend updates state and re-renders components
+#### 📊 **Data Flow**
+1. **User Action** → Frontend captures input
+2. **API Request** → Axios sends HTTP request with JWT
+3. **Backend Processing** → FastAPI validates, processes, and applies business logic
+4. **Database Operation** → MongoDB stores/retrieves data via Beanie ODM
+5. **AI Processing** (if needed) → OpenAI API called for AI features
+6. **Response** → Backend returns structured JSON response
+7. **UI Update** → Frontend updates state and re-renders components
 
-#### ≡ƒöä **State Management**
+#### 🔄 **State Management**
 - **Zustand Store**: Lightweight global state for authentication
 - **React Hook Form**: Local form state with validation
 - **Server State**: API responses cached and managed by React Query patterns
@@ -255,32 +255,32 @@ graph TB
 
 ---
 
-## ≡ƒÄ¿ Frontend Architecture
+## 🎨 Frontend Architecture
 
 ### Frontend Flow Diagram
 
 ```mermaid
 graph LR
     %% App Router
-    Router["≡ƒô▒ Next.js App Router<br/>File-based Routing"]
+    Router["📱 Next.js App Router<br/>File-based Routing"]
     
     %% Pages Layer
-    Pages["≡ƒôä Pages Layer<br/>- Public Routes<br/>- Job Seeker Routes<br/>- Employer Routes"]
+    Pages["📄 Pages Layer<br/>- Public Routes<br/>- Job Seeker Routes<br/>- Employer Routes"]
     
     %% Components Layer
-    Components["≡ƒº⌐ Components<br/>- Layout (Navbar, Footer)<br/>- UI (Button, Input, Card)<br/>- Features (Forms, Cards)"]
+    Components["🧩 Components<br/>- Layout (Navbar, Footer)<br/>- UI (Button, Input, Card)<br/>- Features (Forms, Cards)"]
     
     %% State Management
-    State["≡ƒÆ╛ State Management<br/>Zustand Store<br/>- Auth State<br/>- User Data"]
+    State["💾 State Management<br/>Zustand Store<br/>- Auth State<br/>- User Data"]
     
     %% API Client
-    API["≡ƒöî API Client<br/>Axios + JWT<br/>- Auth API<br/>- Jobs API<br/>- Applications API"]
+    API["🔌 API Client<br/>Axios + JWT<br/>- Auth API<br/>- Jobs API<br/>- Applications API"]
     
     %% Utilities
-    Utils["≡ƒ¢á∩╕Å Utilities<br/>- Hooks<br/>- Types<br/>- Helpers"]
+    Utils["🛠️ Utilities<br/>- Hooks<br/>- Types<br/>- Helpers"]
     
     %% Backend Connection
-    Backend["≡ƒÜÇ Backend API<br/>FastAPI"]
+    Backend["🚀 Backend API<br/>FastAPI"]
     
     %% Flow
     Router ==>|"Route to"| Pages
@@ -314,13 +314,13 @@ graph LR
 
 **Frontend Architecture Overview:**
 
-1. **App Router** ΓåÆ File-based routing system manages all pages
-2. **Pages Layer** ΓåÆ Public, Job Seeker, and Employer routes
-3. **Components** ΓåÆ Reusable UI and feature components
-4. **State Management** ΓåÆ Zustand store for auth and global state
-5. **API Client** ΓåÆ Axios instance with JWT for backend communication
-6. **Utilities** ΓåÆ Hooks, types, and helper functions
-7. **Backend** ΓåÆ FastAPI REST API integration
+1. **App Router** → File-based routing system manages all pages
+2. **Pages Layer** → Public, Job Seeker, and Employer routes
+3. **Components** → Reusable UI and feature components
+4. **State Management** → Zustand store for auth and global state
+5. **API Client** → Axios instance with JWT for backend communication
+6. **Utilities** → Hooks, types, and helper functions
+7. **Backend** → FastAPI REST API integration
 
 ### Detailed Frontend Architecture Diagram
 
@@ -329,34 +329,34 @@ For a comprehensive view of all frontend components and their relationships:
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#ffffff','primaryTextColor':'#000000','primaryBorderColor':'#000000','lineColor':'#333333','secondaryColor':'#f4f4f4','tertiaryColor':'#ffffff','clusterBkg':'#f9f9f9','clusterBorder':'#333333','titleColor':'#000000','edgeLabelBackground':'#ffffff'}}}%%
 graph TB
-    subgraph Routes["<b>≡ƒô▒ ROUTES - Next.js 14 App Router</b>"]
-        PublicRoutes["≡ƒîÉ Public Routes<br/>Home, Jobs, Login, Register"]
-        JSRoutes["≡ƒæñ Job Seeker Routes<br/>Dashboard, Profile, Applications"]
-        EMPRoutes["≡ƒÆ╝ Employer Routes<br/>Dashboard, Post Jobs, Review Apps"]
+    subgraph Routes["<b>📱 ROUTES - Next.js 14 App Router</b>"]
+        PublicRoutes["🌐 Public Routes<br/>Home, Jobs, Login, Register"]
+        JSRoutes["👤 Job Seeker Routes<br/>Dashboard, Profile, Applications"]
+        EMPRoutes["💼 Employer Routes<br/>Dashboard, Post Jobs, Review Apps"]
     end
     
-    subgraph Components["<b>≡ƒº⌐ COMPONENTS LAYER</b>"]
-        Layout["≡ƒôÉ Layout<br/>Navbar, Footer, DashboardLayout"]
-        UI["≡ƒÄ¿ UI Components<br/>Button, Input, Card, Modal"]
-        Features["Γ¡É Feature Components<br/>Forms, Cards, Filters"]
+    subgraph Components["<b>🧩 COMPONENTS LAYER</b>"]
+        Layout["📐 Layout<br/>Navbar, Footer, DashboardLayout"]
+        UI["🎨 UI Components<br/>Button, Input, Card, Modal"]
+        Features["⭐ Feature Components<br/>Forms, Cards, Filters"]
     end
     
-    subgraph State["<b>≡ƒÆ╛ STATE MANAGEMENT</b>"]
-        AuthStore["≡ƒöÉ Zustand Auth Store<br/>user, token, isAuthenticated<br/>login(), logout(), setUser()"]
+    subgraph State["<b>💾 STATE MANAGEMENT</b>"]
+        AuthStore["🔐 Zustand Auth Store<br/>user, token, isAuthenticated<br/>login(), logout(), setUser()"]
     end
     
-    subgraph API["<b>≡ƒöî API LAYER</b>"]
-        APIClient["≡ƒôí Axios Client<br/>JWT Interceptor"]
-        APIMethods["≡ƒ¢á∩╕Å API Methods<br/>Auth, Jobs, Applications,<br/>Profile, Resume, Assistant"]
+    subgraph API["<b>🔌 API LAYER</b>"]
+        APIClient["📡 Axios Client<br/>JWT Interceptor"]
+        APIMethods["🛠️ API Methods<br/>Auth, Jobs, Applications,<br/>Profile, Resume, Assistant"]
     end
     
-    subgraph Utils["<b>≡ƒ¢á∩╕Å UTILITIES</b>"]
-        Hooks["≡ƒ¬¥ Custom Hooks<br/>useAuth, useDebounce"]
-        Types["≡ƒô¥ TypeScript Types<br/>User, Job, Application"]
-        Helpers["ΓÜÖ∩╕Å Helper Functions<br/>formatDate, validateEmail"]
+    subgraph Utils["<b>🛠️ UTILITIES</b>"]
+        Hooks["🪝 Custom Hooks<br/>useAuth, useDebounce"]
+        Types["📝 TypeScript Types<br/>User, Job, Application"]
+        Helpers["⚙️ Helper Functions<br/>formatDate, validateEmail"]
     end
     
-    subgraph Backend["<b>≡ƒÜÇ BACKEND</b>"]
+    subgraph Backend["<b>🚀 BACKEND</b>"]
         FastAPI["FastAPI REST API<br/>http://localhost:8000"]
     end
     
@@ -408,79 +408,79 @@ graph TB
 
 Think of the frontend as a **restaurant experience**:
 
-#### 1. ≡ƒÜ¬ **The Entrance (App Router)**
+#### 1. 🚪 **The Entrance (App Router)**
 - When you visit the website, the **App Router** is like the restaurant's entrance
 - It decides which "room" (page) you should go to based on the URL
 - Example: `/login` takes you to the login page, `/dashboard` takes you to your dashboard
 
-#### 2. ≡ƒôä **The Rooms (Pages)**
+#### 2. 📄 **The Rooms (Pages)**
 - Each page is like a different room in the restaurant
 - **Public rooms**: Anyone can enter (Home, Jobs, Login)
 - **Private rooms**: Need a key to enter (Dashboard, Profile)
 - **VIP rooms**: Only for special guests (Employer Dashboard)
 
-#### 3. ≡ƒº⌐ **The Furniture (Components)**
+#### 3. 🧩 **The Furniture (Components)**
 - Components are like furniture pieces you can reuse in different rooms
 - **Layout furniture**: Navbar (menu board), Footer (exit sign)
 - **UI furniture**: Buttons (chairs), Input boxes (tables), Cards (display cases)
 - **Feature furniture**: Login forms, job cards, application forms
 
-#### 4. ≡ƒÆ╛ **The Memory (State Management)**
+#### 4. 💾 **The Memory (State Management)**
 - The **Zustand Store** is like the restaurant's memory system
 - It remembers: "Is this customer logged in?" "What's their name?" "What's their access token?"
 - All rooms can check this memory to know who you are
 
-#### 5. ≡ƒöî **The Kitchen Phone (API Client)**
+#### 5. 🔌 **The Kitchen Phone (API Client)**
 - The **Axios Client** is like a phone that calls the kitchen (backend)
 - When you click "Apply for Job", it calls the kitchen: "Hey, this person wants to apply!"
 - The kitchen processes your order and sends back a response
 - The phone automatically includes your "membership card" (JWT token) with every call
 
-#### 6. ≡ƒ¢á∩╕Å **The Toolbox (Utilities)**
+#### 6. 🛠️ **The Toolbox (Utilities)**
 - **Hooks**: Special tools that help components do their job (like a can opener)
 - **Types**: Labels that describe what each thing is (TypeScript definitions)
 - **Helpers**: Small tools for common tasks (format dates, validate emails)
 
-#### 7. ≡ƒÜÇ **The Kitchen (Backend)**
+#### 7. 🚀 **The Kitchen (Backend)**
 - The **FastAPI Backend** is like the restaurant's kitchen
 - It receives orders (API requests), cooks them (processes data), and sends back food (responses)
 - It checks your membership card (JWT) to make sure you're allowed to order
 
 ### How It All Works Together:
 
-#### **Example 1: Job Seeker - Applying for a Job** ≡ƒæñ
+#### **Example 1: Job Seeker - Applying for a Job** 👤
 
-1. ≡ƒæñ **You** click "Apply" on a job listing
-2. ≡ƒôä **Page** shows you the application form (ApplyModal component)
-3. Γ£ì∩╕Å **You** fill out the form and click "Submit"
-4. ≡ƒº⌐ **Component** collects your form data
-5. ≡ƒÆ╛ **State** provides your user info and token
-6. ≡ƒöî **API Client** calls the backend: "POST /api/v1/applications" with your data + token
-7. ≡ƒÜÇ **Backend** receives the request, validates it, saves to database
-8. ≡ƒôº **Backend** sends you a confirmation email
-9. ≡ƒöî **API Client** receives success response
-10. ≡ƒº⌐ **Component** shows you: "Application submitted successfully! Γ£à"
-11. ≡ƒôä **Page** updates to show your new application in the list
+1. 👤 **You** click "Apply" on a job listing
+2. 📄 **Page** shows you the application form (ApplyModal component)
+3. ✍️ **You** fill out the form and click "Submit"
+4. 🧩 **Component** collects your form data
+5. 💾 **State** provides your user info and token
+6. 🔌 **API Client** calls the backend: "POST /api/v1/applications" with your data + token
+7. 🚀 **Backend** receives the request, validates it, saves to database
+8. 📧 **Backend** sends you a confirmation email
+9. 🔌 **API Client** receives success response
+10. 🧩 **Component** shows you: "Application submitted successfully! ✅"
+11. 📄 **Page** updates to show your new application in the list
 
-#### **Example 2: Employer - Reviewing Applications** ≡ƒÆ╝
+#### **Example 2: Employer - Reviewing Applications** 💼
 
-1. ≡ƒÆ╝ **You** (employer) navigate to "My Jobs" page
-2. ≡ƒôä **Page** loads your job listings
-3. ≡ƒöî **API Client** calls: "GET /api/v1/jobs/employer/me" with your token
-4. ≡ƒÜÇ **Backend** checks your token, finds your jobs, returns the list
-5. ≡ƒôä **Page** displays your jobs using JobCard components
-6. ≡ƒæå **You** click on a job to see its applications
-7. ≡ƒôä **Page** navigates to the applications review page
-8. ≡ƒöî **API Client** calls: "GET /api/v1/jobs/{job_id}/applications" with your token
-9. ≡ƒÜÇ **Backend** verifies you own this job, returns all applications
-10. ≡ƒº⌐ **Component** displays each application in a CandidateCard
-11. ≡ƒæÇ **You** review a candidate and click "Shortlist"
-12. ≡ƒöî **API Client** calls: "POST /api/v1/applications/{id}/shortlist" with your token
-13. ≡ƒÜÇ **Backend** updates application status to "SHORTLISTED"
-14. ≡ƒôº **Backend** sends email to candidate: "Good news! You've been shortlisted!"
-15. ≡ƒöî **API Client** receives success response
-16. ≡ƒº⌐ **Component** updates the card to show "Shortlisted" badge
-17. ≡ƒôä **Page** moves the card to the "Shortlisted" section
+1. 💼 **You** (employer) navigate to "My Jobs" page
+2. 📄 **Page** loads your job listings
+3. 🔌 **API Client** calls: "GET /api/v1/jobs/employer/me" with your token
+4. 🚀 **Backend** checks your token, finds your jobs, returns the list
+5. 📄 **Page** displays your jobs using JobCard components
+6. 👆 **You** click on a job to see its applications
+7. 📄 **Page** navigates to the applications review page
+8. 🔌 **API Client** calls: "GET /api/v1/jobs/{job_id}/applications" with your token
+9. 🚀 **Backend** verifies you own this job, returns all applications
+10. 🧩 **Component** displays each application in a CandidateCard
+11. 👀 **You** review a candidate and click "Shortlist"
+12. 🔌 **API Client** calls: "POST /api/v1/applications/{id}/shortlist" with your token
+13. 🚀 **Backend** updates application status to "SHORTLISTED"
+14. 📧 **Backend** sends email to candidate: "Good news! You've been shortlisted!"
+15. 🔌 **API Client** receives success response
+16. 🧩 **Component** updates the card to show "Shortlisted" badge
+17. 📄 **Page** moves the card to the "Shortlisted" section
 
 **That's it!** The frontend is just a well-organized system that:
 - Shows you pages and forms (UI)
@@ -493,7 +493,7 @@ Think of the frontend as a **restaurant experience**:
 
 ### Frontend Architectural Highlights
 
-#### ≡ƒÄ» **Next.js 14 App Router**
+#### 🎯 **Next.js 14 App Router**
 - **File-Based Routing**: Automatic route generation from folder structure
 - **Server Components**: Default server-side rendering for optimal performance
 - **Client Components**: Interactive components with `'use client'` directive
@@ -501,72 +501,72 @@ Think of the frontend as a **restaurant experience**:
 - **Dynamic Routes**: `[id]` for job details and application pages
 - **Loading States**: Built-in loading.tsx for better UX
 
-#### ≡ƒº⌐ **Component Architecture**
-- **Atomic Design**: UI components (Button, Input) ΓåÆ Feature components (LoginForm) ΓåÆ Pages
+#### 🧩 **Component Architecture**
+- **Atomic Design**: UI components (Button, Input) → Feature components (LoginForm) → Pages
 - **Reusability**: 40+ components designed for maximum reuse
 - **Composition**: Complex features built from simple UI components
 - **Props Interface**: Strict TypeScript interfaces for all component props
 - **Feature Folders**: Related components grouped by feature (auth, jobs, profile, etc.)
 
-#### ≡ƒôª **State Management Strategy**
+#### 📦 **State Management Strategy**
 - **Global State (Zustand)**: Authentication state (user, token, isAuthenticated)
 - **Local State (useState)**: Component-specific UI state (modals, dropdowns)
 - **Form State (React Hook Form)**: Form data with validation
 - **Server State**: API responses managed with React patterns
 - **Persistent State**: JWT token stored in localStorage for session persistence
 
-#### ≡ƒöî **API Integration**
+#### 🔌 **API Integration**
 - **Centralized Client**: Single `api.ts` file with all API methods
 - **Axios Instance**: Configured with base URL and JWT interceptor
 - **Automatic Auth**: JWT token automatically attached to all requests
 - **Error Handling**: Consistent error handling across all API calls
 - **Type Safety**: All API methods have TypeScript return types
 
-#### ≡ƒÄ¿ **Styling System**
+#### 🎨 **Styling System**
 - **Tailwind CSS**: Utility-first CSS framework
 - **Custom Design System**: Consistent colors, spacing, and typography
 - **TalentNest Branding**: Primary blue (#075299) used throughout
 - **Responsive Design**: Mobile-first approach with breakpoints
 - **Dark Mode Ready**: Tailwind dark mode classes prepared (not yet activated)
 
-#### ≡ƒöÉ **Authentication Flow**
-1. **User Registration/Login** ΓåÆ Form submission
-2. **API Call** ΓåÆ `api.register()` or `api.login()`
-3. **Token Received** ΓåÆ JWT token from backend
-4. **Store Update** ΓåÆ Zustand `setUser()` and `setToken()`
-5. **LocalStorage** ΓåÆ Token persisted for page refreshes
-6. **Route Protection** ΓåÆ Middleware checks auth state
-7. **Role-Based Routing** ΓåÆ Redirect to appropriate dashboard
+#### 🔐 **Authentication Flow**
+1. **User Registration/Login** → Form submission
+2. **API Call** → `api.register()` or `api.login()`
+3. **Token Received** → JWT token from backend
+4. **Store Update** → Zustand `setUser()` and `setToken()`
+5. **LocalStorage** → Token persisted for page refreshes
+6. **Route Protection** → Middleware checks auth state
+7. **Role-Based Routing** → Redirect to appropriate dashboard
 
-#### ≡ƒ¢ú∩╕Å **Routing Strategy**
+#### 🛣️ **Routing Strategy**
 - **Public Routes**: `/`, `/jobs`, `/jobs/[id]`, `/login`, `/register`
 - **Job Seeker Routes**: `/dashboard/*` (protected)
 - **Employer Routes**: `/employer/*` (protected)
 - **Role-Based Access**: Middleware checks user role for access control
 - **Automatic Redirects**: Unauthenticated users redirected to login
 
-#### ≡ƒô▒ **Responsive Design**
+#### 📱 **Responsive Design**
 - **Mobile-First**: Base styles for mobile, enhanced for desktop
 - **Breakpoints**: `sm:`, `md:`, `lg:`, `xl:` for different screen sizes
 - **Flexible Layouts**: Grid and flexbox for adaptive layouts
 - **Touch-Friendly**: Large tap targets for mobile users
 - **Sidebar Collapse**: Dashboard sidebar collapses on mobile
 
-#### ΓÜí **Performance Optimizations**
+#### ⚡ **Performance Optimizations**
 - **Code Splitting**: Automatic route-based code splitting
 - **Lazy Loading**: Components loaded on demand
 - **Image Optimization**: Next.js Image component for optimized images
 - **Bundle Size**: Tree-shaking removes unused code
 - **Production Build**: Minified and optimized for production
 
-#### ≡ƒº¬ **Type Safety**
+#### 🧪 **Type Safety**
 - **TypeScript**: Strict type checking throughout
 - **Interface Definitions**: All data structures typed in `types/index.ts`
 - **API Response Types**: Backend responses have matching frontend types
 - **Component Props**: All props strictly typed
 - **Compile-Time Safety**: Catch errors before runtime
 
-#### ≡ƒÄ¡ **User Experience**
+#### 🎭 **User Experience**
 - **Loading States**: Skeleton screens and spinners during data fetch
 - **Error Handling**: User-friendly error messages
 - **Form Validation**: Real-time validation with helpful messages
@@ -576,33 +576,33 @@ Think of the frontend as a **restaurant experience**:
 
 ---
 
-## ≡ƒÜÇ Features
+## 🚀 Features
 
 ### For Job Seekers
-- ≡ƒô¥ **Profile Management** - Create and update professional profiles
-- ≡ƒôä **Resume Upload** - Upload PDF/DOCX resumes with AI parsing
-- ≡ƒöì **Job Search** - Search and filter jobs by location, type, experience level
-- ≡ƒÆ╝ **Apply to Jobs** - Submit applications with AI-generated cover letters
-- ≡ƒôè **Application Tracking** - Monitor application status in real-time
-- ≡ƒñû **AI Recommendations** - Get personalized job matches based on your profile
-- ≡ƒÆ¼ **AI Career Assistant** - Chat with an AI assistant for career guidance
+- 📝 **Profile Management** - Create and update professional profiles
+- 📄 **Resume Upload** - Upload PDF/DOCX resumes with AI parsing
+- 🔍 **Job Search** - Search and filter jobs by location, type, experience level
+- 💼 **Apply to Jobs** - Submit applications with AI-generated cover letters
+- 📊 **Application Tracking** - Monitor application status in real-time
+- 🤖 **AI Recommendations** - Get personalized job matches based on your profile
+- 💬 **AI Career Assistant** - Chat with an AI assistant for career guidance
 
 ### For Employers
-- ≡ƒôó **Job Posting** - Create, edit, and manage job listings
-- ≡ƒæÑ **Application Review** - View and manage candidate applications
-- Γ£à **Candidate Actions** - Shortlist, reject, or update application status
-- ≡ƒôº **Email Notifications** - Automated notifications for application events
-- ≡ƒÄ» **AI Candidate Matching** - Get AI-powered candidate recommendations
-- ≡ƒôè **Dashboard Analytics** - Track job postings and application metrics
+- 📢 **Job Posting** - Create, edit, and manage job listings
+- 👥 **Application Review** - View and manage candidate applications
+- ✅ **Candidate Actions** - Shortlist, reject, or update application status
+- 📧 **Email Notifications** - Automated notifications for application events
+- 🎯 **AI Candidate Matching** - Get AI-powered candidate recommendations
+- 📊 **Dashboard Analytics** - Track job postings and application metrics
 
 ### AI-Powered Features
-- ≡ƒºá **Resume Parsing** - Extract skills, experience, and education from resumes
-- ≡ƒô¥ **Cover Letter Generation** - AI-generated personalized cover letters
-- ≡ƒÄ» **Job Recommendations** - Machine learning-based job matching
-- ≡ƒñ¥ **Candidate Matching** - AI-powered candidate ranking for jobs
-- ≡ƒÆ¼ **RAG Assistant** - Retrieval-Augmented Generation chatbot with job portal knowledge
+- 🧠 **Resume Parsing** - Extract skills, experience, and education from resumes
+- 📝 **Cover Letter Generation** - AI-generated personalized cover letters
+- 🎯 **Job Recommendations** - Machine learning-based job matching
+- 🤝 **Candidate Matching** - AI-powered candidate ranking for jobs
+- 💬 **RAG Assistant** - Retrieval-Augmented Generation chatbot with job portal knowledge
 
-## ≡ƒ¢á∩╕Å Tech Stack
+## 🛠️ Tech Stack
 
 ### Backend
 - **Framework**: FastAPI (Python 3.11+) with async/await
@@ -628,7 +628,7 @@ Think of the frontend as a **restaurant experience**:
 - **Database**: MongoDB Atlas (cloud) or local MongoDB
 - **Environment**: .env configuration management
 
-## ≡ƒôª Installation & Setup
+## 📦 Installation & Setup
 
 ### Prerequisites
 - Python 3.11 or higher
@@ -749,7 +749,7 @@ For detailed Docker documentation, see [docker/README.md](./docker/README.md)
    - Frontend: http://localhost:3000
    - Backend API: http://localhost:8000
 
-## ≡ƒöº Configuration
+## 🔧 Configuration
 
 ### Backend Environment Variables
 
@@ -770,13 +770,13 @@ See `backend/.env.example` for all available options.
 Required variables in `frontend/.env.local`:
 - `NEXT_PUBLIC_API_URL`: Backend API URL (default: http://localhost:8000)
 
-## ≡ƒôÜ API Documentation
+## 📚 API Documentation
 
 Once the backend is running, visit:
 - **Swagger UI**: http://localhost:8000/docs
 - **ReDoc**: http://localhost:8000/redoc
 
-## ≡ƒº¬ Testing
+## 🧪 Testing
 
 ### Backend Testing
 ```bash
@@ -790,7 +790,7 @@ cd frontend
 npm test
 ```
 
-## ≡ƒÉ│ Docker Commands
+## 🐳 Docker Commands
 
 All Docker files are located in the `docker/` directory.
 
@@ -826,78 +826,78 @@ docker-compose -f docker/docker-compose.yml up --build --force-recreate
 
 For more Docker commands and troubleshooting, see [docker/README.md](./docker/README.md)
 
-## ≡ƒôü Project Structure
+## 📁 Project Structure
 
 ```
 JobPortal/
-Γö£ΓöÇΓöÇ backend/                    # FastAPI backend
-Γöé   Γö£ΓöÇΓöÇ app/
-Γöé   Γöé   Γö£ΓöÇΓöÇ ai/                # AI features
-Γöé   Γöé   Γöé   Γö£ΓöÇΓöÇ agents/        # AI agents
-Γöé   Γöé   Γöé   Γö£ΓöÇΓöÇ chains/        # LangChain chains
-Γöé   Γöé   Γöé   Γö£ΓöÇΓöÇ prompts/       # AI prompts
-Γöé   Γöé   Γöé   Γö£ΓöÇΓöÇ providers/     # OpenAI client
-Γöé   Γöé   Γöé   ΓööΓöÇΓöÇ rag/           # RAG pipeline (loader, splitter, retriever, QA)
-Γöé   Γöé   Γö£ΓöÇΓöÇ api/               # API routes
-Γöé   Γöé   Γöé   ΓööΓöÇΓöÇ v1/routes/     # Auth, jobs, applications, assistant, etc.
-Γöé   Γöé   Γö£ΓöÇΓöÇ core/              # Core configuration
-Γöé   Γöé   Γö£ΓöÇΓöÇ db/                # Database initialization
-Γöé   Γöé   Γö£ΓöÇΓöÇ models/            # Beanie ODM models (User, Job, Application, etc.)
-Γöé   Γöé   Γö£ΓöÇΓöÇ schemas/           # Pydantic request/response schemas
-Γöé   Γöé   Γö£ΓöÇΓöÇ services/          # Business logic (email, resume parser, search)
-Γöé   Γöé   Γö£ΓöÇΓöÇ templates/         # Email templates
-Γöé   Γöé   Γö£ΓöÇΓöÇ workers/tasks/     # Background tasks
-Γöé   Γöé   ΓööΓöÇΓöÇ main.py            # FastAPI application entry point
-Γöé   Γö£ΓöÇΓöÇ uploads/resumes/       # Uploaded resume files
-Γöé   Γö£ΓöÇΓöÇ .env.example           # Environment template
-Γöé   Γö£ΓöÇΓöÇ requirements.txt       # Python dependencies
-Γöé   Γö£ΓöÇΓöÇ TESTING_BACKEND.md     # Backend testing guide
-Γöé   ΓööΓöÇΓöÇ README.md              # Backend documentation
-Γö£ΓöÇΓöÇ frontend/                  # Next.js 14 frontend
-Γöé   Γö£ΓöÇΓöÇ app/                   # App Router pages
-Γöé   Γöé   Γö£ΓöÇΓöÇ dashboard/         # Job seeker pages
-Γöé   Γöé   Γö£ΓöÇΓöÇ employer/          # Employer pages
-Γöé   Γöé   Γö£ΓöÇΓöÇ jobs/              # Job listings and details
-Γöé   Γöé   Γö£ΓöÇΓöÇ login/             # Login page
-Γöé   Γöé   ΓööΓöÇΓöÇ register/          # Registration page
-Γöé   Γö£ΓöÇΓöÇ components/            # Reusable UI components
-Γöé   Γöé   Γö£ΓöÇΓöÇ layout/            # Navbar, Footer, DashboardLayout
-Γöé   Γöé   ΓööΓöÇΓöÇ ui/                # Button, Input, Card, Modal, etc.
-Γöé   Γö£ΓöÇΓöÇ features/              # Feature-specific components
-Γöé   Γöé   Γö£ΓöÇΓöÇ auth/              # Login/Register forms
-Γöé   Γöé   Γö£ΓöÇΓöÇ jobs/              # Job cards, filters, apply modal
-Γöé   Γöé   Γö£ΓöÇΓöÇ profile/           # Profile forms
-Γöé   Γöé   Γö£ΓöÇΓöÇ assistant/         # AI chat interface, cover letter generator
-Γöé   Γöé   ΓööΓöÇΓöÇ employer/          # Employer-specific components
-Γöé   Γö£ΓöÇΓöÇ hooks/                 # Custom React hooks
-Γöé   Γö£ΓöÇΓöÇ lib/                   # API client and utilities
-Γöé   Γö£ΓöÇΓöÇ store/                 # Zustand state management
-Γöé   Γö£ΓöÇΓöÇ types/                 # TypeScript type definitions
-Γöé   Γö£ΓöÇΓöÇ .env.example           # Environment template
-Γöé   Γö£ΓöÇΓöÇ package.json           # Node dependencies
-Γöé   Γö£ΓöÇΓöÇ FRONTEND_GUIDE.md      # Frontend guide
-Γöé   ΓööΓöÇΓöÇ README.md              # Frontend documentation
-Γö£ΓöÇΓöÇ docker/                    # Docker configuration
-Γöé   Γö£ΓöÇΓöÇ backend.Dockerfile     # Backend Docker image
-Γöé   Γö£ΓöÇΓöÇ frontend.Dockerfile    # Frontend Docker image
-Γöé   Γö£ΓöÇΓöÇ docker-compose.yml     # Multi-container orchestration
-Γöé   ΓööΓöÇΓöÇ README.md              # Docker setup guide with OS-specific instructions
-Γö£ΓöÇΓöÇ DB_ContentGen/             # Database seeding utilities
-Γöé   Γö£ΓöÇΓöÇ candidate_generator.py # Generate test candidates
-Γöé   Γö£ΓöÇΓöÇ employer_generator.py  # Generate test employers
-Γöé   Γö£ΓöÇΓöÇ job_generator.py       # Generate test jobs
-Γöé   Γö£ΓöÇΓöÇ application_generator.py # Generate test applications
-Γöé   ΓööΓöÇΓöÇ README.md              # Database seeding documentation
-Γö£ΓöÇΓöÇ project-spec/              # Project specifications
-Γöé   ΓööΓöÇΓöÇ *.md                   # Detailed project specs and walkthroughs
-Γö£ΓöÇΓöÇ JobPortal Implementation Plan.md  # Complete implementation roadmap
-Γö£ΓöÇΓöÇ TESTING_REPORT.md          # Phase 1 testing report
-Γö£ΓöÇΓöÇ FRONTEND_GUIDE.md          # Complete frontend guide
-Γö£ΓöÇΓöÇ FRONTEND_COMPLETION_SUMMARY.md  # Frontend feature checklist
-ΓööΓöÇΓöÇ README.md                  # This file
+├── backend/                    # FastAPI backend
+│   ├── app/
+│   │   ├── ai/                # AI features
+│   │   │   ├── agents/        # AI agents
+│   │   │   ├── chains/        # LangChain chains
+│   │   │   ├── prompts/       # AI prompts
+│   │   │   ├── providers/     # OpenAI client
+│   │   │   └── rag/           # RAG pipeline (loader, splitter, retriever, QA)
+│   │   ├── api/               # API routes
+│   │   │   └── v1/routes/     # Auth, jobs, applications, assistant, etc.
+│   │   ├── core/              # Core configuration
+│   │   ├── db/                # Database initialization
+│   │   ├── models/            # Beanie ODM models (User, Job, Application, etc.)
+│   │   ├── schemas/           # Pydantic request/response schemas
+│   │   ├── services/          # Business logic (email, resume parser, search)
+│   │   ├── templates/         # Email templates
+│   │   ├── workers/tasks/     # Background tasks
+│   │   └── main.py            # FastAPI application entry point
+│   ├── uploads/resumes/       # Uploaded resume files
+│   ├── .env.example           # Environment template
+│   ├── requirements.txt       # Python dependencies
+│   ├── TESTING_BACKEND.md     # Backend testing guide
+│   └── README.md              # Backend documentation
+├── frontend/                  # Next.js 14 frontend
+│   ├── app/                   # App Router pages
+│   │   ├── dashboard/         # Job seeker pages
+│   │   ├── employer/          # Employer pages
+│   │   ├── jobs/              # Job listings and details
+│   │   ├── login/             # Login page
+│   │   └── register/          # Registration page
+│   ├── components/            # Reusable UI components
+│   │   ├── layout/            # Navbar, Footer, DashboardLayout
+│   │   └── ui/                # Button, Input, Card, Modal, etc.
+│   ├── features/              # Feature-specific components
+│   │   ├── auth/              # Login/Register forms
+│   │   ├── jobs/              # Job cards, filters, apply modal
+│   │   ├── profile/           # Profile forms
+│   │   ├── assistant/         # AI chat interface, cover letter generator
+│   │   └── employer/          # Employer-specific components
+│   ├── hooks/                 # Custom React hooks
+│   ├── lib/                   # API client and utilities
+│   ├── store/                 # Zustand state management
+│   ├── types/                 # TypeScript type definitions
+│   ├── .env.example           # Environment template
+│   ├── package.json           # Node dependencies
+│   ├── FRONTEND_GUIDE.md      # Frontend guide
+│   └── README.md              # Frontend documentation
+├── docker/                    # Docker configuration
+│   ├── backend.Dockerfile     # Backend Docker image
+│   ├── frontend.Dockerfile    # Frontend Docker image
+│   ├── docker-compose.yml     # Multi-container orchestration
+│   └── README.md              # Docker setup guide with OS-specific instructions
+├── DB_ContentGen/             # Database seeding utilities
+│   ├── candidate_generator.py # Generate test candidates
+│   ├── employer_generator.py  # Generate test employers
+│   ├── job_generator.py       # Generate test jobs
+│   ├── application_generator.py # Generate test applications
+│   └── README.md              # Database seeding documentation
+├── project-spec/              # Project specifications
+│   └── *.md                   # Detailed project specs and walkthroughs
+├── JobPortal Implementation Plan.md  # Complete implementation roadmap
+├── TESTING_REPORT.md          # Phase 1 testing report
+├── FRONTEND_GUIDE.md          # Complete frontend guide
+├── FRONTEND_COMPLETION_SUMMARY.md  # Frontend feature checklist
+└── README.md                  # This file
 ```
 
-## ≡ƒñ¥ Contributing
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feat/feature-name`)
@@ -905,15 +905,15 @@ JobPortal/
 4. Push to the branch (`git push origin feat/feature-name`)
 5. Open a Pull Request
 
-## ≡ƒô¥ License
+## 📝 License
 
 This project is part of an academic assignment.
 
-## ≡ƒæÑ Team
+## 👥 Team
 
 Developed as part of a collaborative software engineering project.
 
-## ≡ƒùä∩╕Å Database Seeding
+## 🗄️ Database Seeding
 
 To populate the database with sample data for testing and development:
 
@@ -936,7 +936,7 @@ python application_generator.py  # Generate applications
 
 See [DB_ContentGen/README.md](./DB_ContentGen/README.md) for detailed instructions.
 
-## ≡ƒÉ¢ Troubleshooting
+## 🐛 Troubleshooting
 
 ### Common Issues
 
@@ -969,7 +969,7 @@ See [DB_ContentGen/README.md](./DB_ContentGen/README.md) for detailed instructio
 
 For more help, see individual component READMEs or check the [TESTING_REPORT.md](./TESTING_REPORT.md).
 
-## ≡ƒôÜ Documentation
+## 📚 Documentation
 
 ### Core Documentation
 - **[Implementation Plan](./JobPortal%20Implementation%20Plan.md)** - Complete development roadmap with all phases
@@ -990,17 +990,17 @@ For more help, see individual component READMEs or check the [TESTING_REPORT.md]
 - **[Project Spec 3](./project-spec/JobPortal%20-%20Project%20Spec%203%20-%20Backend%20Walkthrough.md)** - Backend walkthrough
 - **[Project Spec 4-6](./project-spec/)** - Setup and workflow guides
 
-## ≡ƒº¬ Testing
+## 🧪 Testing
 
 ### Manual Testing
 All Phase 1 features have been tested and documented in [TESTING_REPORT.md](./TESTING_REPORT.md).
 
 **Test Coverage:**
-- Γ£à User registration and login
-- Γ£à JWT authentication and protected routes
-- Γ£à Role-based routing (Job Seeker / Employer)
-- Γ£à Database connectivity
-- Γ£à Password hashing and security
+- ✅ User registration and login
+- ✅ JWT authentication and protected routes
+- ✅ Role-based routing (Job Seeker / Employer)
+- ✅ Database connectivity
+- ✅ Password hashing and security
 
 ### Backend Testing
 ```bash
@@ -1018,7 +1018,7 @@ npm run dev  # Start development server
 # Manually test features through the UI
 ```
 
-## ≡ƒÜÇ Deployment
+## 🚀 Deployment
 
 ### Docker Deployment (Recommended)
 The application is containerized and ready for deployment:
@@ -1046,7 +1046,7 @@ Before deploying to production:
 
 See [docker/README.md](./docker/README.md) for production deployment best practices.
 
-## ≡ƒöù Quick Links
+## 🔗 Quick Links
 
 ### Getting Started
 - [Installation & Setup](#-installation--setup)
