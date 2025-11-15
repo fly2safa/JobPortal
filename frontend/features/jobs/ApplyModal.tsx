@@ -53,8 +53,13 @@ export function ApplyModal({
   const fetchResumes = async () => {
     try {
       const response = await apiClient.getResumes();
-      setResumes(response.data || []);
+      console.log('Fetched resumes:', response);
+      // getResumes() already returns response.data, which is the array
+      const resumeList = Array.isArray(response) ? response : [];
+      console.log('Resume list:', resumeList);
+      setResumes(resumeList);
     } catch (err) {
+      console.error('Failed to fetch resumes:', err);
       setResumes([]);
     }
   };
@@ -148,13 +153,24 @@ export function ApplyModal({
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <Select
-          label="Select Resume"
-          options={[{ value: '', label: 'Select a resume' }, ...resumes.map((r) => ({ value: r.file_url, label: r.file_name }))]}
-          {...register('resume_url', { required: 'Please select or upload a resume' })}
-          error={errors.resume_url?.message}
-          disabled={isUploadingResume || isSubmitting}
-        />
+        <div>
+          <Select
+            label="Select Resume"
+            options={
+              resumes.length > 0
+                ? [{ value: '', label: 'Select a resume' }, ...resumes.map((r) => ({ value: r.file_url, label: r.file_name }))]
+                : [{ value: '', label: 'No resumes uploaded yet - please upload one above' }]
+            }
+            {...register('resume_url', { required: 'Please select or upload a resume' })}
+            error={errors.resume_url?.message}
+            disabled={isUploadingResume || isSubmitting || resumes.length === 0}
+          />
+          {resumes.length === 0 && (
+            <p className="text-sm text-gray-600 mt-1">
+              ⬆️ Please upload a resume above first
+            </p>
+          )}
+        </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">

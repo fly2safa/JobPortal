@@ -1,116 +1,152 @@
 'use client';
 
-import Link from 'next/link';
+import { JobRecommendation } from '@/types';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
-import { JobRecommendation } from '@/types';
-import { formatTimeAgo, formatSalary } from '@/lib/utils';
-import { MapPin, Briefcase, Clock, DollarSign, TrendingUp, Sparkles } from 'lucide-react';
+import { Bookmark, BookmarkCheck, MapPin, Calendar, Briefcase, DollarSign } from 'lucide-react';
+import { formatDate } from '@/lib/utils';
+import Link from 'next/link';
 
 interface RecommendationCardProps {
   recommendation: JobRecommendation;
+  isSaved?: boolean;
+  onToggleSave?: (jobId: string) => void;
 }
 
-export function RecommendationCard({ recommendation }: RecommendationCardProps) {
+export function RecommendationCard({
+  recommendation,
+  isSaved = false,
+  onToggleSave,
+}: RecommendationCardProps) {
   const { job, match_score, reasons } = recommendation;
-  
-  // Determine match score color
-  const getMatchColor = (score: number) => {
-    if (score >= 80) return 'text-green-600 dark:text-green-400';
-    if (score >= 60) return 'text-blue-600 dark:text-blue-400';
-    if (score >= 40) return 'text-yellow-600 dark:text-yellow-400';
-    return 'text-gray-600 dark:text-gray-400';
-  };
 
-  const getMatchBadgeVariant = (score: number): 'success' | 'primary' | 'warning' | 'default' => {
-    if (score >= 80) return 'success';
-    if (score >= 60) return 'primary';
-    if (score >= 40) return 'warning';
-    return 'default';
+  // Convert match score to percentage for display
+  const matchPercentage = Math.round(match_score * 100);
+
+  // Determine match quality color
+  const getMatchColor = () => {
+    if (match_score >= 0.8) return 'text-green-600 bg-green-50';
+    if (match_score >= 0.6) return 'text-blue-600 bg-blue-50';
+    return 'text-yellow-600 bg-yellow-50';
   };
 
   return (
-    <Link href={`/jobs/${job.id}`}>
-      <Card hover className="h-full transition-all duration-200 relative">
-        {/* Match Score Badge */}
-        <div className="absolute top-4 right-4 flex items-center gap-2">
-          <div className={`text-2xl font-bold ${getMatchColor(match_score)}`}>
-            {match_score}%
-          </div>
-          <Badge variant={getMatchBadgeVariant(match_score)} className="flex items-center gap-1">
-            <TrendingUp size={14} />
-            Match
-          </Badge>
+    <Card className="p-6 hover:shadow-lg transition-all duration-300 relative">
+      {/* Bookmark Button */}
+      {onToggleSave && (
+        <button
+          onClick={() => onToggleSave(job.id)}
+          className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-lg transition-colors z-10"
+          aria-label={isSaved ? 'Unsave job' : 'Save job'}
+        >
+          {isSaved ? (
+            <BookmarkCheck size={20} className="text-primary" />
+          ) : (
+            <Bookmark size={20} className="text-gray-400" />
+          )}
+        </button>
+      )}
+
+      {/* Match Score Badge */}
+      <div className="mb-4">
+        <Badge className={`${getMatchColor()} font-semibold`}>
+          {matchPercentage}% Match
+        </Badge>
+      </div>
+
+      {/* Job Title and Company */}
+      <div className="mb-4">
+        <h3 className="text-xl font-bold text-gray-900 mb-2">
+          {job.title}
+        </h3>
+        <p className="text-lg text-gray-700 font-medium">
+          {job.company_name}
+        </p>
+      </div>
+
+      {/* Job Details */}
+      <div className="space-y-2 mb-4">
+        <div className="flex items-center text-gray-600">
+          <MapPin size={16} className="mr-2" />
+          <span className="text-sm">
+            {job.location} {job.is_remote && '• Remote'}
+          </span>
+        </div>
+        
+        <div className="flex items-center text-gray-600">
+          <Briefcase size={16} className="mr-2" />
+          <span className="text-sm">
+            {job.job_type.replace('_', ' ')} • {job.experience_level}
+          </span>
         </div>
 
-        <div className="pr-24">
-          <div className="flex justify-between items-start mb-3">
-            <div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 hover:text-primary dark:hover:text-primary-400 transition-colors flex items-center gap-2">
-                {job.title}
-                <Sparkles size={16} className="text-primary" />
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">{job.company_name || 'Company Name'}</p>
-            </div>
-            <Badge variant="primary">{job.job_type}</Badge>
+        {job.salary_max && (
+          <div className="flex items-center text-gray-600">
+            <DollarSign size={16} className="mr-2" />
+            <span className="text-sm">
+              {job.salary_min ? `$${job.salary_min.toLocaleString()} - ` : ''}
+              ${job.salary_max.toLocaleString()}/{job.salary_currency || 'USD'}
+            </span>
           </div>
+        )}
 
-          <div className="space-y-2 mb-4">
-            <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-              <MapPin size={16} className="mr-2" />
-              {job.location}
-            </div>
-            <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-              <Briefcase size={16} className="mr-2" />
-              {job.experience_level}
-            </div>
-            {(job.salary_min || job.salary_max) && (
-              <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                <DollarSign size={16} className="mr-2" />
-                {formatSalary(job.salary_min, job.salary_max)}
-              </div>
-            )}
-            <div className="flex items-center text-sm text-gray-500 dark:text-gray-500">
-              <Clock size={16} className="mr-2" />
-              Posted {formatTimeAgo(job.posted_date)}
-            </div>
-          </div>
+        <div className="flex items-center text-gray-600">
+          <Calendar size={16} className="mr-2" />
+          <span className="text-sm">
+            Posted {formatDate(job.posted_date || job.created_at)}
+          </span>
+        </div>
+      </div>
 
-          <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-2">
-            {job.description}
-          </p>
+      {/* Match Reasons */}
+      {reasons && reasons.length > 0 && (
+        <div className="mb-4">
+          <h4 className="text-sm font-semibold text-gray-700 mb-2">
+            Why this matches:
+          </h4>
+          <ul className="space-y-1">
+            {reasons.map((reason, index) => (
+              <li
+                key={index}
+                className="text-sm text-gray-600 flex items-start"
+              >
+                <span className="text-primary mr-2">•</span>
+                <span>{reason}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
-          {/* Match Reasons */}
-          {reasons && reasons.length > 0 && (
-            <div className="mb-4 p-3 bg-primary/5 dark:bg-primary/10 rounded-lg border border-primary/20">
-              <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2 flex items-center gap-1">
-                <Sparkles size={14} className="text-primary" />
-                Why this matches:
-              </h4>
-              <ul className="space-y-1">
-                {reasons.slice(0, 3).map((reason, index) => (
-                  <li key={index} className="text-xs text-gray-700 dark:text-gray-300 flex items-start">
-                    <span className="text-primary mr-2">•</span>
-                    <span>{reason}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
+      {/* Skills Tags */}
+      {job.skills && job.skills.length > 0 && (
+        <div className="mb-4">
           <div className="flex flex-wrap gap-2">
-            {job.skills.slice(0, 4).map((skill) => (
-              <Badge key={skill} variant="default">
+            {job.skills.slice(0, 4).map((skill, index) => (
+              <Badge
+                key={index}
+                variant="secondary"
+                className="text-xs"
+              >
                 {skill}
               </Badge>
             ))}
             {job.skills.length > 4 && (
-              <Badge variant="default">+{job.skills.length - 4} more</Badge>
+              <Badge variant="secondary" className="text-xs">
+                +{job.skills.length - 4} more
+              </Badge>
             )}
           </div>
         </div>
-      </Card>
-    </Link>
+      )}
+
+      {/* View Details Button */}
+      <Link href={`/jobs/${job.id}`} className="block">
+        <button className="w-full py-2 px-4 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90 transition-colors">
+          View Details
+        </button>
+      </Link>
+    </Card>
   );
 }
 
