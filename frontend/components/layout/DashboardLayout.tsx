@@ -29,7 +29,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   ];
 
   const employerLinks = [
-    { href: '/employer/dashboard', icon: Home, label: 'Dashboard' },
+    { href: '/employer/dashboard', icon: Home, label: 'Employer Dashboard' },
     { href: '/employer/jobs', icon: Briefcase, label: 'My Jobs' },
     { href: '/employer/jobs/new', icon: FileText, label: 'Post New Job' },
     { href: '/employer/interviews', icon: Calendar, label: 'Interviews' },

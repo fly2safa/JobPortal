@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
-import { JobRecommendation } from '@/types';
+import { JobRecommendation, CandidateRecommendationResponse } from '@/types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -350,11 +350,14 @@ class ApiClient {
   }
 
   // Candidate matching endpoints
-  async getRecommendedCandidates(jobId: string, params?: {
-    limit?: number;
-    use_ai?: boolean;
-    applicants_only?: boolean;
-  }) {
+  async getRecommendedCandidates(
+    jobId: string, 
+    params?: {
+      limit?: number;
+      use_ai?: boolean;
+      applicants_only?: boolean;
+    }
+  ): Promise<CandidateRecommendationResponse> {
     const response = await this.client.get(`/jobs/${jobId}/recommended-candidates`, { params });
     return response.data;
   }

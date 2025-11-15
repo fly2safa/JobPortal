@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { PasswordInput } from '@/components/ui/PasswordInput';
 import { Card } from '@/components/ui/Card';
 import { useAuthStore } from '@/store/authStore';
 import apiClient from '@/lib/api';
@@ -120,9 +121,8 @@ export function LoginForm() {
         </div>
 
         <div style={{ fontFamily: 'Playfair Display, serif' }}>
-          <Input
+          <PasswordInput
             label="Password"
-            type="password"
             placeholder="••••••••"
             {...register('password', {
               required: 'Password is required',

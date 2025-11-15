@@ -3,6 +3,8 @@ Authentication routes for user registration and login.
 """
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, status, Depends, Request
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 from app.schemas.auth import UserRegister, UserLogin, Token
 from app.schemas.user import UserResponse
 from app.models.user import User
@@ -87,11 +89,14 @@ async def register(request: Request, user_data: UserRegister):
         created_at=user.created_at,
     )
     
-    return {
-        "user": user_response,
-        "access_token": access_token,
-        "token_type": "bearer"
-    }
+    return JSONResponse(
+        status_code=status.HTTP_201_CREATED,
+        content=jsonable_encoder({
+            "user": user_response,
+            "access_token": access_token,
+            "token_type": "bearer"
+        })
+    )
 
 
 @router.post("/login")
@@ -175,11 +180,14 @@ async def login(request: Request, credentials: UserLogin):
     
     logger.info(f"User logged in successfully: {user.email}")
     
-    return {
-        "user": user_response,
-        "access_token": access_token,
-        "token_type": "bearer"
-    }
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content=jsonable_encoder({
+            "user": user_response,
+            "access_token": access_token,
+            "token_type": "bearer"
+        })
+    )
 
 
 @router.get("/me", response_model=UserResponse)

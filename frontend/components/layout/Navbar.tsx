@@ -123,13 +123,14 @@ export function Navbar() {
                   <>
                     <Link
                       href="/employer/dashboard"
-                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center ${
                         isActive('/employer/dashboard')
                           ? 'text-primary bg-primary-50 dark:text-primary-400 dark:bg-primary-900/20'
                           : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-800'
                       }`}
                     >
-                      Dashboard
+                      <Home size={16} className="mr-1.5" />
+                      Employer Dashboard
                     </Link>
                     <Link
                       href="/employer/jobs"
@@ -214,9 +215,10 @@ export function Navbar() {
                 </div>
                 <Link
                   href={user?.role === 'job_seeker' ? '/dashboard' : '/employer/dashboard'}
-                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center"
                 >
-                  Dashboard
+                  <Home size={16} className="mr-2" />
+                  {user?.role === 'job_seeker' ? 'Dashboard' : 'Employer Dashboard'}
                 </Link>
                 <button
                   onClick={handleLogout}
