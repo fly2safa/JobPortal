@@ -237,6 +237,10 @@ class RecommendationService:
             
             return recommendations
             
+            return {
+                "score": score,
+                "reasons": reasons[:3]  # Limit to 3 reasons
+            }
         except Exception as e:
             logger.error(f"Error generating basic recommendations: {str(e)}")
             return []

@@ -45,9 +45,11 @@ langchain-openai>=0.0.5
 langchain-anthropic>=0.1.0
 tiktoken>=0.5.2
 
-# Optional - Vector Store (uncomment if using ChromaDB for semantic search)
-# chromadb>=0.4.22
-# numpy>=1.26.0
+# Vector Store & Embeddings (Required for semantic search and recommendations)
+chromadb>=0.4.22
+langchain-community>=0.0.20
+sentence-transformers>=2.2.2  # For HuggingFace embeddings fallback
+numpy>=1.26.0
 
 # Optional - for email notifications
 # aiosmtplib>=3.0.1

@@ -331,6 +331,8 @@ class JobVectorStore:
         """Get the number of jobs in the store."""
         return self.store.size()
 
+# Global vector store instance
+_vector_store: Optional[VectorStore] = None
 
 # Global job vector store instance
 job_vector_store = JobVectorStore()

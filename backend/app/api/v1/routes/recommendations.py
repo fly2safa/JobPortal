@@ -10,6 +10,7 @@ from app.models.job import Job
 from app.api.dependencies import get_current_user, get_current_employer
 from app.services.recommendation_service import recommendation_service
 from app.core.logging import get_logger
+from pydantic import BaseModel
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/recommendations", tags=["Recommendations"])
@@ -291,6 +292,8 @@ async def refresh_job_in_recommendations(
             "job_id": job_id
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error refreshing job in recommendations: {str(e)}")
         raise HTTPException(
