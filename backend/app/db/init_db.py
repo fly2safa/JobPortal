@@ -50,6 +50,7 @@ async def connect_to_mongo():
         from app.models.resume import Resume
         from app.models.conversation import Conversation
         from app.models.interview import Interview
+        from app.models.test_session import TestSession
         
         # Initialize Beanie with document models
         await init_beanie(
@@ -62,13 +63,14 @@ async def connect_to_mongo():
                 Resume,
                 Conversation,
                 Interview,
+                TestSession,
             ]
         )
         
         # Print colored success message
         print(f"{Colors.GREEN}{Colors.BOLD}✅ MongoDB Connected Successfully!{Colors.RESET}")
         print(f"{Colors.GREEN}   Database: {settings.DATABASE_NAME}{Colors.RESET}")
-        print(f"{Colors.GREEN}   Models: 7 collections initialized{Colors.RESET}")
+        print(f"{Colors.GREEN}   Models: 8 collections initialized{Colors.RESET}")
         logger.info("Successfully connected to MongoDB and initialized Beanie")
         
     except Exception as e:
