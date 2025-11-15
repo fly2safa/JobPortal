@@ -2,6 +2,7 @@
 AI Assistant routes for chat and cover letter generation.
 """
 from typing import Optional, List
+from datetime import datetime
 from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel, Field
 from app.models.user import User
@@ -11,6 +12,7 @@ from app.ai.rag.qa_chain import qa_chain
 from app.ai.providers import get_llm, ProviderError
 from app.core.config import settings
 from app.core.logging import get_logger
+from openai import AsyncOpenAI
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/assistant", tags=["AI Assistant"])
@@ -228,6 +230,15 @@ async def generate_cover_letter(
     logger.info(f"Cover letter generation request from {current_user.email} for job {request.job_id}")
     
     try:
+        if not settings.OPENAI_API_KEY:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="AI service is not configured. Please write your cover letter manually."
+            )
+        
+        # Get current date for the cover letter
+        current_date = datetime.now().strftime("%B %d, %Y")
+        
         # Build prompt for cover letter generation
         prompt = f"""Generate a professional cover letter for the following job application:
 
@@ -242,20 +253,37 @@ Job Description:
 
 Instructions:
 - Write a professional, compelling cover letter
+- Start with the date: {current_date}
+- DO NOT include placeholder addresses like [Your Address], [City, State, Zip Code], [Email Address], [Phone Number], [Company Address]
+- After the date, skip a line and write "Hiring Manager" followed by the company name "{request.company_name}"
+- Then skip a line and start with "Dear Hiring Manager,"
 - Highlight relevant skills and experience
 - Express genuine interest in the position
 - Keep it concise (3-4 paragraphs)
 - Use a professional but friendly tone
-- Include proper greeting and closing
 - Make it personalized to this specific job
+- End with "Sincerely," followed by the applicant name: {request.user_name}
+
+Format example:
+{current_date}
+
+Hiring Manager
+{request.company_name}
+
+Dear Hiring Manager,
+
+[Body paragraphs here...]
+
+Sincerely,
+{request.user_name}
 
 Generate the cover letter now:"""
 
-        # Get LLM with automatic fallback
-        try:
-            llm = get_llm(temperature=0.8, max_tokens=800)
-            
-            messages = [
+        # Call OpenAI API using new v1.0+ syntax
+        client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+        response = await client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
                 {
                     "role": "system",
                     "content": "You are an expert career coach and professional writer specializing in cover letters."

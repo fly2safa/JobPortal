@@ -28,7 +28,8 @@ interface ScheduleInterviewForm {
 }
 
 interface RescheduleForm {
-  scheduled_time: string;
+  reschedule_date: string;
+  reschedule_time: string;
   reason: string;
 }
 
@@ -92,7 +93,13 @@ export default function EmployerInterviewsPage() {
     if (!selectedInterview) return;
 
     try {
-      await apiClient.rescheduleInterview(selectedInterview.id, data);
+      // Combine date and time into ISO format
+      const scheduledDateTime = `${data.reschedule_date}T${data.reschedule_time}:00`;
+      
+      await apiClient.rescheduleInterview(selectedInterview.id, {
+        scheduled_time: scheduledDateTime,
+        reason: data.reason
+      });
       setShowRescheduleModal(false);
       resetReschedule();
       setSelectedInterview(null);
@@ -272,15 +279,16 @@ export default function EmployerInterviewsPage() {
 
           <Select
             label="Interview Type"
+            options={[
+              { value: 'video', label: 'Video Interview' },
+              { value: 'phone', label: 'Phone Interview' },
+              { value: 'in_person', label: 'In-Person' },
+              { value: 'technical', label: 'Technical Interview' },
+              { value: 'behavioral', label: 'Behavioral Interview' },
+              { value: 'final', label: 'Final Interview' }
+            ]}
             {...register('interview_type')}
-          >
-            <option value="video">Video Interview</option>
-            <option value="phone">Phone Interview</option>
-            <option value="in_person">In-Person</option>
-            <option value="technical">Technical Interview</option>
-            <option value="behavioral">Behavioral Interview</option>
-            <option value="final">Final Interview</option>
-          </Select>
+          />
 
           <Input
             label="Meeting Link"
@@ -340,11 +348,38 @@ export default function EmployerInterviewsPage() {
             Reschedule interview with <strong>{selectedInterview?.candidate_name}</strong>
           </p>
 
-          <Input
-            label="New Date & Time"
-            type="datetime-local"
-            {...registerReschedule('scheduled_time', { required: true })}
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="New Date"
+              type="date"
+              {...registerReschedule('reschedule_date', { 
+                required: 'Date is required',
+                validate: (value) => {
+                  const selectedDate = new Date(value);
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  return selectedDate >= today || 'Date cannot be in the past';
+                }
+              })}
+            />
+
+            <Select
+              label="New Time"
+              options={[
+                { value: '', label: 'Select time' },
+                ...Array.from({ length: 96 }, (_, i) => {
+                  const hours = Math.floor(i / 4);
+                  const minutes = (i % 4) * 15;
+                  const time = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                  const period = hours < 12 ? 'AM' : 'PM';
+                  const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+                  const displayTime = `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+                  return { value: time, label: displayTime };
+                })
+              ]}
+              {...registerReschedule('reschedule_time', { required: 'Time is required' })}
+            />
+          </div>
 
           <Textarea
             label="Reason for Rescheduling"

@@ -84,7 +84,7 @@ export default function JobsPage() {
           </div>
         ) : jobs.length === 0 ? (
           <div className="text-center py-20">
-            <p className="text-gray-600 text-lg">No jobs found. Try adjusting your filters.</p>
+            <p className="text-white text-lg">No jobs found. Try adjusting your filters.</p>
           </div>
         ) : (
           <>
