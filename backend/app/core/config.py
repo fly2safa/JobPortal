@@ -17,8 +17,17 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
-    # OpenAI (Optional - for AI features)
+    # AI Provider Configuration
+    AI_PROVIDER: str = "openai"  # Primary provider: "openai" or "anthropic"
+    AI_FALLBACK_ENABLED: bool = True  # Enable automatic fallback to secondary provider
+    
+    # OpenAI Configuration (Optional - for AI features)
     OPENAI_API_KEY: Optional[str] = None
+    OPENAI_MODEL: str = "gpt-4o"  # Options: gpt-4o, gpt-4o-mini, gpt-4-turbo, gpt-4
+    
+    # Anthropic Configuration (Optional - for AI features)
+    ANTHROPIC_API_KEY: Optional[str] = None
+    ANTHROPIC_MODEL: str = "claude-3-5-sonnet-20241022"  # Options: claude-3-5-sonnet, claude-3-opus
     
     # n8n Workflow Automation (Optional - for AI orchestration)
     N8N_BASE_URL: str = "http://localhost:5678"
@@ -40,6 +49,14 @@ class Settings(BaseSettings):
     APP_NAME: str = "JobPortal"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
+    LOG_LEVEL: str = "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+    UVICORN_LOG_LEVEL: str = "info"  # Uvicorn's own log level (lowercase: debug, info, warning, error, critical)
+    
+    # Server Configuration
+    HOST: str = "127.0.0.1"  # Use 0.0.0.0 for Docker/production to accept external connections
+    PORT: int = 8000
+    
+    # CORS
     CORS_ORIGINS: str = "http://localhost:3000"
     
     # File Upload

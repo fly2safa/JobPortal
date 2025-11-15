@@ -10,9 +10,20 @@ from app.core.logging import setup_logging, get_logger
 from app.db.init_db import connect_to_mongo, close_mongo_connection
 from app.api.v1.routes import auth, jobs, applications, users, resumes, assistant, interviews, recommendations
 
-# Setup logging
-setup_logging(level="DEBUG" if settings.DEBUG else "INFO")
+# Setup logging from settings
+setup_logging(level=settings.LOG_LEVEL)
 logger = get_logger(__name__)
+
+# ANSI color codes for console output
+class Colors:
+    GREEN = '\033[92m'
+    RED = '\033[91m'
+    YELLOW = '\033[93m'
+    BLUE = '\033[94m'
+    CYAN = '\033[96m'
+    MAGENTA = '\033[95m'
+    BOLD = '\033[1m'
+    RESET = '\033[0m'
 
 
 @asynccontextmanager
@@ -24,7 +35,12 @@ async def lifespan(app: FastAPI):
         app: FastAPI application instance
     """
     # Startup
+    print(f"\n{Colors.MAGENTA}{Colors.BOLD}{'='*60}{Colors.RESET}")
+    print(f"{Colors.MAGENTA}{Colors.BOLD}🚀 Starting {settings.APP_NAME} v{settings.APP_VERSION}{Colors.RESET}")
+    print(f"{Colors.MAGENTA}{Colors.BOLD}{'='*60}{Colors.RESET}\n")
     logger.info(f"Starting {settings.APP_NAME} v{settings.APP_VERSION}")
+    
+    # Connect to MongoDB
     await connect_to_mongo()
     
     # Initialize AI recommendation system
@@ -48,8 +64,12 @@ async def lifespan(app: FastAPI):
     yield
     
     # Shutdown
+    print(f"\n{Colors.YELLOW}{Colors.BOLD}{'='*60}{Colors.RESET}")
+    print(f"{Colors.YELLOW}{Colors.BOLD}🛑 Shutting down application...{Colors.RESET}")
+    print(f"{Colors.YELLOW}{Colors.BOLD}{'='*60}{Colors.RESET}\n")
     logger.info("Shutting down application...")
     await close_mongo_connection()
+    print(f"\n{Colors.GREEN}{Colors.BOLD}✅ Application shutdown complete{Colors.RESET}\n")
     logger.info("Application shutdown complete")
 
 
@@ -118,8 +138,8 @@ if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
         "app.main:app",
-        host="0.0.0.0",
-        port=8000,
+        host=settings.HOST,
+        port=settings.PORT,
         reload=settings.DEBUG,
     )
 

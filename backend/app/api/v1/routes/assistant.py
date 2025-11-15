@@ -9,6 +9,7 @@ from app.models.user import User
 from app.models.conversation import Conversation, MessageRole
 from app.api.dependencies import get_current_user
 from app.ai.rag.qa_chain import qa_chain
+from app.ai.providers import get_llm, ProviderError
 from app.core.config import settings
 from app.core.logging import get_logger
 from openai import AsyncOpenAI
@@ -291,16 +292,21 @@ Generate the cover letter now:"""
                     "role": "user",
                     "content": prompt
                 }
-            ],
-            temperature=0.8,
-            max_tokens=800
-        )
-        
-        cover_letter = response.choices[0].message.content
-        
-        logger.info(f"Generated cover letter for user {current_user.email}")
-        
-        return CoverLetterResponse(cover_letter=cover_letter)
+            ]
+            
+            # Invoke LLM
+            cover_letter = llm.invoke(messages).content
+            
+            logger.info(f"Generated cover letter for user {current_user.email}")
+            
+            return CoverLetterResponse(cover_letter=cover_letter)
+            
+        except ProviderError as e:
+            logger.error(f"All AI providers failed: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="AI service is temporarily unavailable. Please write your cover letter manually or try again later."
+            )
         
     except HTTPException:
         raise
