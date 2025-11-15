@@ -2,7 +2,8 @@
 LangChain prompt chain for AI-powered job recommendations.
 
 This module implements a LangChain chain that analyzes user profiles and job descriptions
-to generate match scores and recommendations.
+to generate match scores and recommendations. Also supports simpler reason generation for
+backward compatibility.
 """
 from typing import Dict, Any, List
 from langchain_core.prompts import ChatPromptTemplate
@@ -34,7 +35,8 @@ class RecommendationChain:
     LangChain chain for generating job recommendations.
     
     This chain takes a user profile and job description as input and outputs
-    a structured match score with detailed reasons.
+    a structured match score with detailed reasons. Also supports simpler
+    reason generation for backward compatibility.
     """
     
     def __init__(self, temperature: float = 0.3, max_tokens: int = 300):
@@ -194,6 +196,122 @@ Provide your analysis as JSON with match_score and reasons.""")
         except Exception as e:
             logger.error(f"Error in recommendation chain: {e}")
             raise
+    
+    async def generate_job_recommendation_reasons(
+        self,
+        user_profile: Dict[str, Any],
+        job: Dict[str, Any],
+        match_score: float
+    ) -> List[str]:
+        """
+        Generate human-readable reasons for why a job matches a user's profile.
+        This method is for backward compatibility when match_score is already calculated.
+        
+        Args:
+            user_profile: Dictionary with user skills, experience, etc.
+            job: Dictionary with job details
+            match_score: Numerical match score (0-1)
+            
+        Returns:
+            List of reason strings explaining the match
+        """
+        try:
+            # Use LangChain chain to generate reasons, but we already have the score
+            # So we'll use the chain but extract just the reasons
+            result = await self.ainvoke(user_profile, job)
+            return result.get("reasons", [])[:3]
+        except Exception as e:
+            logger.warning(f"Error generating reasons with chain, using fallback: {e}")
+            return self._generate_fallback_reasons(user_profile, job, match_score)
+    
+    def _generate_fallback_reasons(
+        self,
+        user_profile: Dict[str, Any],
+        job: Dict[str, Any],
+        match_score: float
+    ) -> List[str]:
+        """Generate fallback reasons without LLM."""
+        reasons = []
+        
+        # Check skill match
+        user_skills = set(s.lower() for s in user_profile.get("skills", []))
+        job_skills = set(s.lower() for s in job.get("skills", []))
+        matching_skills = user_skills.intersection(job_skills)
+        
+        if matching_skills:
+            top_skills = list(matching_skills)[:2]
+            if len(top_skills) == 1:
+                reasons.append(f"Strong match in {top_skills[0]}")
+            else:
+                reasons.append(f"Skills match: {', '.join(top_skills)}")
+        
+        # Check experience match
+        user_exp = user_profile.get("experience_years", 0)
+        job_level = job.get("experience_level", "").lower()
+        
+        if job_level:
+            if ("junior" in job_level or "entry" in job_level) and user_exp <= 3:
+                reasons.append("Experience level aligns well")
+            elif "mid" in job_level and 3 <= user_exp <= 7:
+                reasons.append("Perfect experience level match")
+            elif ("senior" in job_level or "lead" in job_level) and user_exp >= 5:
+                reasons.append("Senior experience matches requirements")
+        
+        # Check location
+        user_loc = user_profile.get("location", "").lower()
+        job_loc = job.get("location", "").lower()
+        
+        if job.get("is_remote"):
+            reasons.append("Remote work opportunity")
+        elif user_loc and job_loc and user_loc in job_loc:
+            reasons.append("Location matches your preferences")
+        
+        # Check salary if available
+        if job.get("salary_max"):
+            reasons.append(f"Competitive salary up to ${int(job['salary_max']):,}")
+        
+        # Default high score reason
+        if match_score >= 0.8 and not reasons:
+            reasons.append("Excellent overall match for your profile")
+        
+        # Ensure we have at least one reason
+        if not reasons:
+            reasons.append("Good fit based on your profile")
+        
+        return reasons[:3]
+    
+    async def rank_candidates_for_job(
+        self,
+        job: Dict[str, Any],
+        candidates: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """
+        Rank candidates for a job position using LLM analysis.
+        
+        Args:
+            job: Job details
+            candidates: List of candidate profiles with match scores
+            
+        Returns:
+            Ranked list of candidates with enhanced reasoning
+        """
+        try:
+            # For each candidate, generate reasoning
+            ranked_candidates = []
+            for candidate in candidates:
+                reasons = await self.generate_job_recommendation_reasons(
+                    user_profile=candidate,
+                    job=job,
+                    match_score=candidate.get("match_score", 0.0)
+                )
+                candidate["match_reasons"] = reasons
+                ranked_candidates.append(candidate)
+            
+            return ranked_candidates
+            
+        except Exception as e:
+            logger.error(f"Error ranking candidates: {str(e)}")
+            return candidates
 
 
 def get_recommendation_chain(temperature: float = 0.3, max_tokens: int = 300) -> RecommendationChain:
@@ -209,3 +327,6 @@ def get_recommendation_chain(temperature: float = 0.3, max_tokens: int = 300) ->
     """
     return RecommendationChain(temperature=temperature, max_tokens=max_tokens)
 
+
+# Global recommendation chain instance (for backward compatibility)
+recommendation_chain = RecommendationChain()

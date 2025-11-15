@@ -32,6 +32,7 @@ class UserUpdate(BaseModel):
     bio: Optional[str] = None
     linkedin_url: Optional[str] = None
     portfolio_url: Optional[str] = None
+    company_name: Optional[str] = None
     job_title: Optional[str] = None
 
 
@@ -47,6 +48,7 @@ class UserResponse(UserBase):
     linkedin_url: Optional[str] = None
     portfolio_url: Optional[str] = None
     company_id: Optional[str] = None
+    company_name: Optional[str] = None
     job_title: Optional[str] = None
     is_active: bool
     is_verified: bool

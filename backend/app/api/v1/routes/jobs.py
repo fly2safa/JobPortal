@@ -251,24 +251,30 @@ async def create_job(
     """
     logger.info(f"Job creation attempt by employer: {current_user.email}")
     
-    # Verify company exists
-    company = await Company.get(job_data.company_id)
-    if not company:
-        logger.warning(f"Job creation failed: Company not found - {job_data.company_id}")
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Company not found"
-        )
+    # Use company_name from user profile if no company_id provided
+    company_id = job_data.company_id if job_data.company_id else str(current_user.id)
+    company_name = job_data.company_id if job_data.company_id else (current_user.company_name or f"{current_user.first_name} {current_user.last_name}")
     
-    # Verify user is associated with the company
-    if current_user.company_id != job_data.company_id:
-        logger.warning(
-            f"Job creation failed: User {current_user.email} not authorized for company {job_data.company_id}"
-        )
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not authorized to post jobs for this company"
-        )
+    # If company_id is provided, verify it exists and user has access
+    if job_data.company_id:
+        company = await Company.get(job_data.company_id)
+        if not company:
+            logger.warning(f"Job creation failed: Company not found - {job_data.company_id}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Company not found"
+            )
+        
+        # Verify user is associated with the company
+        if current_user.company_id != job_data.company_id:
+            logger.warning(
+                f"Job creation failed: User {current_user.email} not authorized for company {job_data.company_id}"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You are not authorized to post jobs for this company"
+            )
+        company_name = company.name
     
     # Create job
     job = Job(
@@ -281,8 +287,8 @@ async def create_job(
         preferred_skills=job_data.preferred_skills,
         location=job_data.location,
         is_remote=job_data.is_remote,
-        company_id=job_data.company_id,
-        company_name=company.name,  # Denormalized for faster queries
+        company_id=company_id,
+        company_name=company_name,  # Denormalized for faster queries
         employer_id=str(current_user.id),
         salary_min=job_data.salary_min,
         salary_max=job_data.salary_max,
@@ -302,6 +308,15 @@ async def create_job(
     
     await job.insert()
     logger.info(f"Job created successfully: {job.title} (ID: {job.id}) by {current_user.email}")
+    
+    # Update vector store for AI recommendations (async, non-blocking)
+    try:
+        from app.services.recommendation_service import recommendation_service
+        if job.status == JobStatus.ACTIVE:
+            await recommendation_service.refresh_job_in_vector_store(job)
+            logger.debug(f"Vector store updated with new job {job.id}")
+    except Exception as e:
+        logger.warning(f"Failed to update vector store for new job: {str(e)}")
     
     return JobResponse(
         id=str(job.id),
@@ -505,6 +520,14 @@ async def update_job(
     await job.save()
     logger.info(f"Job updated successfully: {job.title} (ID: {job.id})")
     
+    # Update vector store for AI recommendations (async, non-blocking)
+    try:
+        from app.services.recommendation_service import recommendation_service
+        await recommendation_service.refresh_job_in_vector_store(job)
+        logger.debug(f"Vector store updated for job {job.id}")
+    except Exception as e:
+        logger.warning(f"Failed to update vector store for updated job: {str(e)}")
+    
     return JobResponse(
         id=str(job.id),
         title=job.title,
@@ -575,6 +598,12 @@ async def delete_job(
     
     await job.delete()
     logger.info(f"Job deleted successfully: {job.title} (ID: {job_id})")
-
-
+    
+    # Remove from vector store for AI recommendations
+    try:
+        from app.services.recommendation_service import recommendation_service
+        recommendation_service.vector_store.store.remove_by_id(job_id)
+        logger.debug(f"Vector store cleaned up for deleted job {job_id}")
+    except Exception as e:
+        logger.warning(f"Failed to remove deleted job from vector store: {str(e)}")
 

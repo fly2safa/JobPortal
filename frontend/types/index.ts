@@ -15,6 +15,7 @@ export interface User {
   linkedin_url?: string;
   portfolio_url?: string;
   company_id?: string;
+  company_name?: string;
   job_title?: string;
   is_active?: boolean;
   is_verified?: boolean;
@@ -213,27 +214,10 @@ export interface JobRecommendation {
 }
 
 export interface CandidateRecommendation {
-  user_id: string;
-  full_name: string;
-  email: string;
+  candidate: User;
   match_score: number;
   reasons: string[];
-  application_id: string;
-  application_status: 'pending' | 'reviewing' | 'shortlisted' | 'rejected' | 'accepted';
-  applied_at?: string;
-  resume?: {
-    resume_id: string;
-    file_url: string;
-    skills: string[];
-    uploaded_at?: string;
-  };
-}
-
-export interface CandidateRecommendationResponse {
-  job_id: string;
-  job_title: string;
-  total_candidates: number;
-  candidates: CandidateRecommendation[];
+  recommended_at: string;
 }
 
 // Chat/Assistant Types

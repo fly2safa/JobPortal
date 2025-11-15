@@ -52,6 +52,7 @@ async def register(request: Request, user_data: UserRegister):
         role=user_data.role,
         phone=user_data.phone,
         location=user_data.location,
+        company_name=user_data.company_name if user_data.role == "employer" else None,
     )
     
     await user.insert()
@@ -81,6 +82,7 @@ async def register(request: Request, user_data: UserRegister):
         linkedin_url=user.linkedin_url,
         portfolio_url=user.portfolio_url,
         company_id=user.company_id,
+        company_name=user.company_name,
         job_title=user.job_title,
         is_active=user.is_active,
         is_verified=user.is_verified,
@@ -169,6 +171,7 @@ async def login(request: Request, credentials: UserLogin):
         linkedin_url=user.linkedin_url,
         portfolio_url=user.portfolio_url,
         company_id=user.company_id,
+        company_name=user.company_name,
         job_title=user.job_title,
         is_active=user.is_active,
         is_verified=user.is_verified,
@@ -213,6 +216,7 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
         linkedin_url=current_user.linkedin_url,
         portfolio_url=current_user.portfolio_url,
         company_id=current_user.company_id,
+        company_name=current_user.company_name,
         job_title=current_user.job_title,
         is_active=current_user.is_active,
         is_verified=current_user.is_verified,
