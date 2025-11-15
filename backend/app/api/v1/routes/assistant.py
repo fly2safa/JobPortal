@@ -2,7 +2,7 @@
 AI Assistant routes for chat and cover letter generation.
 """
 from typing import Optional, List
-from fastapi import APIRouter, HTTPException, status, Depends, Request
+from fastapi import APIRouter, HTTPException, status, Depends, Request, Response
 from pydantic import BaseModel, Field
 from app.models.user import User
 from app.models.conversation import Conversation, MessageRole
@@ -56,26 +56,27 @@ class ConversationListResponse(BaseModel):
 @router.post("/chat", response_model=ChatResponse)
 @limiter.limit(RATE_LIMIT_AI)
 async def chat_with_assistant(
-    http_request: Request,
-    request: ChatRequest,
+    request: Request,
+    response: Response,
+    chat_request: ChatRequest,
     current_user: User = Depends(get_current_user)
 ):
     """
     Chat with the AI assistant.
     
     Args:
-        request: Chat request with message and optional conversation_id
+        chat_request: Chat request with message and optional conversation_id
         current_user: Current authenticated user
         
     Returns:
         Assistant's response and conversation_id
     """
-    logger.info(f"Chat request from user {current_user.email}: {request.message[:50]}...")
+    logger.info(f"Chat request from user {current_user.email}: {chat_request.message[:50]}...")
     
     try:
         # Get or create conversation
-        if request.conversation_id:
-            conversation = await Conversation.get(request.conversation_id)
+        if chat_request.conversation_id:
+            conversation = await Conversation.get(chat_request.conversation_id)
             if not conversation or conversation.user_id != str(current_user.id):
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
@@ -89,7 +90,7 @@ async def chat_with_assistant(
             await conversation.insert()
         
         # Add user message to conversation
-        conversation.add_message(MessageRole.USER, request.message)
+        conversation.add_message(MessageRole.USER, chat_request.message)
         
         # Get conversation history for context
         history = conversation.get_messages_for_llm(limit=10)
@@ -102,7 +103,7 @@ async def chat_with_assistant(
         
         # Get answer from QA chain
         answer = await qa_chain.answer_question(
-            question=request.message,
+            question=chat_request.message,
             conversation_history=history[:-1],  # Exclude the current message
             user_context=user_context
         )
@@ -216,34 +217,35 @@ async def get_conversation(
 @router.post("/generate-cover-letter", response_model=CoverLetterResponse)
 @limiter.limit(RATE_LIMIT_AI)
 async def generate_cover_letter(
-    http_request: Request,
-    request: CoverLetterRequest,
+    request: Request,
+    response: Response,
+    cover_letter_request: CoverLetterRequest,
     current_user: User = Depends(get_current_user)
 ):
     """
     Generate a cover letter for a job application using AI.
     
     Args:
-        request: Cover letter generation request
+        cover_letter_request: Cover letter generation request
         current_user: Current authenticated user
         
     Returns:
         Generated cover letter
     """
-    logger.info(f"Cover letter generation request from {current_user.email} for job {request.job_id}")
+    logger.info(f"Cover letter generation request from {current_user.email} for job {cover_letter_request.job_id}")
     
     try:
         # Build prompt for cover letter generation
         prompt = f"""Generate a professional cover letter for the following job application:
 
-Job Title: {request.job_title}
-Company: {request.company_name}
-Applicant Name: {request.user_name}
-Applicant Skills: {', '.join(request.user_skills) if request.user_skills else 'Not specified'}
-Applicant Experience: {request.user_experience or 'Not specified'}
+Job Title: {cover_letter_request.job_title}
+Company: {cover_letter_request.company_name}
+Applicant Name: {cover_letter_request.user_name}
+Applicant Skills: {', '.join(cover_letter_request.user_skills) if cover_letter_request.user_skills else 'Not specified'}
+Applicant Experience: {cover_letter_request.user_experience or 'Not specified'}
 
 Job Description:
-{request.job_description}
+{cover_letter_request.job_description}
 
 Instructions:
 - Write a professional, compelling cover letter
