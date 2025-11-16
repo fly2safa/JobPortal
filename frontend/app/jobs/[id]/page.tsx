@@ -132,7 +132,9 @@ export default function JobDetailPage() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Posted</p>
-                  <p className="font-medium text-gray-900">{formatDate(job.posted_date)}</p>
+                  <p className="font-medium text-gray-900">
+                    {job.posted_date ? formatDate(job.posted_date) : 'Not posted yet'}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Status</p>
@@ -248,27 +250,22 @@ export default function JobDetailPage() {
 }
 
 function getMockJob(id: string): Job {
+  const now = Date.now();
   return {
     id,
     title: 'Senior Frontend Developer',
     description: 'We are looking for an experienced frontend developer to join our growing team. You will be working on building scalable, performant web applications using modern technologies like React, TypeScript, and Next.js.\n\nIn this role, you will collaborate closely with designers, product managers, and backend engineers to deliver exceptional user experiences. You will have the opportunity to shape the architecture and technical direction of our frontend systems.',
     company_id: 'company-1',
     company_name: 'TechCorp Inc.',
+    employer_id: 'employer-1',
     location: 'San Francisco, CA (Hybrid)',
+    is_remote: false,
     job_type: 'full_time',
     experience_level: 'senior',
     salary_min: 120000,
     salary_max: 180000,
     skills: ['React', 'TypeScript', 'Next.js', 'Tailwind CSS', 'Git', 'REST API'],
-    requirements: [
-      '5+ years of professional frontend development experience',
-      'Expert knowledge of React and its ecosystem',
-      'Strong proficiency in TypeScript',
-      'Experience with modern CSS frameworks (Tailwind, Styled Components, etc.)',
-      'Understanding of web performance optimization',
-      'Experience with testing frameworks (Jest, React Testing Library)',
-      'Excellent communication and collaboration skills',
-    ],
+    requirements: '5+ years of professional frontend development experience\nExpert knowledge of React and its ecosystem\nStrong proficiency in TypeScript\nExperience with modern CSS frameworks (Tailwind, Styled Components, etc.)\nUnderstanding of web performance optimization\nExperience with testing frameworks (Jest, React Testing Library)\nExcellent communication and collaboration skills',
     benefits: [
       'Competitive salary and equity',
       'Health, dental, and vision insurance',
@@ -279,7 +276,11 @@ function getMockJob(id: string): Job {
       'Modern tech stack',
     ],
     status: 'active',
-    posted_date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    posted_date: new Date(now - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    application_count: 24,
+    view_count: 342,
+    created_at: new Date(now - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    updated_at: new Date(now - 2 * 24 * 60 * 60 * 1000).toISOString(),
   };
 }
 

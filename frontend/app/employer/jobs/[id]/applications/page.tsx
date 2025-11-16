@@ -52,7 +52,7 @@ export default function JobApplicationsPage() {
 
   const fetchJobDetails = async () => {
     try {
-      const job = await apiClient.getJob(params.id as string);
+      const job = await apiClient.getJobById(params.id as string);
       setJobTitle(job.title || 'this position');
     } catch (error) {
       console.error('Failed to fetch job details:', error);
@@ -369,7 +369,7 @@ export default function JobApplicationsPage() {
               <div className="bg-gray-50 rounded-lg p-4 space-y-2">
                 <p className="text-sm"><strong>Name:</strong> {selectedApplication.applicant_name}</p>
                 <p className="text-sm"><strong>Email:</strong> {selectedApplication.applicant_email}</p>
-                <p className="text-sm"><strong>Applied:</strong> {formatDate(selectedApplication.applied_at)}</p>
+                <p className="text-sm"><strong>Applied:</strong> {formatDate(selectedApplication.applied_at || selectedApplication.applied_date || selectedApplication.updated_at)}</p>
                 <p className="text-sm"><strong>Status:</strong> <Badge variant={
                   selectedApplication.status === 'shortlisted' ? 'success' :
                   selectedApplication.status === 'rejected' ? 'danger' :

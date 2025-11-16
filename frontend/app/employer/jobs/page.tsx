@@ -98,7 +98,9 @@ export default function EmployerJobsPage() {
                     <div className="grid grid-cols-3 gap-4 py-3 mb-4 border-y border-gray-200">
                       <div>
                         <p className="text-sm text-gray-500">Posted</p>
-                        <p className="font-medium text-gray-900">{formatDate(job.posted_date)}</p>
+                        <p className="font-medium text-gray-900">
+                          {job.posted_date ? formatDate(job.posted_date) : 'Not posted yet'}
+                        </p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-500">Applications</p>
@@ -165,30 +167,44 @@ function getMockEmployerJobs(): Job[] {
       title: 'Senior Frontend Developer',
       description: 'Looking for an experienced frontend developer...',
       company_id: 'company-1',
+      company_name: 'TechCorp',
+      employer_id: 'employer-1',
       location: 'San Francisco, CA',
+      is_remote: false,
       job_type: 'full_time',
       experience_level: 'senior',
       salary_min: 120000,
       salary_max: 180000,
       skills: ['React', 'TypeScript', 'Next.js', 'Tailwind CSS'],
-      requirements: ['5+ years experience'],
+      requirements: '5+ years experience in frontend development',
       status: 'active',
       posted_date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+      application_count: 24,
+      view_count: 342,
+      created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+      updated_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
     },
     {
       id: '2',
       title: 'Product Manager',
       description: 'Seeking a product manager to lead our initiatives...',
       company_id: 'company-1',
+      company_name: 'TechCorp',
+      employer_id: 'employer-1',
       location: 'Remote',
+      is_remote: true,
       job_type: 'full_time',
       experience_level: 'mid',
       salary_min: 100000,
       salary_max: 150000,
       skills: ['Product Management', 'Agile', 'User Research', 'Analytics'],
-      requirements: ['3+ years PM experience'],
+      requirements: '3+ years PM experience',
       status: 'active',
       posted_date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+      application_count: 15,
+      view_count: 256,
+      created_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+      updated_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
     },
   ];
 }
