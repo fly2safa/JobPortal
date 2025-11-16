@@ -2054,8 +2054,13 @@ class TestingTrackerApp:
     
     def load_progress(self):
         """Load testing progress from file."""
+        # Create results directory if it doesn't exist
+        RESULTS_DIR.mkdir(exist_ok=True)
+        
         filename = filedialog.askopenfilename(
-            filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
+            initialdir=str(RESULTS_DIR),
+            title="Load Test Progress"
         )
         
         if not filename:
@@ -2126,11 +2131,14 @@ class TestingTrackerApp:
     
     def merge_results(self):
         """Merge results from multiple testers."""
+        # Create results directory if it doesn't exist
+        RESULTS_DIR.mkdir(exist_ok=True)
+        
         # Ask user to select multiple files
         filenames = filedialog.askopenfilenames(
             title="Select Test Progress Files to Merge",
             filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
-            initialdir="results"
+            initialdir=str(RESULTS_DIR)
         )
         
         if not filenames or len(filenames) < 2:
