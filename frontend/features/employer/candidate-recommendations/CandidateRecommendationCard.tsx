@@ -33,10 +33,10 @@ export function CandidateRecommendationCard({
   
   // Determine match score color
   const getMatchColor = (score: number) => {
-    if (score >= 80) return 'text-green-600 dark:text-green-400';
-    if (score >= 60) return 'text-blue-600 dark:text-blue-400';
-    if (score >= 40) return 'text-yellow-600 dark:text-yellow-400';
-    return 'text-gray-600 dark:text-gray-400';
+    if (score >= 80) return 'text-green-600';
+    if (score >= 60) return 'text-blue-600';
+    if (score >= 40) return 'text-yellow-600';
+    return 'text-gray-600';
   };
 
   const getMatchBadgeVariant = (score: number): 'success' | 'primary' | 'warning' | 'default' => {
@@ -94,11 +94,11 @@ export function CandidateRecommendationCard({
           <div className="flex-1">
             <div className="flex items-start justify-between mb-2">
               <div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
                   {full_name}
                   <Sparkles size={16} className="text-primary" />
                 </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center mt-1">
+                <p className="text-sm text-gray-600 flex items-center mt-1">
                   <Mail size={14} className="mr-1" />
                   {email}
                 </p>
@@ -109,7 +109,7 @@ export function CandidateRecommendationCard({
             </div>
 
             {applied_at && (
-              <p className="text-xs text-gray-500 dark:text-gray-500 flex items-center">
+              <p className="text-xs text-gray-500 flex items-center">
                 <Calendar size={12} className="mr-1" />
                 Applied {formatTimeAgo(applied_at)}
               </p>
@@ -120,7 +120,7 @@ export function CandidateRecommendationCard({
         {/* Resume Skills */}
         {resume && resume.skills && resume.skills.length > 0 && (
           <div className="mb-4">
-            <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Skills:</p>
+            <p className="text-xs font-semibold text-gray-700 mb-2">Skills:</p>
             <div className="flex flex-wrap gap-2">
               {resume.skills.slice(0, 6).map((skill) => (
                 <Badge key={skill} variant="default" className="text-xs">
@@ -138,14 +138,14 @@ export function CandidateRecommendationCard({
 
         {/* Match Reasons */}
         {reasons && reasons.length > 0 && (
-          <div className="mb-4 p-3 bg-primary/5 dark:bg-primary/10 rounded-lg border border-primary/20">
-            <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2 flex items-center gap-1">
+          <div className="mb-4 p-3 bg-primary/5 rounded-lg border border-primary/20">
+            <h4 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-1">
               <Sparkles size={14} className="text-primary" />
               Why this candidate matches:
             </h4>
             <ul className="space-y-1">
               {reasons.slice(0, 3).map((reason, index) => (
-                <li key={index} className="text-xs text-gray-700 dark:text-gray-300 flex items-start">
+                <li key={index} className="text-xs text-gray-700 flex items-start">
                   <span className="text-primary mr-2">•</span>
                   <span>{reason}</span>
                 </li>
@@ -155,7 +155,7 @@ export function CandidateRecommendationCard({
         )}
 
         {/* Actions */}
-        <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-200">
           {resume && resume.file_url && (
             <a
               href={resume.file_url}

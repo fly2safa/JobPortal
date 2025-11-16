@@ -218,21 +218,21 @@ export default function JobApplicationsPage() {
         </div>
 
         {/* AI Recommendations Section */}
-        <Card className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border-purple-200 dark:border-purple-800">
+        <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-start space-x-4 flex-1">
               <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
                 <Sparkles className="text-white" size={24} />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                <h3 className="font-semibold text-gray-900 mb-1">
                   AI-Recommended Candidates
                 </h3>
-                <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
+                <p className="text-sm text-gray-700 mb-2">
                   Based on job requirements, these candidates are ranked by AI-powered matching
                 </p>
                 {recommendations.length > 0 && (
-                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                  <p className="text-xs text-gray-600">
                     {recommendations.length} top match{recommendations.length !== 1 ? 'es' : ''} found
                   </p>
                 )}
@@ -273,10 +273,10 @@ export default function JobApplicationsPage() {
 
           {/* Recommendations Error */}
           {recommendationsError && (
-            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
               <div className="flex items-center space-x-2">
-                <AlertCircle className="text-red-600 dark:text-red-400" size={16} />
-                <p className="text-sm text-red-800 dark:text-red-300">{recommendationsError}</p>
+                <AlertCircle className="text-red-600" size={16} />
+                <p className="text-sm text-red-800">{recommendationsError}</p>
               </div>
             </div>
           )}
@@ -290,10 +290,10 @@ export default function JobApplicationsPage() {
                 </div>
               ) : recommendations.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-600 dark:text-gray-400 mb-2">
+                  <p className="text-gray-600 mb-2">
                     No AI recommendations available yet
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-500">
+                  <p className="text-xs text-gray-500">
                     {recommendationsError 
                       ? 'Try refreshing or check back later'
                       : 'Candidates will appear here once they apply and profiles are synced'}

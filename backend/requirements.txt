@@ -47,7 +47,7 @@ tiktoken>=0.5.2
 # Vector Store & Embeddings (Required for semantic search and recommendations)
 chromadb>=0.4.22
 langchain-community>=0.0.20
-sentence-transformers>=2.2.2  # For HuggingFace embeddings fallback
+# sentence-transformers>=2.2.2  # Optional: HuggingFace embeddings fallback (requires PyTorch - not available for Python 3.13)
 numpy>=1.26.0
 
 # Optional - for email notifications
