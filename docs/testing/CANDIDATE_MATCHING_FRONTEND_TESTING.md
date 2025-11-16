@@ -348,3 +348,4 @@ curl -X GET "http://localhost:8000/api/v1/jobs/YOUR_JOB_ID/recommended-candidate
 
 
 
+
