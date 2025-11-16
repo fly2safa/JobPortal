@@ -57,6 +57,10 @@ class TestingTrackerApp:
     # - MINOR: New features, backward compatible
     # - PATCH: Bug fixes, small improvements
     # 
+    # v2.1.2 - Fix scrollbar issue - all 83 tests now accessible
+    #          - Remove tree height limit to allow full scrolling
+    #          - Update initial popup to mention name AND browser
+    #          - Remove debug logging (confirmed all tests load correctly)
     # v2.1.1 - UI improvements and UX refinements
     #          - Split Quick Jump buttons into two rows (8 per row)
     #          - Removed premature welcome popup after entering name
@@ -66,7 +70,7 @@ class TestingTrackerApp:
     #          Now includes ERD, Architecture diagrams, README completeness,
     #          cross-platform instructions, and compliance documentation tests
     #          Total test cases: 83 (was 78)
-    VERSION = "2.1.1"
+    VERSION = "2.1.2"
     
     def __init__(self, root):
         self.root = root
@@ -740,9 +744,9 @@ class TestingTrackerApp:
         # Store section buttons
         self.section_buttons = {}
         
-        # Create treeview
+        # Create treeview (no height limit - let it expand to fill space)
         columns = ("ID", "Section", "Title", "Status")
-        self.tree = ttk.Treeview(list_frame, columns=columns, show="tree headings", height=25)
+        self.tree = ttk.Treeview(list_frame, columns=columns, show="tree headings")
         
         # Configure columns
         self.tree.column("#0", width=30, stretch=False)
@@ -784,11 +788,6 @@ class TestingTrackerApp:
             if test.section not in sections:
                 sections[test.section] = []
             sections[test.section].append(test)
-        
-        # Debug: Print total tests and sections
-        print(f"DEBUG: Loading {len(self.test_cases)} test cases into {len(sections)} sections")
-        for section, tests in sections.items():
-            print(f"  - {section}: {len(tests)} tests")
         
         # Store section items for jumping
         self.section_items = {}
@@ -859,7 +858,6 @@ class TestingTrackerApp:
                 self.section_buttons[section] = btn
         
         # Add to tree
-        total_inserted = 0
         for section, tests in sections.items():
             section_id = self.tree.insert("", "end", text="📁", values=("", section, "", ""),
                                          tags=("section", section))
@@ -871,23 +869,10 @@ class TestingTrackerApp:
                 self.tree.insert(section_id, "end", text=icon,
                                values=(test.id, "", test.title, test.status),
                                tags=(test.id,))
-                total_inserted += 1
         
-        print(f"DEBUG: Inserted {total_inserted} tests into tree")
-        print(f"DEBUG: Tree has {len(self.tree.get_children())} top-level items (sections)")
-        
-        # Expand all
+        # Expand all sections
         for item in self.tree.get_children():
             self.tree.item(item, open=True)
-        
-        # Verify all items are visible by counting children
-        total_visible = 0
-        for section_item in self.tree.get_children():
-            children = self.tree.get_children(section_item)
-            total_visible += len(children)
-            section_name = self.tree.item(section_item)['values'][1]
-            print(f"DEBUG: Section '{section_name}' has {len(children)} visible children")
-        print(f"DEBUG: Total visible test items: {total_visible}")
     
     def get_status_icon(self, status):
         """Get icon for status."""
