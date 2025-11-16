@@ -785,6 +785,11 @@ class TestingTrackerApp:
                 sections[test.section] = []
             sections[test.section].append(test)
         
+        # Debug: Print total tests and sections
+        print(f"DEBUG: Loading {len(self.test_cases)} test cases into {len(sections)} sections")
+        for section, tests in sections.items():
+            print(f"  - {section}: {len(tests)} tests")
+        
         # Store section items for jumping
         self.section_items = {}
         
@@ -854,6 +859,7 @@ class TestingTrackerApp:
                 self.section_buttons[section] = btn
         
         # Add to tree
+        total_inserted = 0
         for section, tests in sections.items():
             section_id = self.tree.insert("", "end", text="📁", values=("", section, "", ""),
                                          tags=("section", section))
@@ -865,10 +871,23 @@ class TestingTrackerApp:
                 self.tree.insert(section_id, "end", text=icon,
                                values=(test.id, "", test.title, test.status),
                                tags=(test.id,))
+                total_inserted += 1
+        
+        print(f"DEBUG: Inserted {total_inserted} tests into tree")
+        print(f"DEBUG: Tree has {len(self.tree.get_children())} top-level items (sections)")
         
         # Expand all
         for item in self.tree.get_children():
             self.tree.item(item, open=True)
+        
+        # Verify all items are visible by counting children
+        total_visible = 0
+        for section_item in self.tree.get_children():
+            children = self.tree.get_children(section_item)
+            total_visible += len(children)
+            section_name = self.tree.item(section_item)['values'][1]
+            print(f"DEBUG: Section '{section_name}' has {len(children)} visible children")
+        print(f"DEBUG: Total visible test items: {total_visible}")
     
     def get_status_icon(self, status):
         """Get icon for status."""
@@ -1356,13 +1375,16 @@ class TestingTrackerApp:
             
             # Show prompt dialog
             messagebox.showwarning(
-                "Tester Name Required",
-                "⚠️ Please enter your name before starting testing.\n\n"
-                "Your name is required to:\n"
+                "Setup Required",
+                "⚠️ Please enter your name AND select your browser before starting testing.\n\n"
+                "Required information:\n"
+                "1️⃣ Enter your name in the 'Tester' field\n"
+                "2️⃣ Select your browser from the 'Browser' dropdown\n\n"
+                "This information is required to:\n"
                 "• Track who tested each test case\n"
+                "• Identify browser-specific issues\n"
                 "• Save your progress with your name\n"
-                "• Identify your contributions in team reports\n\n"
-                "Please enter your name in the 'Tester' field at the top."
+                "• Generate accurate team reports"
             )
             
             # Focus on the tester entry
