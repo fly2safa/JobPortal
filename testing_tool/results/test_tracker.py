@@ -56,7 +56,12 @@ class TestingTrackerApp:
     # - MAJOR: Breaking changes or major new features
     # - MINOR: New features, backward compatible
     # - PATCH: Bug fixes, small improvements
-    VERSION = "2.0.0"
+    # 
+    # v2.1.0 - Added 5 documentation verification test cases (16.1-16.5)
+    #          Now includes ERD, Architecture diagrams, README completeness,
+    #          cross-platform instructions, and compliance documentation tests
+    #          Total test cases: 83 (was 78)
+    VERSION = "2.1.0"
     
     def __init__(self, root):
         self.root = root
@@ -468,6 +473,25 @@ class TestingTrackerApp:
             TestCase("15.3", "Testing Tools", "Database/Test Data Seeding",
                     "Verify database seeding tools (DB_ContentGen) successfully create realistic demo data used by the app",
                     ["Run seeding scripts for sample jobs, users, and applications", "Log in as job seeker and employer", "Verify seeded data appears correctly in job lists, recommendations, and candidate matching views"]),
+        ])
+        
+        # Documentation & Compliance (Phase 4 - Complete)
+        test_cases.extend([
+            TestCase("16.1", "Documentation", "ERD Diagram Verification",
+                    "Verify ERD diagram exists in README.md with all 7 MongoDB collections and relationships",
+                    ["Open root README.md", "Locate ERD section (Entity Relationship Diagram)", "Verify all 7 collections present: User, Company, Job, Application, Resume, Conversation, Interview", "Verify relationships are shown with proper cardinality", "Verify Mermaid diagram renders correctly"]),
+            TestCase("16.2", "Documentation", "Architecture Diagrams Verification",
+                    "Verify all architecture diagrams exist in README.md and use Mermaid format",
+                    ["Open root README.md", "Verify System Flow Diagram exists", "Verify Detailed System Architecture Diagram exists", "Verify Frontend Architecture Diagram exists", "Verify all diagrams use Mermaid format", "Verify diagrams are readable and comprehensive"]),
+            TestCase("16.3", "Documentation", "README Production Status Verification",
+                    "Verify README documents production-ready status with all phases complete and bonus features",
+                    ["Open root README.md", "Verify project status shows 'Production Ready' or 'All Phases Complete'", "Verify all 4 phases marked as complete", "Verify bonus features section lists 11+ features", "Verify tech stack section includes AI providers, ChromaDB, LangChain, n8n", "Verify deployment section exists with Docker instructions"]),
+            TestCase("16.4", "Documentation", "Cross-Platform Instructions Verification",
+                    "Verify frontend and backend READMEs have instructions for Windows (PowerShell/CMD) and macOS/Linux (bash)",
+                    ["Open frontend/README.md", "Verify Windows PowerShell commands for env file creation", "Verify Windows CMD commands as alternative", "Verify macOS/Linux bash commands", "Open backend/README.md", "Verify venv activation for Windows and Linux/Mac", "Verify all critical setup steps have OS-specific instructions"]),
+            TestCase("16.5", "Documentation", "Compliance Documentation Verification",
+                    "Verify all compliance and verification documents exist in docs/ folder",
+                    ["Check docs/SPEC_TO_IMPLEMENTATION_ANALYSIS.md exists", "Check docs/PROJECT_IMPLEMENTATION_VERIFICATION.md exists", "Check docs/SPECIFICATION_COMPLIANCE_REVIEW.md exists", "Check docs/TEST_TRACKER_COMPLIANCE_REVIEW.md exists", "Open each document and verify it has comprehensive content", "Verify all documents show 100% compliance/completion"]),
         ])
 
         return test_cases
