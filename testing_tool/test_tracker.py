@@ -8,6 +8,11 @@ import json
 from datetime import datetime
 from pathlib import Path
 import requests
+import os
+
+# Get the directory where this script is located
+SCRIPT_DIR = Path(__file__).parent.resolve()
+RESULTS_DIR = SCRIPT_DIR / "results"
 
 
 class Bug:
@@ -57,6 +62,10 @@ class TestingTrackerApp:
     # - MINOR: New features, backward compatible
     # - PATCH: Bug fixes, small improvements
     # 
+    # v2.1.3 - Fix file paths - save to testing_tool/results/
+    #          - All results now save to testing_tool/results/ (not root/results/)
+    #          - Update .gitignore to exclude test_progress_*.json and test_report_*.md
+    #          - Use script-relative paths for cross-platform compatibility
     # v2.1.2 - Fix scrollbar issue - all 83 tests now accessible
     #          - Remove tree height limit to allow full scrolling
     #          - Update initial popup to mention name AND browser
@@ -70,7 +79,7 @@ class TestingTrackerApp:
     #          Now includes ERD, Architecture diagrams, README completeness,
     #          cross-platform instructions, and compliance documentation tests
     #          Total test cases: 83 (was 78)
-    VERSION = "2.1.2"
+    VERSION = "2.1.3"
     
     def __init__(self, root):
         self.root = root
@@ -1616,7 +1625,7 @@ class TestingTrackerApp:
     def load_team_file(self):
         """Load the team's master test results file."""
         # Look for team file first
-        team_file = Path("results/TEAM_MASTER_test_results.json")
+        team_file = RESULTS_DIR / "TEAM_MASTER_test_results.json"
         
         if team_file.exists():
             # Ask if they want to load the team file
@@ -1723,12 +1732,11 @@ class TestingTrackerApp:
         self.save_tester_info()
         
         # Create results directory if it doesn't exist
-        results_dir = Path("results")
-        results_dir.mkdir(exist_ok=True)
+        RESULTS_DIR.mkdir(exist_ok=True)
         
         # Auto-generate filename
         tester_name = self.tester_entry.get() or 'tester'
-        filename = results_dir / f"test_progress_{tester_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        filename = RESULTS_DIR / f"test_progress_{tester_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
         
         # Prepare data
         data = {
@@ -1795,10 +1803,9 @@ class TestingTrackerApp:
         self.save_tester_info()
         
         # Create results directory if it doesn't exist
-        results_dir = Path("results")
-        results_dir.mkdir(exist_ok=True)
+        RESULTS_DIR.mkdir(exist_ok=True)
         
-        team_file = results_dir / "TEAM_MASTER_test_results.json"
+        team_file = RESULTS_DIR / "TEAM_MASTER_test_results.json"
         
         # Check if team file exists
         if team_file.exists():
@@ -1970,14 +1977,13 @@ class TestingTrackerApp:
         self.save_tester_info()
         
         # Create results directory if it doesn't exist
-        results_dir = Path("results")
-        results_dir.mkdir(exist_ok=True)
+        RESULTS_DIR.mkdir(exist_ok=True)
         
         # Ask for filename (with timestamp)
         filename = filedialog.asksaveasfilename(
             defaultextension=".json",
             filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
-            initialdir=str(results_dir),
+            initialdir=str(RESULTS_DIR),
             initialfile=f"test_progress_{self.tester_entry.get() or 'tester'}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
             title="Save Test Progress"
         )
@@ -2669,10 +2675,14 @@ class TestingTrackerApp:
         if self.current_test:
             self.save_current_test()
         
+        # Create results directory if it doesn't exist
+        RESULTS_DIR.mkdir(exist_ok=True)
+        
         # Ask for filename (with timestamp)
         filename = filedialog.asksaveasfilename(
             defaultextension=".md",
             filetypes=[("Markdown files", "*.md"), ("All files", "*.*")],
+            initialdir=str(RESULTS_DIR),
             initialfile=f"test_report_{self.tester_entry.get() or 'tester'}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
         )
         
