@@ -7,6 +7,7 @@ This service uses:
 3. Keyword matching (fallback) - when AI fails
 """
 from typing import List, Dict, Any, Optional
+import asyncio
 from bson import ObjectId
 from app.models.user import User
 from app.models.job import Job
@@ -51,23 +52,62 @@ class RecommendationService:
         try:
             # Get user's resume for skills and experience
             resume = await self._get_user_resume(user.id)
+            logger.info(f"User {user.email} has resume: {resume is not None}")
             
             # Build user profile
             user_profile = self._build_user_profile(user, resume)
             user_profile_text = self._build_profile_text(user_profile)
+            logger.info(f"User profile text length: {len(user_profile_text)} characters")
             
-            # First, try vector similarity search
+            # First, try vector similarity search (with timeout protection)
             try:
-                vector_matches = self.vector_store.search_jobs(
-                    query_text=user_profile_text,
-                    n_results=limit * 2  # Get more candidates for AI refinement
-                )
+                # Check if vector store has jobs before attempting search
+                stats = self.vector_store.get_stats()
+                if stats.get("jobs", 0) == 0:
+                    logger.info("Vector store has no jobs indexed, skipping vector search")
+                    vector_matches = []
+                else:
+                    # Run vector search with timeout (5 seconds max)
+                    try:
+                        vector_matches = await asyncio.wait_for(
+                            asyncio.to_thread(
+                                self.vector_store.search_jobs,
+                                query_text=user_profile_text,
+                                n_results=limit * 2
+                            ),
+                            timeout=5.0
+                        )
+                    except asyncio.TimeoutError:
+                        logger.warning("Vector search timed out after 5 seconds, skipping to fallback")
+                        vector_matches = []
                 
                 if vector_matches:
                     logger.info(f"Found {len(vector_matches)} jobs via vector similarity")
-                    recommendations = await self._enhance_vector_matches(
-                        vector_matches, user_profile, limit
-                    )
+                    # Try to enhance with AI, but don't wait too long
+                    try:
+                        recommendations = await asyncio.wait_for(
+                            self._enhance_vector_matches(vector_matches, user_profile, limit),
+                            timeout=10.0  # 10 second timeout for AI enhancement
+                        )
+                    except asyncio.TimeoutError:
+                        logger.warning("AI enhancement timed out, using vector scores only")
+                        # Use vector scores without AI enhancement
+                        recommendations = []
+                        for match in vector_matches[:limit]:
+                            try:
+                                job_id = match['job_id']
+                                job = await self.job_repository.get_job_by_id(job_id)
+                                if job:
+                                    vector_score = int(match['similarity_score'] * 100)
+                                    recommendations.append({
+                                        "job": job,
+                                        "match_score": vector_score,
+                                        "reasons": [f"Semantic similarity: {vector_score}%"]
+                                    })
+                            except Exception as e:
+                                logger.error(f"Error processing vector match: {e}")
+                                continue
+                        recommendations.sort(key=lambda x: x["match_score"], reverse=True)
                     
                     if recommendations:
                         logger.info(f"Generated {len(recommendations)} recommendations for user {user.email}")
@@ -77,20 +117,57 @@ class RecommendationService:
                 logger.warning(f"Vector search failed, falling back to traditional scoring: {e}")
             
             # Fallback: Get all active jobs and score them
-            jobs = await self.job_repository.get_active_jobs(limit=100)
+            jobs, _ = await self.job_repository.get_active_jobs(page=1, page_size=100)
+            logger.info(f"Found {len(jobs)} active jobs for fallback scoring")
             
             if not jobs:
-                logger.info(f"No active jobs found for recommendations")
+                logger.warning(f"No active jobs found in database for recommendations")
                 return []
             
-            # Score and rank jobs using AI
-            recommendations = await self._score_jobs(user_profile, jobs, limit)
+            # Score and rank jobs using AI (with timeout)
+            try:
+                recommendations = await asyncio.wait_for(
+                    self._score_jobs(user_profile, jobs, limit),
+                    timeout=15.0  # 15 second timeout for scoring all jobs
+                )
+            except asyncio.TimeoutError:
+                logger.warning("Job scoring timed out, using fallback with recent jobs")
+                recommendations = []
+            
+            # If scoring returned no results, provide a fallback with recent jobs
+            if not recommendations:
+                logger.warning(f"Scoring returned no recommendations, using fallback: returning recent active jobs")
+                # Return recent active jobs with a default score
+                fallback_jobs = jobs[:limit]
+                recommendations = [
+                    {
+                        "job": job,
+                        "match_score": 50,  # Default neutral score
+                        "reasons": ["Recent job posting", "Active opportunity"]
+                    }
+                    for job in fallback_jobs
+                ]
             
             logger.info(f"Generated {len(recommendations)} recommendations for user {user.email}")
             return recommendations
             
         except Exception as e:
             logger.error(f"Error generating recommendations: {e}")
+            # Final fallback: return recent active jobs if everything fails
+            try:
+                logger.warning("Using final fallback: returning recent active jobs")
+                jobs, _ = await self.job_repository.get_active_jobs(page=1, page_size=limit)
+                if jobs:
+                    return [
+                        {
+                            "job": job,
+                            "match_score": 50,
+                            "reasons": ["Recent job posting", "Active opportunity"]
+                        }
+                        for job in jobs[:limit]
+                    ]
+            except Exception as fallback_error:
+                logger.error(f"Final fallback also failed: {fallback_error}")
             return []
     
     async def _get_user_resume(self, user_id: ObjectId) -> Optional[Resume]:
@@ -345,14 +422,17 @@ REASONS:
     
     def _simple_keyword_match(self, user_profile: Dict[str, Any], job: Job) -> Dict[str, Any]:
         """Simple keyword-based matching as fallback."""
-        user_skills_lower = set(skill.lower() for skill in user_profile["skills"])
+        user_skills_lower = set(skill.lower() for skill in user_profile.get("skills", []))
         job_skills_lower = set(skill.lower() for skill in job.skills)
         
         # Calculate skill overlap
         matching_skills = user_skills_lower.intersection(job_skills_lower)
         
-        if not job_skills_lower:
-            score = 50  # Neutral score if no skills specified
+        # If user has no skills, give a neutral score instead of 0
+        if not user_skills_lower:
+            score = 50  # Neutral score if user has no skills listed
+        elif not job_skills_lower:
+            score = 50  # Neutral score if no skills specified for job
         else:
             score = int((len(matching_skills) / len(job_skills_lower)) * 100)
         
@@ -414,7 +494,7 @@ REASONS:
             Dictionary with sync statistics
         """
         try:
-            jobs = await self.job_repository.get_active_jobs(limit=1000)
+            jobs, _ = await self.job_repository.get_active_jobs(page=1, page_size=1000)
             
             success_count = 0
             failed_count = 0
