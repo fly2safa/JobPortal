@@ -597,6 +597,181 @@ Think of the frontend as a **restaurant experience**:
 
 ---
 
+## 📊 Entity Relationship Diagram (ERD)
+
+### Database Schema - MongoDB Collections
+
+The following ERD shows the MongoDB collections and their relationships in the TalentNest Job Portal:
+
+```mermaid
+%%{init: {'theme':'default', 'themeVariables': { 'lineColor':'#333333'}}}%%
+erDiagram
+    User ||--o{ Resume : "has"
+    User ||--o{ Application : "submits"
+    User ||--o{ Conversation : "has"
+    User ||--|| Company : "creates (employer)"
+    
+    Company ||--o{ Job : "posts"
+    
+    Job ||--o{ Application : "receives"
+    Job ||--o{ Interview : "schedules"
+    
+    Application ||--o| Resume : "references"
+    Application ||--o| Interview : "leads to"
+    
+    User {
+        ObjectId _id PK
+        string email UK
+        string hashed_password
+        string full_name
+        string role
+        string phone
+        string location
+        array skills
+        string experience
+        string education
+        datetime created_at
+        datetime updated_at
+    }
+    
+    Company {
+        ObjectId _id PK
+        ObjectId employer_id FK
+        string name
+        string description
+        string industry
+        string website
+        string location
+        int company_size
+        datetime created_at
+        datetime updated_at
+    }
+    
+    Job {
+        ObjectId _id PK
+        ObjectId employer_id FK
+        ObjectId company_id FK
+        string title
+        string description
+        string requirements
+        array skills
+        string location
+        string job_type
+        string experience_level
+        int salary_min
+        int salary_max
+        string status
+        datetime posted_date
+        datetime deadline
+        datetime created_at
+        datetime updated_at
+    }
+    
+    Application {
+        ObjectId _id PK
+        ObjectId job_id FK
+        ObjectId applicant_id FK
+        ObjectId resume_id FK
+        string status
+        string cover_letter
+        datetime applied_date
+        datetime updated_at
+        string notes
+    }
+    
+    Resume {
+        ObjectId _id PK
+        ObjectId user_id FK
+        string file_url
+        string file_name
+        string parsed_text
+        array skills_extracted
+        string experience_extracted
+        string education_extracted
+        datetime created_at
+        datetime updated_at
+    }
+    
+    Conversation {
+        ObjectId _id PK
+        ObjectId user_id FK
+        array messages
+        string context_type
+        datetime created_at
+        datetime updated_at
+    }
+    
+    Interview {
+        ObjectId _id PK
+        ObjectId job_id FK
+        ObjectId application_id FK
+        ObjectId employer_id FK
+        ObjectId candidate_id FK
+        datetime scheduled_time
+        int duration_minutes
+        string status
+        string meeting_link
+        string location
+        string notes
+        datetime created_at
+        datetime updated_at
+    }
+```
+
+### Collection Relationships Explained
+
+#### User Collection
+- **Central entity** for both job seekers and employers
+- **Role field** determines user type: "job_seeker" or "employer"
+- **One-to-Many** with Resume (job seekers can upload multiple resumes)
+- **One-to-Many** with Application (job seekers submit multiple applications)
+- **One-to-Many** with Conversation (users have chat history with AI assistant)
+- **One-to-One** with Company (employers create their company profile)
+
+#### Company Collection
+- **Owned by** employer users
+- **One-to-Many** with Job (companies post multiple job listings)
+- Contains company branding and information
+
+#### Job Collection
+- **Posted by** employers through their company
+- **One-to-Many** with Application (jobs receive multiple applications)
+- **One-to-Many** with Interview (jobs can have multiple interview schedules)
+- Stores job requirements, skills, salary range, and status
+
+#### Application Collection
+- **Links** job seekers to jobs
+- **References** a specific resume from the applicant
+- **Status tracking**: pending → reviewing → shortlisted → rejected/accepted
+- **One-to-One** with Interview (shortlisted applications lead to interviews)
+
+#### Resume Collection
+- **Belongs to** job seekers
+- Stores uploaded file and **AI-parsed data**
+- Extracted skills, experience, and education used for **AI recommendations**
+
+#### Conversation Collection
+- **Stores** AI assistant chat history
+- **Array of messages** with role (user/assistant) and content
+- Enables **context-aware** conversations
+
+#### Interview Collection (BONUS Feature)
+- **Schedules** interviews between employers and candidates
+- Links to both Job and Application
+- Tracks interview status: scheduled → completed → cancelled
+- Stores meeting link and location details
+
+### Key Database Features
+
+✅ **MongoDB with Beanie ODM** - Async operations with Pydantic validation  
+✅ **Indexed Fields** - Optimized queries on email, job_id, user_id, status  
+✅ **Embedded Documents** - Messages array in Conversation for efficiency  
+✅ **Referential Integrity** - Foreign keys maintained through ObjectId references  
+✅ **Timestamps** - Automatic created_at and updated_at tracking  
+✅ **Flexible Schema** - MongoDB's document model allows easy schema evolution  
+
+---
+
 ## 🚀 Features
 
 ### For Job Seekers
