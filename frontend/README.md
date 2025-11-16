@@ -41,22 +41,66 @@ TalentNest is an AI-powered job portal application that connects job seekers wit
 
 ### Installation
 
-1. Install dependencies:
+#### Step 1: Navigate to Frontend Directory
+
+**All Operating Systems:**
+```bash
+cd frontend
+```
+
+#### Step 2: Install Dependencies
+
+**All Operating Systems:**
 ```bash
 npm install
 ```
 
-2. Create `.env.local` file:
+Or if you prefer yarn:
 ```bash
+yarn install
+```
+
+#### Step 3: Create Environment File
+
+**Windows (PowerShell):**
+```powershell
+Copy-Item .env.example .env.local
+# Or create manually
+New-Item -Path .env.local -ItemType File
+```
+
+**Windows (Command Prompt):**
+```cmd
+copy .env.example .env.local
+```
+
+**macOS/Linux:**
+```bash
+cp .env.example .env.local
+```
+
+Then edit `.env.local` with your backend URL:
+```env
 NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 
-3. Run the development server:
+#### Step 4: Run the Development Server
+
+**All Operating Systems:**
 ```bash
 npm run dev
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser
+Or with yarn:
+```bash
+yarn dev
+```
+
+#### Step 5: Access the Application
+
+Open [http://localhost:3000](http://localhost:3000) in your browser
+
+**Note:** Make sure the backend is running at `http://localhost:8000` before starting the frontend.
 
 ## Project Structure
 
@@ -83,10 +127,46 @@ frontend/
 
 ## Available Scripts
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
+### Development
+**All Operating Systems:**
+```bash
+npm run dev
+```
+Start development server with hot reload
+
+### Production Build
+**All Operating Systems:**
+```bash
+npm run build
+```
+Build optimized production bundle
+
+### Production Server
+**All Operating Systems:**
+```bash
+npm run start
+```
+Start production server (requires `npm run build` first)
+
+### Linting
+**All Operating Systems:**
+```bash
+npm run lint
+```
+Run ESLint to check code quality
+
+### Clean Build (if needed)
+**Windows (PowerShell):**
+```powershell
+Remove-Item -Recurse -Force .next
+npm run build
+```
+
+**macOS/Linux:**
+```bash
+rm -rf .next
+npm run build
+```
 
 ## Brand Colors
 
