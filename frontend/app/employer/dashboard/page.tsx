@@ -126,7 +126,7 @@ export default function EmployerDashboardPage() {
                     <div className="flex-1">
                       <h4 className="font-semibold text-gray-900">{job.title}</h4>
                       <p className="text-sm text-gray-600">
-                        Posted {formatDate(job.posted_date || job.created_at)} • {job.location} • {job.status}
+                        {job.posted_date ? `Posted ${formatDate(job.posted_date)}` : 'Not posted yet'} • {job.location} • {job.status}
                       </p>
                       <div className="flex items-center space-x-4 mt-2">
                         {/* Application stats (when available) */}
