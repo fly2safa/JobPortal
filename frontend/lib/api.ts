@@ -183,11 +183,6 @@ class ApiClient {
   }
 
   // Recommendations endpoints
-  async getJobRecommendations() {
-    const response = await this.client.get('/recommendations/jobs');
-    return response.data;
-  }
-
   async getCandidateRecommendations(jobId: string) {
     const response = await this.client.get(`/jobs/${jobId}/recommended-candidates`);
     return response.data;
