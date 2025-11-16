@@ -62,3 +62,11 @@ backend/ENV/
 *.seed
 *.pid.lock
 
+# Testing Tool Results (don't track individual test results)
+testing_tool/results/test_progress_*.json
+testing_tool/results/test_report_*.md
+tester_info.json
+
+# Legacy results folder (should not exist - files should be in testing_tool/results/)
+results/
+
