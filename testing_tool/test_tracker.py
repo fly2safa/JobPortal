@@ -57,11 +57,16 @@ class TestingTrackerApp:
     # - MINOR: New features, backward compatible
     # - PATCH: Bug fixes, small improvements
     # 
+    # v2.1.1 - UI improvements and UX refinements
+    #          - Split Quick Jump buttons into two rows (8 per row)
+    #          - Removed premature welcome popup after entering name
+    #          - Welcome message now shows only after browser selection
+    #          - Added requirements.txt and comprehensive README.md
     # v2.1.0 - Added 5 documentation verification test cases (16.1-16.5)
     #          Now includes ERD, Architecture diagrams, README completeness,
     #          cross-platform instructions, and compliance documentation tests
     #          Total test cases: 83 (was 78)
-    VERSION = "2.1.0"
+    VERSION = "2.1.1"
     
     def __init__(self, root):
         self.root = root
@@ -116,6 +121,9 @@ class TestingTrackerApp:
         # Setup UI
         self.setup_ui()
         self.load_tester_info()
+        
+        # Update progress to show total test count on startup
+        self.update_progress()
         
         # Setup window close handler
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
@@ -782,19 +790,34 @@ class TestingTrackerApp:
         
         # Create quick jump buttons (only first time)
         if not self.section_buttons:
-            col = 1
             section_list = list(sections.keys())
             
-            for section in section_list:
+            # Split buttons into two rows (8 buttons per row)
+            buttons_per_row = 8
+            
+            for idx, section in enumerate(section_list):
+                # Calculate row and column for two-row layout
+                row = (idx // buttons_per_row)
+                col = (idx % buttons_per_row) + 1  # +1 to leave space for label
+                
                 # Short names and icons for buttons
                 button_info = {
                     "Authentication": ("🔐 Auth", "#8b5cf6"),      # Purple
                     "Job Seeker": ("👤 Seeker", "#3b82f6"),       # Blue
                     "Employer": ("💼 Employer", "#06b6d4"),       # Cyan
                     "AI Features": ("🤖 AI", "#10b981"),          # Green
+                    "Interview": ("📅 Interview", "#f97316"),     # Orange
+                    "Email": ("📧 Email", "#8b5cf6"),             # Purple
+                    "UI/UX": ("🎨 UI/UX", "#ec4899"),             # Pink
                     "Edge Cases": ("⚠️ Edge", "#f59e0b"),         # Orange
                     "Responsive": ("📱 Resp", "#ec4899"),         # Pink
-                    "Performance": ("⚡ Perf", "#ef4444")         # Red
+                    "Performance": ("⚡ Perf", "#ef4444"),        # Red
+                    "Security": ("🔒 Security", "#dc2626"),       # Dark Red
+                    "Infrastructure": ("🏗️ Infra", "#6366f1"),    # Indigo
+                    "End-to-End": ("🔄 E2E", "#14b8a6"),          # Teal
+                    "n8n": ("🔗 n8n", "#059669"),                 # Emerald
+                    "Testing Tools": ("🧪 Tools", "#8b5cf6"),     # Purple
+                    "Documentation": ("📚 Docs", "#0ea5e9")       # Sky Blue
                 }
                 btn_text, btn_color = button_info.get(section, (section[:6], self.colors['primary']))
                 
@@ -816,7 +839,7 @@ class TestingTrackerApp:
                                padx=12,
                                pady=6,
                                command=make_command(section))
-                btn.grid(row=0, column=col, padx=3)
+                btn.grid(row=row, column=col, padx=3, pady=2)
                 
                 # Add hover effects
                 def on_enter(e, button=btn, color=btn_color):
@@ -829,7 +852,6 @@ class TestingTrackerApp:
                 btn.bind("<Leave>", on_leave)
                 
                 self.section_buttons[section] = btn
-                col += 1
         
         # Add to tree
         for section, tests in sections.items():
@@ -1358,7 +1380,7 @@ class TestingTrackerApp:
         # Validate minimum length (at least 2 characters)
         if tester_name and len(tester_name) >= 2:
             if not self.testing_enabled:
-                # Clear the warning message and update to show name is entered
+                # Update status label to show waiting for browser
                 if hasattr(self, 'test_id_label'):
                     self.test_id_label.config(
                         text="⏳ Please select your browser to continue...", 
@@ -1368,22 +1390,14 @@ class TestingTrackerApp:
                 # Check if browser is selected
                 browser = self.browser_combo.get().strip()
                 if not browser:
-                    # Only show prompt once
-                    if not self.browser_prompt_shown:
-                        self.browser_prompt_shown = True
-                        messagebox.showwarning(
-                            "Browser Required",
-                            "⚠️ Please select your browser before starting.\n\n"
-                            "This helps track which browser was used for testing."
-                        )
-                        self.browser_combo.focus_set()
+                    # Just focus on browser dropdown - no popup message
+                    self.browser_combo.focus_set()
                     return
                 # If browser is already filled, don't activate here - let browser selection handle it
                 # This prevents double activation
         elif not tester_name and self.testing_enabled:
             self.disable_testing_controls()
             self.testing_enabled = False
-            self.browser_prompt_shown = False  # Reset flag
         elif tester_name and len(tester_name) < 2:
             # Name too short
             messagebox.showwarning(
