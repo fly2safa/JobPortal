@@ -16,10 +16,10 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
   
   // Determine match score color
   const getMatchColor = (score: number) => {
-    if (score >= 80) return 'text-green-600 dark:text-green-400';
-    if (score >= 60) return 'text-blue-600 dark:text-blue-400';
-    if (score >= 40) return 'text-yellow-600 dark:text-yellow-400';
-    return 'text-gray-600 dark:text-gray-400';
+    if (score >= 80) return 'text-green-600';
+    if (score >= 60) return 'text-blue-600';
+    if (score >= 40) return 'text-yellow-600';
+    return 'text-gray-600';
   };
 
   const getMatchBadgeVariant = (score: number): 'success' | 'primary' | 'warning' | 'default' => {
@@ -46,50 +46,50 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
         <div className="pr-24">
           <div className="flex justify-between items-start mb-3">
             <div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 hover:text-primary dark:hover:text-primary-400 transition-colors flex items-center gap-2">
+              <h3 className="text-xl font-semibold text-gray-900 hover:text-primary transition-colors flex items-center gap-2">
                 {job.title}
                 <Sparkles size={16} className="text-primary" />
               </h3>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">{job.company_name || 'Company Name'}</p>
+              <p className="text-gray-600 mt-1">{job.company_name || 'Company Name'}</p>
             </div>
             <Badge variant="primary">{job.job_type}</Badge>
           </div>
 
           <div className="space-y-2 mb-4">
-            <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+            <div className="flex items-center text-sm text-gray-600">
               <MapPin size={16} className="mr-2" />
               {job.location}
             </div>
-            <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+            <div className="flex items-center text-sm text-gray-600">
               <Briefcase size={16} className="mr-2" />
               {job.experience_level}
             </div>
             {(job.salary_min || job.salary_max) && (
-              <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+              <div className="flex items-center text-sm text-gray-600">
                 <DollarSign size={16} className="mr-2" />
                 {formatSalary(job.salary_min, job.salary_max)}
               </div>
             )}
-            <div className="flex items-center text-sm text-gray-500 dark:text-gray-500">
+            <div className="flex items-center text-sm text-gray-500">
               <Clock size={16} className="mr-2" />
               Posted {formatTimeAgo(job.posted_date)}
             </div>
           </div>
 
-          <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-2">
+          <p className="text-gray-600 text-sm mb-4 line-clamp-2">
             {job.description}
           </p>
 
           {/* Match Reasons */}
           {reasons && reasons.length > 0 && (
-            <div className="mb-4 p-3 bg-primary/5 dark:bg-primary/10 rounded-lg border border-primary/20">
-              <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2 flex items-center gap-1">
+            <div className="mb-4 p-3 bg-primary/5 rounded-lg border border-primary/20">
+              <h4 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-1">
                 <Sparkles size={14} className="text-primary" />
                 Why this matches:
               </h4>
               <ul className="space-y-1">
                 {reasons.slice(0, 3).map((reason, index) => (
-                  <li key={index} className="text-xs text-gray-700 dark:text-gray-300 flex items-start">
+                  <li key={index} className="text-xs text-gray-700 flex items-start">
                     <span className="text-primary mr-2">•</span>
                     <span>{reason}</span>
                   </li>

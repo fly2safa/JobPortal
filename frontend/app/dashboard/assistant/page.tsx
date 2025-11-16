@@ -43,11 +43,11 @@ export default function AssistantPage() {
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center">
-            <Bot className="mr-3 text-primary" size={32} />
+          <h1 className="text-3xl font-bold text-white mb-2 flex items-center">
+            <Bot className="mr-3 text-gray-700" size={32} />
             AI Career Assistant
           </h1>
-          <p className="text-gray-600">Get personalized career advice and job search tips</p>
+          <p className="text-white">Get personalized career advice and job search tips</p>
         </div>
 
         <Card className="h-[600px]">

@@ -48,13 +48,24 @@ export default function ApplicationsPage() {
       <div className="space-y-6">
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">My Applications</h1>
-            <p className="text-gray-600">Track the status of your job applications</p>
+            <h1 className="text-3xl font-bold text-white mb-2">My Applications</h1>
+            <p className="text-white">Track the status of your job applications</p>
+          </div>
+          <div className="bg-white rounded-lg border border-gray-200 p-4 flex items-center justify-between min-w-[200px]">
+            <div>
+              <p className="text-sm text-gray-500 mb-1">Applications</p>
+              <p className="text-3xl font-bold text-gray-900">
+                {filteredApplications.length}
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
+                <FileText className="text-primary" size={24} />
+            </div>
           </div>
         </div>
 
         {/* Filter */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-start space-x-4">
           <Select
             options={[
               { value: 'all', label: 'All Applications' },
@@ -68,9 +79,6 @@ export default function ApplicationsPage() {
             onChange={(e) => setFilter(e.target.value)}
             className="w-64"
           />
-          <span className="text-sm text-gray-600">
-            {filteredApplications.length} application{filteredApplications.length !== 1 ? 's' : ''}
-          </span>
         </div>
 
         {/* Applications List */}
@@ -107,7 +115,7 @@ export default function ApplicationsPage() {
                           application.status === 'shortlisted' ? 'success' :
                           application.status === 'reviewing' ? 'info' :
                           application.status === 'interview' ? 'info' :
-                          application.status === 'withdrawn' ? 'secondary' :
+                          application.status === 'withdrawn' ? 'default' :
                           'warning'
                         }
                       >
