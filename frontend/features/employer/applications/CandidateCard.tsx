@@ -70,7 +70,7 @@ export function CandidateCard({
                   {application.applicant_email}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  Applied {formatDate(application.applied_at)}
+                  Applied {formatDate(application.applied_at || application.applied_date || application.updated_at)}
                 </p>
               </div>
               <Badge variant={getStatusBadgeVariant(application.status)}>

@@ -107,7 +107,8 @@ export function RegisterForm() {
           transform: translateY(0);
         }
       `}} />
-      <Card className="w-full max-w-md register-form" style={{ fontFamily: 'Playfair Display, serif' }}>
+      <div style={{ fontFamily: 'Playfair Display, serif' }}>
+      <Card className="w-full max-w-md register-form">
         <div className="text-center mb-6" style={{ fontFamily: 'Playfair Display, serif' }}>
           <h2 className="text-3xl font-bold text-gray-900" style={{ fontFamily: 'Playfair Display, serif' }}>Create Account</h2>
           <p className="text-gray-600 mt-2" style={{ fontFamily: 'Playfair Display, serif' }}>
@@ -303,6 +304,7 @@ export function RegisterForm() {
         </p>
       </div>
     </Card>
+    </div>
     </>
   );
 }

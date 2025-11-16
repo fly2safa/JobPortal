@@ -125,7 +125,9 @@ export default function EmployerDashboardPage() {
                   <div key={job.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                     <div className="flex-1">
                       <h4 className="font-semibold text-gray-900">{job.title}</h4>
-                      <p className="text-sm text-gray-600">Posted {formatDate(job.posted_date)} • {job.location} • {job.status}</p>
+                      <p className="text-sm text-gray-600">
+                        Posted {formatDate(job.posted_date || job.created_at)} • {job.location} • {job.status}
+                      </p>
                       <div className="flex items-center space-x-4 mt-2">
                         {/* Application stats (when available) */}
                       </div>

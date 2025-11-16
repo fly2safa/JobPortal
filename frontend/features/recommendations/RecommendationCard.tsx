@@ -72,7 +72,7 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
             )}
             <div className="flex items-center text-sm text-gray-500">
               <Clock size={16} className="mr-2" />
-              Posted {formatTimeAgo(job.posted_date)}
+              {job.posted_date ? `Posted ${formatTimeAgo(job.posted_date)}` : 'Not posted yet'}
             </div>
           </div>
 

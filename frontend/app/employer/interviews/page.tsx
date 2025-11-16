@@ -272,15 +272,16 @@ export default function EmployerInterviewsPage() {
 
           <Select
             label="Interview Type"
+            options={[
+              { value: 'video', label: 'Video Interview' },
+              { value: 'phone', label: 'Phone Interview' },
+              { value: 'in_person', label: 'In-Person' },
+              { value: 'technical', label: 'Technical Interview' },
+              { value: 'behavioral', label: 'Behavioral Interview' },
+              { value: 'final', label: 'Final Interview' },
+            ]}
             {...register('interview_type')}
-          >
-            <option value="video">Video Interview</option>
-            <option value="phone">Phone Interview</option>
-            <option value="in_person">In-Person</option>
-            <option value="technical">Technical Interview</option>
-            <option value="behavioral">Behavioral Interview</option>
-            <option value="final">Final Interview</option>
-          </Select>
+          />
 
           <Input
             label="Meeting Link"
@@ -488,23 +489,55 @@ function getMockInterviews(): Interview[] {
       id: '1',
       job_id: 'job-1',
       application_id: 'app-1',
-      candidate_name: 'John Doe - Senior Frontend Developer',
+      candidate_id: 'candidate-1',
+      candidate_name: 'John Doe',
+      candidate_email: 'john.doe@example.com',
+      employer_id: 'employer-1',
+      employer_name: 'TechCorp HR',
+      employer_email: 'hr@techcorp.com',
+      company_id: 'company-1',
+      company_name: 'TechCorp',
+      job_title: 'Senior Frontend Developer',
       scheduled_time: new Date(now + 1 * 24 * 60 * 60 * 1000).toISOString(),
       duration_minutes: 60,
+      interview_type: 'technical',
       meeting_link: 'https://meet.google.com/abc-defg-hij',
       status: 'scheduled',
+      status_history: [],
       notes: 'Technical interview focusing on React and TypeScript',
+      candidate_notified: true,
+      employer_notified: true,
+      reminder_sent: false,
+      created_at: new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString(),
+      updated_at: new Date(now - 1 * 24 * 60 * 60 * 1000).toISOString(),
+      created_by: 'employer-1',
     },
     {
       id: '2',
       job_id: 'job-1',
       application_id: 'app-2',
-      candidate_name: 'Jane Smith - Product Manager',
+      candidate_id: 'candidate-2',
+      candidate_name: 'Jane Smith',
+      candidate_email: 'jane.smith@example.com',
+      employer_id: 'employer-1',
+      employer_name: 'TechCorp HR',
+      employer_email: 'hr@techcorp.com',
+      company_id: 'company-1',
+      company_name: 'TechCorp',
+      job_title: 'Product Manager',
       scheduled_time: new Date(now + 3 * 24 * 60 * 60 * 1000).toISOString(),
       duration_minutes: 45,
+      interview_type: 'behavioral',
       meeting_link: 'https://zoom.us/j/123456789',
       status: 'scheduled',
+      status_history: [],
       notes: 'Behavioral interview with team',
+      candidate_notified: true,
+      employer_notified: true,
+      reminder_sent: false,
+      created_at: new Date(now - 5 * 24 * 60 * 60 * 1000).toISOString(),
+      updated_at: new Date(now - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      created_by: 'employer-1',
     },
   ];
 }

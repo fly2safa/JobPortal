@@ -90,7 +90,8 @@ export function LoginForm() {
           transform: translateY(0);
         }
       `}} />
-      <Card className="w-full max-w-md login-form" style={{ fontFamily: 'Playfair Display, serif' }}>
+      <div style={{ fontFamily: 'Playfair Display, serif' }}>
+      <Card className="w-full max-w-md login-form">
         <div className="text-center mb-6" style={{ fontFamily: 'Playfair Display, serif' }}>
           <h2 className="text-3xl text-gray-900" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}>Welcome Back</h2>
           <p className="text-gray-600 mt-2" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}>Sign In To Your TalentNest Account</p>
@@ -170,6 +171,7 @@ export function LoginForm() {
         </p>
       </div>
     </Card>
+    </div>
     </>
   );
 }
