@@ -3,7 +3,7 @@ Job routes for job postings and management.
 """
 from datetime import datetime
 from typing import List, Optional
-from fastapi import APIRouter, HTTPException, status, Depends, Query
+from fastapi import APIRouter, HTTPException, status, Depends, Query, Request, Response
 from beanie import PydanticObjectId
 from app.schemas.job import (
     JobCreate,
@@ -19,6 +19,7 @@ from app.models.company import Company
 from app.api.dependencies import get_current_user, get_current_employer
 from app.services.search_service import SearchService
 from app.core.logging import get_logger
+from app.core.rate_limiting import limiter, RATE_LIMIT_JOB_POSTING
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
@@ -229,7 +230,10 @@ async def get_all_jobs(
 
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=JobResponse)
+@limiter.limit(RATE_LIMIT_JOB_POSTING)
 async def create_job(
+    request: Request,
+    response: Response,
     job_data: JobCreate,
     current_user: User = Depends(get_current_employer)
 ):
@@ -247,14 +251,22 @@ async def create_job(
         HTTPException: If company not found or user not authorized
     """
     logger.info(f"Job creation attempt by employer: {current_user.email}")
+    logger.info(f"Company ID from job_data: {job_data.company_id} (type: {type(job_data.company_id)})")
+    logger.info(f"Company ID from current_user: {current_user.company_id} (type: {type(current_user.company_id)})")
     
-    # Verify company exists
-    company = await Company.get(job_data.company_id)
+    # Verify company exists (convert string to PydanticObjectId)
+    try:
+        company_oid = PydanticObjectId(job_data.company_id) if isinstance(job_data.company_id, str) else job_data.company_id
+        company = await Company.get(company_oid)
+    except Exception as e:
+        logger.error(f"Error fetching company: {e}")
+        company = None
+    
     if not company:
         logger.warning(f"Job creation failed: Company not found - {job_data.company_id}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Company not found"
+            detail=f"Company not found with ID: {job_data.company_id}. Please ensure you have a company associated with your account."
         )
     
     # Verify user is associated with the company

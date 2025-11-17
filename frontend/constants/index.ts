@@ -6,10 +6,11 @@ export const BRAND_COLORS = {
 } as const;
 
 export const JOB_TYPES = [
-  { value: 'full-time', label: 'Full Time' },
-  { value: 'part-time', label: 'Part Time' },
+  { value: 'full_time', label: 'Full Time' },
+  { value: 'part_time', label: 'Part Time' },
   { value: 'contract', label: 'Contract' },
   { value: 'internship', label: 'Internship' },
+  { value: 'temporary', label: 'Temporary' },
 ] as const;
 
 export const EXPERIENCE_LEVELS = [
@@ -23,8 +24,10 @@ export const APPLICATION_STATUS = {
   pending: { label: 'Pending', color: 'bg-yellow-100 text-yellow-800' },
   reviewing: { label: 'Reviewing', color: 'bg-blue-100 text-blue-800' },
   shortlisted: { label: 'Shortlisted', color: 'bg-green-100 text-green-800' },
+  interview: { label: 'Interview', color: 'bg-blue-100 text-blue-800' },
   rejected: { label: 'Rejected', color: 'bg-red-100 text-red-800' },
   accepted: { label: 'Accepted', color: 'bg-purple-100 text-purple-800' },
+  withdrawn: { label: 'Withdrawn', color: 'bg-gray-200 text-gray-700' },
 } as const;
 
 export const POPULAR_SKILLS = [

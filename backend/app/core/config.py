@@ -17,8 +17,25 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
-    # OpenAI (Optional - for AI features)
+    # AI Provider Configuration
+    AI_PROVIDER: str = "openai"  # Primary provider: "openai" or "anthropic"
+    AI_FALLBACK_ENABLED: bool = True  # Enable automatic fallback to secondary provider
+    
+    # OpenAI Configuration (Optional - for AI features)
     OPENAI_API_KEY: Optional[str] = None
+    OPENAI_MODEL: str = "gpt-4o"  # Options: gpt-4o, gpt-4o-mini, gpt-4-turbo, gpt-4
+    
+    # Anthropic Configuration (Optional - for AI features)
+    ANTHROPIC_API_KEY: Optional[str] = None
+    ANTHROPIC_MODEL: str = "claude-3-5-sonnet-20241022"  # Options: claude-3-5-sonnet, claude-3-opus
+    
+    # n8n Workflow Automation (Optional - for AI orchestration)
+    N8N_BASE_URL: str = "http://localhost:5678"
+    N8N_API_KEY: Optional[str] = None
+    N8N_JOB_RECOMMENDATION_WORKFLOW_ID: str = "job-recommendation"
+    N8N_CANDIDATE_MATCHING_WORKFLOW_ID: str = "candidate-matching"
+    N8N_RESUME_PARSING_WORKFLOW_ID: str = "resume-parsing"
+    N8N_EMAIL_NOTIFICATION_WORKFLOW_ID: str = "email-notification"
     
     # SMTP (Optional - for email notifications)
     SMTP_HOST: str = "smtp.gmail.com"
@@ -32,7 +49,23 @@ class Settings(BaseSettings):
     APP_NAME: str = "JobPortal"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
+    LOG_LEVEL: str = "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+    UVICORN_LOG_LEVEL: str = "info"  # Uvicorn's own log level (lowercase: debug, info, warning, error, critical)
+    
+    # Server Configuration
+    HOST: str = "127.0.0.1"  # Use 0.0.0.0 for Docker/production to accept external connections
+    PORT: int = 8000
+    
+    # CORS
     CORS_ORIGINS: str = "http://localhost:3000"
+    
+    # Rate Limiting
+    RATE_LIMIT_ENABLED: bool = True  # Enable/disable rate limiting
+    RATE_LIMIT_PER_MINUTE: int = 100  # Default: 100 requests per minute per IP
+    RATE_LIMIT_AUTH_PER_MINUTE: int = 5  # Auth endpoints: 5 requests per minute (prevent brute force)
+    RATE_LIMIT_JOB_POSTING_PER_MINUTE: int = 10  # Job posting: 10 requests per minute
+    RATE_LIMIT_APPLICATION_PER_MINUTE: int = 20  # Application submission: 20 requests per minute
+    RATE_LIMIT_AI_PER_MINUTE: int = 30  # AI endpoints: 30 requests per minute
     
     # File Upload
     MAX_UPLOAD_SIZE: int = 10485760  # 10MB
@@ -40,8 +73,11 @@ class Settings(BaseSettings):
     
     model_config = SettingsConfigDict(
         env_file=".env",
+        env_file_encoding="utf-8",
+        env_ignore_empty=True,
         case_sensitive=True,
-        extra="ignore"
+        extra="ignore",
+        env_nested_delimiter="__"
     )
     
     @property

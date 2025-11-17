@@ -1,45 +1,81 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
+import { Select } from '@/components/ui/Select';
 import { useAuth, useRequireRole } from '@/hooks/useAuth';
 import { Interview } from '@/types';
-import { formatDateTime } from '@/lib/utils';
-import { Calendar, Plus, Video, Edit, X } from 'lucide-react';
+import { InterviewCard, InterviewCalendar } from '@/features/interviews';
+import { Calendar as CalendarIcon, Plus, List } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import apiClient from '@/lib/api';
 
 interface ScheduleInterviewForm {
+  job_id: string;
+  application_id: string;
   scheduled_time: string;
   duration_minutes: number;
+  interview_type: string;
   meeting_link: string;
+  meeting_location: string;
+  meeting_instructions: string;
   notes: string;
+}
+
+interface RescheduleForm {
+  scheduled_time: string;
+  reason: string;
 }
 
 export default function EmployerInterviewsPage() {
   useAuth(true);
   useRequireRole(['employer']);
+  const searchParams = useSearchParams();
   const [interviews, setInterviews] = useState<Interview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [selectedInterview, setSelectedInterview] = useState<Interview | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [feedback, setFeedback] = useState('');
+  const [jobTitle, setJobTitle] = useState<string>('');
+  const [applicantName, setApplicantName] = useState<string>('');
 
-  const { register, handleSubmit, reset } = useForm<ScheduleInterviewForm>();
+  const { register, handleSubmit, reset, setValue } = useForm<ScheduleInterviewForm>();
+  const { register: registerReschedule, handleSubmit: handleSubmitReschedule, reset: resetReschedule } = useForm<RescheduleForm>();
 
   useEffect(() => {
     fetchInterviews();
-  }, []);
+    
+    // Check if we should open schedule modal from query params
+    const shouldSchedule = searchParams.get('schedule');
+    const applicationId = searchParams.get('applicationId');
+    const jobId = searchParams.get('jobId');
+    
+    if (shouldSchedule === 'true' && applicationId && jobId) {
+      setValue('application_id', applicationId);
+      setValue('job_id', jobId);
+      setShowScheduleModal(true);
+      
+      // Fetch job and application details
+      fetchJobAndApplicationDetails(jobId, applicationId);
+    }
+  }, [searchParams, setValue]);
 
   const fetchInterviews = async () => {
     setIsLoading(true);
     try {
       const response = await apiClient.getInterviews({ employer: true });
-      setInterviews(response.data || []);
+      setInterviews(response.interviews || response || []);
     } catch (error) {
       console.error('Failed to fetch interviews:', error);
       setInterviews(getMockInterviews());
@@ -48,23 +84,114 @@ export default function EmployerInterviewsPage() {
     }
   };
 
-  const handleScheduleInterview = async (data: ScheduleInterviewForm) => {
+  const fetchJobAndApplicationDetails = async (jobId: string, applicationId: string) => {
     try {
-      await apiClient.scheduleInterview({
+      // Fetch job details
+      const job = await apiClient.getJobById(jobId);
+      setJobTitle(job.title || 'Unknown Job');
+      
+      // Fetch application details
+      const applications = await apiClient.getJobApplications(jobId);
+      const application = applications.applications?.find((app: any) => app.id === applicationId);
+      if (application) {
+        setApplicantName(application.applicant_name || 'Unknown Applicant');
+      }
+    } catch (error) {
+      console.error('Failed to fetch job and application details:', error);
+      setJobTitle('Loading...');
+      setApplicantName('Loading...');
+    }
+  };
+
+  const handleScheduleInterview = async (data: ScheduleInterviewForm & { scheduled_date?: string }) => {
+    try {
+      // Combine date and time into ISO datetime string
+      const scheduledDateTime = `${data.scheduled_date}T${data.scheduled_time}:00`;
+      
+      const interviewData = {
         ...data,
-        job_id: 'job-1',
-        application_id: 'app-1',
-      });
+        scheduled_time: scheduledDateTime,
+      };
+      
+      // Remove the separate date field as it's not needed in the API
+      delete (interviewData as any).scheduled_date;
+      
+      await apiClient.scheduleInterview(interviewData);
       setShowScheduleModal(false);
       reset();
+      setJobTitle('');
+      setApplicantName('');
       fetchInterviews();
     } catch (error) {
       console.error('Failed to schedule interview:', error);
     }
   };
 
-  const upcomingInterviews = interviews.filter((i) => i.status === 'scheduled');
-  const pastInterviews = interviews.filter((i) => i.status === 'completed' || i.status === 'cancelled');
+  const handleJoinInterview = (interview: Interview) => {
+    if (interview.meeting_link) {
+      window.open(interview.meeting_link, '_blank');
+    }
+  };
+
+  const handleRescheduleInterview = (interview: Interview) => {
+    setSelectedInterview(interview);
+    setShowRescheduleModal(true);
+  };
+
+  const confirmReschedule = async (data: RescheduleForm) => {
+    if (!selectedInterview) return;
+
+    try {
+      await apiClient.rescheduleInterview(selectedInterview.id, data);
+      setShowRescheduleModal(false);
+      resetReschedule();
+      setSelectedInterview(null);
+      fetchInterviews();
+    } catch (error) {
+      console.error('Failed to reschedule interview:', error);
+    }
+  };
+
+  const handleCancelInterview = (interview: Interview) => {
+    setSelectedInterview(interview);
+    setShowCancelModal(true);
+  };
+
+  const confirmCancelInterview = async () => {
+    if (!selectedInterview) return;
+
+    try {
+      await apiClient.cancelInterview(selectedInterview.id, cancelReason);
+      setShowCancelModal(false);
+      setCancelReason('');
+      setSelectedInterview(null);
+      fetchInterviews();
+    } catch (error) {
+      console.error('Failed to cancel interview:', error);
+    }
+  };
+
+  const handleCompleteInterview = (interview: Interview) => {
+    setSelectedInterview(interview);
+    setShowCompleteModal(true);
+  };
+
+  const confirmCompleteInterview = async () => {
+    if (!selectedInterview) return;
+
+    try {
+      await apiClient.completeInterview(selectedInterview.id, { feedback });
+      setShowCompleteModal(false);
+      setFeedback('');
+      setSelectedInterview(null);
+      fetchInterviews();
+    } catch (error) {
+      console.error('Failed to complete interview:', error);
+    }
+  };
+
+  const upcomingInterviews = interviews.filter((i) => i.status === 'scheduled' || i.status === 'rescheduled');
+  const pastInterviews = interviews.filter((i) => i.status === 'completed' || i.status === 'cancelled' || i.status === 'no_show');
 
   return (
     <DashboardLayout>
@@ -74,113 +201,89 @@ export default function EmployerInterviewsPage() {
             <h1 className="text-3xl font-bold text-white mb-2">Interviews</h1>
             <p className="text-white">Manage and schedule interviews with candidates</p>
           </div>
-          <Button variant="primary" onClick={() => setShowScheduleModal(true)}>
-            <Plus size={18} className="mr-2" />
-            Schedule Interview
-          </Button>
-        </div>
-
-        {/* Upcoming Interviews */}
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Upcoming Interviews</h2>
-          {isLoading ? (
-            <div className="flex justify-center py-10">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
-            </div>
-          ) : upcomingInterviews.length === 0 ? (
-            <Card className="text-center py-10">
-              <Calendar className="mx-auto text-gray-400 mb-3" size={48} />
-              <p className="text-gray-600 mb-4">No upcoming interviews scheduled</p>
-              <Button variant="primary" onClick={() => setShowScheduleModal(true)}>
-                Schedule Interview
-              </Button>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {upcomingInterviews.map((interview) => (
-                <Card key={interview.id} className="border-l-4 border-primary">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            {interview.candidate_name}
-                          </h3>
-                          <p className="text-sm text-gray-600">
-                            {formatDateTime(interview.scheduled_time)}
-                          </p>
-                        </div>
-                        <Badge variant="success">Scheduled</Badge>
-                      </div>
-
-                      <div className="flex items-center space-x-4 text-sm text-gray-600 mb-3">
-                        <span>Duration: {interview.duration_minutes} minutes</span>
-                        {interview.meeting_link && (
-                          <>
-                            <span>•</span>
-                            <a
-                              href={interview.meeting_link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-primary hover:underline flex items-center"
-                            >
-                              <Video size={14} className="mr-1" />
-                              Join Meeting
-                            </a>
-                          </>
-                        )}
-                      </div>
-
-                      {interview.notes && (
-                        <div className="bg-gray-50 rounded-lg p-3 mb-3 text-sm text-gray-700">
-                          {interview.notes}
-                        </div>
-                      )}
-
-                      <div className="flex space-x-2">
-                        {interview.meeting_link && (
-                          <Button variant="primary" size="sm">
-                            <Video size={14} className="mr-1" />
-                            Start Interview
-                          </Button>
-                        )}
-                        <Button variant="outline" size="sm">
-                          <Edit size={14} className="mr-1" />
-                          Reschedule
-                        </Button>
-                        <Button variant="ghost" size="sm" className="text-red-600">
-                          <X size={14} className="mr-1" />
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Past Interviews */}
-        {pastInterviews.length > 0 && (
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Past Interviews</h2>
-            <div className="space-y-4">
-              {pastInterviews.map((interview) => (
-                <Card key={interview.id} className="opacity-75">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{interview.candidate_name}</h3>
-                      <p className="text-sm text-gray-600">{formatDateTime(interview.scheduled_time)}</p>
-                    </div>
-                    <Badge variant={interview.status === 'completed' ? 'success' : 'default'}>
-                      {interview.status}
-                    </Badge>
-                  </div>
-                </Card>
-              ))}
-            </div>
+          <div className="flex space-x-2">
+            <Button
+              variant={viewMode === 'list' ? 'primary' : 'outline'}
+              onClick={() => setViewMode('list')}
+            >
+              <List size={18} className="mr-2" />
+              List
+            </Button>
+            <Button
+              variant={viewMode === 'calendar' ? 'primary' : 'outline'}
+              onClick={() => setViewMode('calendar')}
+            >
+              <CalendarIcon size={18} className="mr-2" />
+              Calendar
+            </Button>
+            <Button variant="primary" onClick={() => setShowScheduleModal(true)}>
+              <Plus size={18} className="mr-2" />
+              Schedule Interview
+            </Button>
           </div>
+        </div>
+
+        {isLoading ? (
+          <div className="flex justify-center py-10">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+          </div>
+        ) : viewMode === 'calendar' ? (
+          <InterviewCalendar
+            interviews={interviews}
+            onDateSelect={(date) => {
+              console.log('Selected date:', date);
+              setViewMode('list');
+            }}
+            onInterviewClick={(interview) => {
+              console.log('Selected interview:', interview);
+            }}
+          />
+        ) : (
+          <>
+            {/* Upcoming Interviews */}
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Upcoming Interviews</h2>
+              {upcomingInterviews.length === 0 ? (
+                <Card className="text-center py-10">
+                  <CalendarIcon className="mx-auto text-gray-400 mb-3" size={48} />
+                  <p className="text-gray-600 mb-4">No upcoming interviews scheduled</p>
+                  <Button variant="primary" onClick={() => setShowScheduleModal(true)}>
+                    Schedule Interview
+                  </Button>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {upcomingInterviews.map((interview) => (
+                    <InterviewCard
+                      key={interview.id}
+                      interview={interview}
+                      isEmployer={true}
+                      onJoin={handleJoinInterview}
+                      onReschedule={handleRescheduleInterview}
+                      onCancel={handleCancelInterview}
+                      onComplete={handleCompleteInterview}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Past Interviews */}
+            {pastInterviews.length > 0 && (
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Past Interviews</h2>
+                <div className="space-y-4">
+                  {pastInterviews.map((interview) => (
+                    <InterviewCard
+                      key={interview.id}
+                      interview={interview}
+                      isEmployer={true}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -189,20 +292,175 @@ export default function EmployerInterviewsPage() {
         isOpen={showScheduleModal}
         onClose={() => setShowScheduleModal(false)}
         title="Schedule Interview"
-        size="md"
+        size="lg"
       >
         <form onSubmit={handleSubmit(handleScheduleInterview)} className="space-y-4">
-          <Input
-            label="Date & Time"
-            type="datetime-local"
-            {...register('scheduled_time', { required: true })}
+          {/* Hidden fields for IDs */}
+          <input type="hidden" {...register('job_id', { required: true })} />
+          <input type="hidden" {...register('application_id', { required: true })} />
+          
+          {/* Display-only fields showing human-readable information */}
+          {jobTitle && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Job Position
+              </label>
+              <div className="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900">
+                {jobTitle}
+              </div>
+            </div>
+          )}
+
+          {applicantName && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Candidate
+              </label>
+              <div className="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900">
+                {applicantName}
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Date"
+              type="date"
+              {...register('scheduled_date', { required: true })}
+            />
+            
+            <Select
+              label="Time"
+              options={[
+                { value: '00:00', label: '12:00 AM' },
+                { value: '00:15', label: '12:15 AM' },
+                { value: '00:30', label: '12:30 AM' },
+                { value: '00:45', label: '12:45 AM' },
+                { value: '01:00', label: '1:00 AM' },
+                { value: '01:15', label: '1:15 AM' },
+                { value: '01:30', label: '1:30 AM' },
+                { value: '01:45', label: '1:45 AM' },
+                { value: '02:00', label: '2:00 AM' },
+                { value: '02:15', label: '2:15 AM' },
+                { value: '02:30', label: '2:30 AM' },
+                { value: '02:45', label: '2:45 AM' },
+                { value: '03:00', label: '3:00 AM' },
+                { value: '03:15', label: '3:15 AM' },
+                { value: '03:30', label: '3:30 AM' },
+                { value: '03:45', label: '3:45 AM' },
+                { value: '04:00', label: '4:00 AM' },
+                { value: '04:15', label: '4:15 AM' },
+                { value: '04:30', label: '4:30 AM' },
+                { value: '04:45', label: '4:45 AM' },
+                { value: '05:00', label: '5:00 AM' },
+                { value: '05:15', label: '5:15 AM' },
+                { value: '05:30', label: '5:30 AM' },
+                { value: '05:45', label: '5:45 AM' },
+                { value: '06:00', label: '6:00 AM' },
+                { value: '06:15', label: '6:15 AM' },
+                { value: '06:30', label: '6:30 AM' },
+                { value: '06:45', label: '6:45 AM' },
+                { value: '07:00', label: '7:00 AM' },
+                { value: '07:15', label: '7:15 AM' },
+                { value: '07:30', label: '7:30 AM' },
+                { value: '07:45', label: '7:45 AM' },
+                { value: '08:00', label: '8:00 AM' },
+                { value: '08:15', label: '8:15 AM' },
+                { value: '08:30', label: '8:30 AM' },
+                { value: '08:45', label: '8:45 AM' },
+                { value: '09:00', label: '9:00 AM' },
+                { value: '09:15', label: '9:15 AM' },
+                { value: '09:30', label: '9:30 AM' },
+                { value: '09:45', label: '9:45 AM' },
+                { value: '10:00', label: '10:00 AM' },
+                { value: '10:15', label: '10:15 AM' },
+                { value: '10:30', label: '10:30 AM' },
+                { value: '10:45', label: '10:45 AM' },
+                { value: '11:00', label: '11:00 AM' },
+                { value: '11:15', label: '11:15 AM' },
+                { value: '11:30', label: '11:30 AM' },
+                { value: '11:45', label: '11:45 AM' },
+                { value: '12:00', label: '12:00 PM' },
+                { value: '12:15', label: '12:15 PM' },
+                { value: '12:30', label: '12:30 PM' },
+                { value: '12:45', label: '12:45 PM' },
+                { value: '13:00', label: '1:00 PM' },
+                { value: '13:15', label: '1:15 PM' },
+                { value: '13:30', label: '1:30 PM' },
+                { value: '13:45', label: '1:45 PM' },
+                { value: '14:00', label: '2:00 PM' },
+                { value: '14:15', label: '2:15 PM' },
+                { value: '14:30', label: '2:30 PM' },
+                { value: '14:45', label: '2:45 PM' },
+                { value: '15:00', label: '3:00 PM' },
+                { value: '15:15', label: '3:15 PM' },
+                { value: '15:30', label: '3:30 PM' },
+                { value: '15:45', label: '3:45 PM' },
+                { value: '16:00', label: '4:00 PM' },
+                { value: '16:15', label: '4:15 PM' },
+                { value: '16:30', label: '4:30 PM' },
+                { value: '16:45', label: '4:45 PM' },
+                { value: '17:00', label: '5:00 PM' },
+                { value: '17:15', label: '5:15 PM' },
+                { value: '17:30', label: '5:30 PM' },
+                { value: '17:45', label: '5:45 PM' },
+                { value: '18:00', label: '6:00 PM' },
+                { value: '18:15', label: '6:15 PM' },
+                { value: '18:30', label: '6:30 PM' },
+                { value: '18:45', label: '6:45 PM' },
+                { value: '19:00', label: '7:00 PM' },
+                { value: '19:15', label: '7:15 PM' },
+                { value: '19:30', label: '7:30 PM' },
+                { value: '19:45', label: '7:45 PM' },
+                { value: '20:00', label: '8:00 PM' },
+                { value: '20:15', label: '8:15 PM' },
+                { value: '20:30', label: '8:30 PM' },
+                { value: '20:45', label: '8:45 PM' },
+                { value: '21:00', label: '9:00 PM' },
+                { value: '21:15', label: '9:15 PM' },
+                { value: '21:30', label: '9:30 PM' },
+                { value: '21:45', label: '9:45 PM' },
+                { value: '22:00', label: '10:00 PM' },
+                { value: '22:15', label: '10:15 PM' },
+                { value: '22:30', label: '10:30 PM' },
+                { value: '22:45', label: '10:45 PM' },
+                { value: '23:00', label: '11:00 PM' },
+                { value: '23:15', label: '11:15 PM' },
+                { value: '23:30', label: '11:30 PM' },
+                { value: '23:45', label: '11:45 PM' },
+              ]}
+              {...register('scheduled_time', { required: true })}
+              defaultValue="09:00"
+            />
+          </div>
+
+          <Select
+            label="Duration"
+            options={[
+              { value: '15', label: '15 minutes' },
+              { value: '30', label: '30 minutes' },
+              { value: '45', label: '45 minutes' },
+              { value: '60', label: '1 hour' },
+              { value: '75', label: '1 hour 15 minutes' },
+              { value: '90', label: '1 hour 30 minutes' },
+              { value: '105', label: '1 hour 45 minutes' },
+              { value: '120', label: '2 hours' },
+            ]}
+            {...register('duration_minutes', { required: true, valueAsNumber: true })}
+            defaultValue="60"
           />
 
-          <Input
-            label="Duration (minutes)"
-            type="number"
-            defaultValue={60}
-            {...register('duration_minutes', { required: true, valueAsNumber: true })}
+          <Select
+            label="Interview Type"
+            options={[
+              { value: 'video', label: 'Video Interview' },
+              { value: 'phone', label: 'Phone Interview' },
+              { value: 'in_person', label: 'In-Person' },
+              { value: 'technical', label: 'Technical Interview' },
+              { value: 'behavioral', label: 'Behavioral Interview' },
+              { value: 'final', label: 'Final Interview' },
+            ]}
+            {...register('interview_type')}
           />
 
           <Input
@@ -211,9 +469,22 @@ export default function EmployerInterviewsPage() {
             {...register('meeting_link')}
           />
 
+          <Input
+            label="Meeting Location (for in-person)"
+            placeholder="Office address or location"
+            {...register('meeting_location')}
+          />
+
+          <Textarea
+            label="Meeting Instructions"
+            rows={2}
+            placeholder="Instructions for joining or finding the interview location..."
+            {...register('meeting_instructions')}
+          />
+
           <Textarea
             label="Notes"
-            rows={4}
+            rows={3}
             placeholder="Add any notes or preparation instructions for the interview..."
             {...register('notes')}
           />
@@ -228,10 +499,164 @@ export default function EmployerInterviewsPage() {
               Cancel
             </Button>
             <Button type="submit" variant="primary" className="flex-1">
-              Schedule
+              Schedule Interview
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Reschedule Interview Modal */}
+      <Modal
+        isOpen={showRescheduleModal}
+        onClose={() => {
+          setShowRescheduleModal(false);
+          resetReschedule();
+          setSelectedInterview(null);
+        }}
+        title="Reschedule Interview"
+        size="md"
+      >
+        <form onSubmit={handleSubmitReschedule(confirmReschedule)} className="space-y-4">
+          <p className="text-gray-700">
+            Reschedule interview with <strong>{selectedInterview?.candidate_name}</strong>
+          </p>
+
+          <Input
+            label="New Date & Time"
+            type="datetime-local"
+            {...registerReschedule('scheduled_time', { required: true })}
+          />
+
+          <Textarea
+            label="Reason for Rescheduling"
+            rows={3}
+            placeholder="Please provide a reason for rescheduling..."
+            {...registerReschedule('reason')}
+          />
+
+          <div className="flex space-x-2 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setShowRescheduleModal(false);
+                resetReschedule();
+                setSelectedInterview(null);
+              }}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary" className="flex-1">
+              Reschedule
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Cancel Interview Modal */}
+      <Modal
+        isOpen={showCancelModal}
+        onClose={() => {
+          setShowCancelModal(false);
+          setCancelReason('');
+          setSelectedInterview(null);
+        }}
+        title="Cancel Interview"
+        size="md"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-700">
+            Are you sure you want to cancel the interview with <strong>{selectedInterview?.candidate_name}</strong>? 
+            The candidate will be notified.
+          </p>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Reason for cancellation (optional)
+            </label>
+            <textarea
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              rows={3}
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="Please provide a reason..."
+            />
+          </div>
+
+          <div className="flex space-x-2 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowCancelModal(false);
+                setCancelReason('');
+                setSelectedInterview(null);
+              }}
+              className="flex-1"
+            >
+              Keep Interview
+            </Button>
+            <Button
+              variant="primary"
+              onClick={confirmCancelInterview}
+              className="flex-1 bg-red-600 hover:bg-red-700"
+            >
+              Cancel Interview
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Complete Interview Modal */}
+      <Modal
+        isOpen={showCompleteModal}
+        onClose={() => {
+          setShowCompleteModal(false);
+          setFeedback('');
+          setSelectedInterview(null);
+        }}
+        title="Complete Interview"
+        size="md"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-700">
+            Mark interview with <strong>{selectedInterview?.candidate_name}</strong> as completed.
+          </p>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Interview Feedback (optional)
+            </label>
+            <textarea
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              rows={4}
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+              placeholder="Add your feedback about the interview..."
+            />
+          </div>
+
+          <div className="flex space-x-2 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowCompleteModal(false);
+                setFeedback('');
+                setSelectedInterview(null);
+              }}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={confirmCompleteInterview}
+              className="flex-1"
+            >
+              Mark Complete
+            </Button>
+          </div>
+        </div>
       </Modal>
     </DashboardLayout>
   );
@@ -244,23 +669,55 @@ function getMockInterviews(): Interview[] {
       id: '1',
       job_id: 'job-1',
       application_id: 'app-1',
-      candidate_name: 'John Doe - Senior Frontend Developer',
+      candidate_id: 'candidate-1',
+      candidate_name: 'John Doe',
+      candidate_email: 'john.doe@example.com',
+      employer_id: 'employer-1',
+      employer_name: 'TechCorp HR',
+      employer_email: 'hr@techcorp.com',
+      company_id: 'company-1',
+      company_name: 'TechCorp',
+      job_title: 'Senior Frontend Developer',
       scheduled_time: new Date(now + 1 * 24 * 60 * 60 * 1000).toISOString(),
       duration_minutes: 60,
+      interview_type: 'technical',
       meeting_link: 'https://meet.google.com/abc-defg-hij',
       status: 'scheduled',
+      status_history: [],
       notes: 'Technical interview focusing on React and TypeScript',
+      candidate_notified: true,
+      employer_notified: true,
+      reminder_sent: false,
+      created_at: new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString(),
+      updated_at: new Date(now - 1 * 24 * 60 * 60 * 1000).toISOString(),
+      created_by: 'employer-1',
     },
     {
       id: '2',
       job_id: 'job-1',
       application_id: 'app-2',
-      candidate_name: 'Jane Smith - Product Manager',
+      candidate_id: 'candidate-2',
+      candidate_name: 'Jane Smith',
+      candidate_email: 'jane.smith@example.com',
+      employer_id: 'employer-1',
+      employer_name: 'TechCorp HR',
+      employer_email: 'hr@techcorp.com',
+      company_id: 'company-1',
+      company_name: 'TechCorp',
+      job_title: 'Product Manager',
       scheduled_time: new Date(now + 3 * 24 * 60 * 60 * 1000).toISOString(),
       duration_minutes: 45,
+      interview_type: 'behavioral',
       meeting_link: 'https://zoom.us/j/123456789',
       status: 'scheduled',
+      status_history: [],
       notes: 'Behavioral interview with team',
+      candidate_notified: true,
+      employer_notified: true,
+      reminder_sent: false,
+      created_at: new Date(now - 5 * 24 * 60 * 60 * 1000).toISOString(),
+      updated_at: new Date(now - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      created_by: 'employer-1',
     },
   ];
 }

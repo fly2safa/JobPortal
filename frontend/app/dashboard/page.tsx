@@ -10,7 +10,7 @@ import { Briefcase, FileText, Star, TrendingUp, Clock } from 'lucide-react';
 import { apiClient } from '@/lib/api';
 
 export default function DashboardPage() {
-  useAuth(true);
+  const { user } = useAuth(true);
 
   const [stats, setStats] = useState({ 
     total: 0, 
@@ -35,6 +35,18 @@ export default function DashboardPage() {
         setRecentApplications(appsResponse.applications || []);
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error);
+        // Set default empty state on error
+        setStats({ 
+          total: 0, 
+          pending: 0,
+          reviewing: 0, 
+          shortlisted: 0,
+          interview: 0,
+          rejected: 0,
+          accepted: 0,
+          withdrawn: 0
+        });
+        setRecentApplications([]);
       } finally {
         setLoading(false);
       }
@@ -46,8 +58,10 @@ export default function DashboardPage() {
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Dashboard</h1>
-          <p className="text-white">Welcome back! Here&apos;s your job search overview.</p>
+          <h1 className="text-3xl font-bold text-white mb-2">
+            Welcome back, {user?.first_name} {user?.last_name}!
+          </h1>
+          <p className="text-white">Here&apos;s your job search overview.</p>
         </div>
 
         {/* Stats */}
@@ -142,12 +156,12 @@ export default function DashboardPage() {
                 recentApplications.map((app) => (
                   <div key={app.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                     <div>
-                      <h4 className="font-semibold text-gray-900">{app.job?.title || 'Unknown Position'}</h4>
+                      <h4 className="font-semibold text-gray-900">{app.job_title || 'Unknown Position'}</h4>
                       <p className="text-sm text-gray-600">
-                        {app.job?.company?.name || 'Unknown Company'} • {app.job?.location || 'Location N/A'}
+                        {app.company_name || 'Unknown Company'}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
-                        Applied {new Date(app.created_at).toLocaleDateString()}
+                        Applied {new Date(app.applied_date || app.created_at).toLocaleDateString()}
                       </p>
                     </div>
                     <div className="text-right">

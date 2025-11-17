@@ -353,6 +353,380 @@ class EmailService:
         """
         
         return await self.send_email(to_email, subject, html_content, text_content)
+    
+    async def send_interview_scheduled_email(
+        self,
+        to_email: str,
+        recipient_name: str,
+        job_title: str,
+        company_name: str,
+        scheduled_time: str,
+        duration_minutes: int,
+        meeting_link: Optional[str] = None,
+        meeting_location: Optional[str] = None,
+        notes: Optional[str] = None,
+        is_candidate: bool = True
+    ) -> bool:
+        """
+        Send email notification when interview is scheduled.
+        
+        Args:
+            to_email: Recipient's email
+            recipient_name: Recipient's full name
+            job_title: Job title
+            company_name: Company name
+            scheduled_time: Scheduled interview time (formatted string)
+            duration_minutes: Interview duration in minutes
+            meeting_link: Optional video meeting link
+            meeting_location: Optional physical meeting location
+            notes: Optional interview notes
+            is_candidate: True if recipient is candidate, False if employer
+            
+        Returns:
+            True if email sent successfully
+        """
+        role = "candidate" if is_candidate else "interviewer"
+        subject = f"Interview Scheduled: {job_title} at {company_name}"
+        
+        meeting_details = ""
+        if meeting_link:
+            meeting_details = f'<p style="margin: 5px 0;"><strong>Meeting Link:</strong> <a href="{meeting_link}" style="color: #2563eb;">{meeting_link}</a></p>'
+        if meeting_location:
+            meeting_details += f'<p style="margin: 5px 0;"><strong>Location:</strong> {meeting_location}</p>'
+        
+        notes_section = ""
+        if notes:
+            notes_section = f'''
+            <div style="background-color: #fef3c7; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #f59e0b;">
+                <p style="margin: 0; font-weight: bold; color: #92400e;">Interview Notes:</p>
+                <p style="margin: 5px 0 0 0; color: #78350f;">{notes}</p>
+            </div>
+            '''
+        
+        html_content = f"""
+        <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <h2 style="color: #2563eb;">Interview Scheduled</h2>
+                    <p>Dear {recipient_name},</p>
+                    <p>{'Your interview has been scheduled' if is_candidate else 'An interview has been scheduled'} for the position of <strong>{job_title}</strong> at <strong>{company_name}</strong>.</p>
+                    
+                    <div style="background-color: #f3f4f6; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                        <h3 style="margin-top: 0; color: #1f2937;">Interview Details</h3>
+                        <p style="margin: 5px 0;"><strong>Position:</strong> {job_title}</p>
+                        <p style="margin: 5px 0;"><strong>Company:</strong> {company_name}</p>
+                        <p style="margin: 5px 0;"><strong>Date & Time:</strong> {scheduled_time}</p>
+                        <p style="margin: 5px 0;"><strong>Duration:</strong> {duration_minutes} minutes</p>
+                        {meeting_details}
+                    </div>
+                    
+                    {notes_section}
+                    
+                    <p>{'Please make sure to prepare for the interview and join on time.' if is_candidate else 'Please be ready to conduct the interview at the scheduled time.'}</p>
+                    
+                    <div style="margin: 20px 0;">
+                        <a href="{meeting_link or '#'}" style="display: inline-block; padding: 12px 24px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                            {'Join Interview' if meeting_link else 'Add to Calendar'}
+                        </a>
+                    </div>
+                    
+                    <p>Best regards,<br>{company_name} Team</p>
+                    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+                    <p style="font-size: 12px; color: #6b7280;">
+                        This is an automated message from {settings.APP_NAME}. Please do not reply to this email.
+                    </p>
+                </div>
+            </body>
+        </html>
+        """
+        
+        text_content = f"""
+        Interview Scheduled
+        
+        Dear {recipient_name},
+        
+        {'Your interview has been scheduled' if is_candidate else 'An interview has been scheduled'} for the position of {job_title} at {company_name}.
+        
+        Interview Details:
+        - Position: {job_title}
+        - Company: {company_name}
+        - Date & Time: {scheduled_time}
+        - Duration: {duration_minutes} minutes
+        {f'- Meeting Link: {meeting_link}' if meeting_link else ''}
+        {f'- Location: {meeting_location}' if meeting_location else ''}
+        
+        {f'Notes: {notes}' if notes else ''}
+        
+        {'Please make sure to prepare for the interview and join on time.' if is_candidate else 'Please be ready to conduct the interview at the scheduled time.'}
+        
+        Best regards,
+        {company_name} Team
+        
+        ---
+        This is an automated message from {settings.APP_NAME}. Please do not reply to this email.
+        """
+        
+        return await self.send_email(to_email, subject, html_content, text_content)
+    
+    async def send_interview_rescheduled_email(
+        self,
+        to_email: str,
+        recipient_name: str,
+        job_title: str,
+        company_name: str,
+        old_time: str,
+        new_time: str,
+        duration_minutes: int,
+        reason: Optional[str] = None,
+        meeting_link: Optional[str] = None,
+        is_candidate: bool = True
+    ) -> bool:
+        """
+        Send email notification when interview is rescheduled.
+        
+        Args:
+            to_email: Recipient's email
+            recipient_name: Recipient's full name
+            job_title: Job title
+            company_name: Company name
+            old_time: Original scheduled time (formatted string)
+            new_time: New scheduled time (formatted string)
+            duration_minutes: Interview duration in minutes
+            reason: Optional reason for rescheduling
+            meeting_link: Optional video meeting link
+            is_candidate: True if recipient is candidate, False if employer
+            
+        Returns:
+            True if email sent successfully
+        """
+        subject = f"Interview Rescheduled: {job_title} at {company_name}"
+        
+        reason_section = ""
+        if reason:
+            reason_section = f'<p style="margin: 10px 0; color: #6b7280;"><em>Reason: {reason}</em></p>'
+        
+        html_content = f"""
+        <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <h2 style="color: #f59e0b;">Interview Rescheduled</h2>
+                    <p>Dear {recipient_name},</p>
+                    <p>The interview for the position of <strong>{job_title}</strong> at <strong>{company_name}</strong> has been rescheduled.</p>
+                    
+                    {reason_section}
+                    
+                    <div style="background-color: #fef2f2; padding: 15px; border-radius: 5px; margin: 10px 0; border-left: 4px solid #ef4444;">
+                        <p style="margin: 0;"><strong>Previous Time:</strong> <span style="text-decoration: line-through;">{old_time}</span></p>
+                    </div>
+                    
+                    <div style="background-color: #f0fdf4; padding: 15px; border-radius: 5px; margin: 10px 0; border-left: 4px solid #22c55e;">
+                        <p style="margin: 0;"><strong>New Time:</strong> {new_time}</p>
+                        <p style="margin: 5px 0 0 0;"><strong>Duration:</strong> {duration_minutes} minutes</p>
+                        {f'<p style="margin: 5px 0 0 0;"><strong>Meeting Link:</strong> <a href="{meeting_link}" style="color: #2563eb;">{meeting_link}</a></p>' if meeting_link else ''}
+                    </div>
+                    
+                    <p>We apologize for any inconvenience this may cause. Please update your calendar accordingly.</p>
+                    
+                    <p>Best regards,<br>{company_name} Team</p>
+                    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+                    <p style="font-size: 12px; color: #6b7280;">
+                        This is an automated message from {settings.APP_NAME}. Please do not reply to this email.
+                    </p>
+                </div>
+            </body>
+        </html>
+        """
+        
+        text_content = f"""
+        Interview Rescheduled
+        
+        Dear {recipient_name},
+        
+        The interview for the position of {job_title} at {company_name} has been rescheduled.
+        
+        {f'Reason: {reason}' if reason else ''}
+        
+        Previous Time: {old_time}
+        New Time: {new_time}
+        Duration: {duration_minutes} minutes
+        {f'Meeting Link: {meeting_link}' if meeting_link else ''}
+        
+        We apologize for any inconvenience this may cause. Please update your calendar accordingly.
+        
+        Best regards,
+        {company_name} Team
+        
+        ---
+        This is an automated message from {settings.APP_NAME}. Please do not reply to this email.
+        """
+        
+        return await self.send_email(to_email, subject, html_content, text_content)
+    
+    async def send_interview_cancelled_email(
+        self,
+        to_email: str,
+        recipient_name: str,
+        job_title: str,
+        company_name: str,
+        scheduled_time: str,
+        reason: Optional[str] = None,
+        is_candidate: bool = True
+    ) -> bool:
+        """
+        Send email notification when interview is cancelled.
+        
+        Args:
+            to_email: Recipient's email
+            recipient_name: Recipient's full name
+            job_title: Job title
+            company_name: Company name
+            scheduled_time: Scheduled interview time (formatted string)
+            reason: Optional cancellation reason
+            is_candidate: True if recipient is candidate, False if employer
+            
+        Returns:
+            True if email sent successfully
+        """
+        subject = f"Interview Cancelled: {job_title} at {company_name}"
+        
+        reason_section = ""
+        if reason:
+            reason_section = f'<p style="margin: 10px 0; color: #6b7280;"><em>{reason}</em></p>'
+        
+        html_content = f"""
+        <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <h2 style="color: #ef4444;">Interview Cancelled</h2>
+                    <p>Dear {recipient_name},</p>
+                    <p>We regret to inform you that the interview for the position of <strong>{job_title}</strong> at <strong>{company_name}</strong> has been cancelled.</p>
+                    
+                    <div style="background-color: #fef2f2; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ef4444;">
+                        <p style="margin: 0;"><strong>Cancelled Interview:</strong></p>
+                        <p style="margin: 5px 0 0 0;">Position: {job_title}</p>
+                        <p style="margin: 5px 0 0 0;">Scheduled Time: {scheduled_time}</p>
+                    </div>
+                    
+                    {reason_section}
+                    
+                    <p>{'We appreciate your interest and will reach out if there are other opportunities that match your profile.' if is_candidate else 'Thank you for your time and understanding.'}</p>
+                    
+                    <p>Best regards,<br>{company_name} Team</p>
+                    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+                    <p style="font-size: 12px; color: #6b7280;">
+                        This is an automated message from {settings.APP_NAME}. Please do not reply to this email.
+                    </p>
+                </div>
+            </body>
+        </html>
+        """
+        
+        text_content = f"""
+        Interview Cancelled
+        
+        Dear {recipient_name},
+        
+        We regret to inform you that the interview for the position of {job_title} at {company_name} has been cancelled.
+        
+        Cancelled Interview:
+        - Position: {job_title}
+        - Scheduled Time: {scheduled_time}
+        
+        {f'{reason}' if reason else ''}
+        
+        {'We appreciate your interest and will reach out if there are other opportunities that match your profile.' if is_candidate else 'Thank you for your time and understanding.'}
+        
+        Best regards,
+        {company_name} Team
+        
+        ---
+        This is an automated message from {settings.APP_NAME}. Please do not reply to this email.
+        """
+        
+        return await self.send_email(to_email, subject, html_content, text_content)
+    
+    async def send_interview_reminder_email(
+        self,
+        to_email: str,
+        recipient_name: str,
+        job_title: str,
+        company_name: str,
+        scheduled_time: str,
+        hours_until: int,
+        meeting_link: Optional[str] = None,
+        is_candidate: bool = True
+    ) -> bool:
+        """
+        Send reminder email before interview.
+        
+        Args:
+            to_email: Recipient's email
+            recipient_name: Recipient's full name
+            job_title: Job title
+            company_name: Company name
+            scheduled_time: Scheduled interview time (formatted string)
+            hours_until: Hours until interview
+            meeting_link: Optional video meeting link
+            is_candidate: True if recipient is candidate, False if employer
+            
+        Returns:
+            True if email sent successfully
+        """
+        subject = f"Reminder: Interview in {hours_until} hours - {job_title}"
+        
+        html_content = f"""
+        <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <h2 style="color: #2563eb;">Interview Reminder</h2>
+                    <p>Dear {recipient_name},</p>
+                    <p>This is a friendly reminder that {'you have' if is_candidate else 'you have scheduled'} an interview coming up in <strong>{hours_until} hours</strong>.</p>
+                    
+                    <div style="background-color: #dbeafe; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #2563eb;">
+                        <h3 style="margin-top: 0; color: #1e40af;">Interview Details</h3>
+                        <p style="margin: 5px 0;"><strong>Position:</strong> {job_title}</p>
+                        <p style="margin: 5px 0;"><strong>Company:</strong> {company_name}</p>
+                        <p style="margin: 5px 0;"><strong>Time:</strong> {scheduled_time}</p>
+                        {f'<p style="margin: 5px 0;"><strong>Meeting Link:</strong> <a href="{meeting_link}" style="color: #2563eb;">{meeting_link}</a></p>' if meeting_link else ''}
+                    </div>
+                    
+                    <p>{'Please make sure you are prepared and join the meeting on time. Good luck!' if is_candidate else 'Please be ready to conduct the interview at the scheduled time.'}</p>
+                    
+                    {f'<div style="margin: 20px 0;"><a href="{meeting_link}" style="display: inline-block; padding: 12px 24px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">Join Interview</a></div>' if meeting_link else ''}
+                    
+                    <p>Best regards,<br>{company_name} Team</p>
+                    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+                    <p style="font-size: 12px; color: #6b7280;">
+                        This is an automated message from {settings.APP_NAME}. Please do not reply to this email.
+                    </p>
+                </div>
+            </body>
+        </html>
+        """
+        
+        text_content = f"""
+        Interview Reminder
+        
+        Dear {recipient_name},
+        
+        This is a friendly reminder that {'you have' if is_candidate else 'you have scheduled'} an interview coming up in {hours_until} hours.
+        
+        Interview Details:
+        - Position: {job_title}
+        - Company: {company_name}
+        - Time: {scheduled_time}
+        {f'- Meeting Link: {meeting_link}' if meeting_link else ''}
+        
+        {'Please make sure you are prepared and join the meeting on time. Good luck!' if is_candidate else 'Please be ready to conduct the interview at the scheduled time.'}
+        
+        Best regards,
+        {company_name} Team
+        
+        ---
+        This is an automated message from {settings.APP_NAME}. Please do not reply to this email.
+        """
+        
+        return await self.send_email(to_email, subject, html_content, text_content)
 
 
 # Global email service instance

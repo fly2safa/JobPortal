@@ -4,7 +4,7 @@ Hybrid resume parser: Algorithmic first, AI fallback with GPT-4o-mini.
 import re
 import json
 from typing import Dict, List, Optional
-from openai import OpenAI
+from app.ai.providers import get_llm, ProviderError
 from app.core.config import settings
 from app.core.logging import get_logger
 
@@ -16,9 +16,6 @@ class ResumeParser:
     
     def __init__(self):
         self.skills_database = self._load_skills_database()
-        self.ai_client = None
-        if settings.OPENAI_API_KEY:
-            self.ai_client = OpenAI(api_key=settings.OPENAI_API_KEY)
     
     def parse_resume_text(self, text: str) -> Dict:
         """
@@ -42,7 +39,7 @@ class ResumeParser:
         needs_ai = confidence < 0.7  # Threshold for AI fallback
         ai_used = False
         
-        if needs_ai and self.ai_client:
+        if needs_ai:
             logger.info("Confidence low, using AI fallback (GPT-4o-mini)")
             try:
                 ai_result = self._parse_with_ai(text)
@@ -57,7 +54,7 @@ class ResumeParser:
                 logger.info("AI parsing completed successfully")
                 return final_result
                 
-            except Exception as e:
+            except (ProviderError, Exception) as e:
                 logger.warning(f"AI parsing failed: {str(e)}, using algorithmic results")
                 # Fall back to algorithmic if AI fails
         
@@ -199,10 +196,7 @@ class ResumeParser:
         return min(confidence, 1.0)
     
     def _parse_with_ai(self, text: str) -> Dict:
-        """Parse resume using GPT-4o-mini."""
-        if not self.ai_client:
-            raise ValueError("OpenAI client not initialized")
-        
+        """Parse resume using AI with automatic fallback."""
         # Limit text to avoid token limits
         text_truncated = text[:4000] if len(text) > 4000 else text
         
@@ -219,21 +213,21 @@ Resume text:
 Return ONLY valid JSON, no markdown formatting or code blocks."""
 
         try:
-            response = self.ai_client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You are a resume parser. Extract structured data from resumes. Always return valid JSON only."
-                    },
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.3,  # Lower temperature for more consistent extraction
-                max_tokens=500,
-                response_format={"type": "json_object"}  # Force JSON response
-            )
+            # Get LLM with automatic fallback (using gpt-4o-mini for cost efficiency)
+            llm = get_llm(temperature=0.3, max_tokens=500)
             
-            content = response.choices[0].message.content
+            messages = [
+                {
+                    "role": "system",
+                    "content": "You are a resume parser. Extract structured data from resumes. Always return valid JSON only."
+                },
+                {"role": "user", "content": prompt}
+            ]
+            
+            # Invoke LLM
+            content = llm.invoke(messages).content
+            
+            # Parse JSON response
             ai_data = json.loads(content)
             
             return {

@@ -47,33 +47,63 @@ export interface Job {
   id: string;
   title: string;
   description: string;
-  company_id: string;
-  company_name?: string;
+  requirements?: string;  // String format from backend
+  responsibilities?: string;
+  
+  skills: string[];
+  required_skills?: string[];
+  preferred_skills?: string[];
+  
   location: string;
-  job_type: 'full-time' | 'part-time' | 'contract' | 'internship';
-  experience_level: 'entry' | 'mid' | 'senior' | 'lead';
+  is_remote: boolean;
+  
+  company_id: string;
+  company_name: string;
+  employer_id: string;
+  
   salary_min?: number;
   salary_max?: number;
-  skills: string[];
-  requirements: string[];
+  salary_currency?: string;
+  
+  job_type: 'full_time' | 'part_time' | 'contract' | 'internship' | 'temporary';
+  experience_level: 'entry' | 'junior' | 'mid' | 'senior' | 'lead' | 'executive';
+  experience_years_min?: number;
+  experience_years_max?: number;
+  
+  status: 'draft' | 'active' | 'closed' | 'archived';
+  posted_date?: string;
+  closing_date?: string;
+  
+  application_count: number;
+  view_count: number;
+  
   benefits?: string[];
-  status: 'active' | 'closed' | 'draft';
-  posted_date: string;
-  deadline?: string;
+  application_instructions?: string;
+  
+  created_at: string;
+  updated_at: string;
 }
 
 // Application Types
 export interface Application {
   id: string;
   job_id: string;
+  applicant_id?: string;
   job_title?: string;
   company_name?: string;
+  company_id?: string;
   user_id: string;
+  applicant_name?: string;
+  applicant_email?: string;
   resume_url: string;
   cover_letter?: string;
-  status: 'pending' | 'reviewing' | 'shortlisted' | 'rejected' | 'accepted';
-  applied_date: string;
+  status: 'pending' | 'reviewing' | 'shortlisted' | 'interview' | 'rejected' | 'accepted' | 'withdrawn';
+  applied_date?: string;
+  applied_at?: string;
   updated_at: string;
+  employer_notes?: string;
+  rejection_reason?: string;
+  additional_info?: Record<string, any>;
 }
 
 // Resume Types
@@ -113,12 +143,66 @@ export interface Interview {
   id: string;
   job_id: string;
   application_id: string;
-  candidate_name?: string;
+  
+  candidate_id: string;
+  candidate_name: string;
+  candidate_email: string;
+  
+  employer_id: string;
+  employer_name: string;
+  employer_email: string;
+  
+  company_id: string;
+  company_name: string;
+  job_title: string;
+  
   scheduled_time: string;
   duration_minutes: number;
+  interview_type: 'phone' | 'video' | 'in_person' | 'technical' | 'behavioral' | 'final';
+  
   meeting_link?: string;
-  status: 'scheduled' | 'completed' | 'cancelled';
+  meeting_location?: string;
+  meeting_instructions?: string;
+  
+  status: 'scheduled' | 'rescheduled' | 'completed' | 'cancelled' | 'no_show';
+  status_history: any[];
+  
   notes?: string;
+  feedback?: string;
+  interviewer_notes?: string;
+  
+  candidate_notified: boolean;
+  employer_notified: boolean;
+  reminder_sent: boolean;
+  
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+}
+
+export interface InterviewCreate {
+  job_id: string;
+  application_id: string;
+  scheduled_time: string;
+  duration_minutes: number;
+  interview_type?: 'phone' | 'video' | 'in_person' | 'technical' | 'behavioral' | 'final';
+  meeting_link?: string;
+  meeting_location?: string;
+  meeting_instructions?: string;
+  notes?: string;
+}
+
+export interface InterviewUpdate {
+  scheduled_time?: string;
+  duration_minutes?: number;
+  interview_type?: 'phone' | 'video' | 'in_person' | 'technical' | 'behavioral' | 'final';
+  meeting_link?: string;
+  meeting_location?: string;
+  meeting_instructions?: string;
+  notes?: string;
+  status?: 'scheduled' | 'rescheduled' | 'completed' | 'cancelled' | 'no_show';
+  feedback?: string;
+  interviewer_notes?: string;
 }
 
 // Recommendation Types
@@ -130,11 +214,26 @@ export interface JobRecommendation {
 
 export interface CandidateRecommendation {
   user_id: string;
-  application_id: string;
-  candidate_name: string;
+  full_name: string;
+  email: string;
   match_score: number;
-  skills_match: string[];
-  resume_url: string;
+  reasons: string[];
+  application_id: string;
+  application_status: 'pending' | 'reviewing' | 'shortlisted' | 'rejected' | 'accepted';
+  applied_at?: string;
+  resume?: {
+    resume_id: string;
+    file_url: string;
+    skills: string[];
+    uploaded_at?: string;
+  };
+}
+
+export interface CandidateRecommendationResponse {
+  job_id: string;
+  job_title: string;
+  total_candidates: number;
+  candidates: CandidateRecommendation[];
 }
 
 // Chat/Assistant Types

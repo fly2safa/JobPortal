@@ -15,6 +15,14 @@ class UserRegister(BaseModel):
     role: UserRole = Field(default=UserRole.JOB_SEEKER)
     phone: Optional[str] = None
     location: Optional[str] = None
+    
+    # Company fields (required for employers)
+    company_name: Optional[str] = Field(None, min_length=2, max_length=200)
+    company_description: Optional[str] = Field(None, max_length=2000)
+    company_industry: Optional[str] = Field(None, max_length=100)
+    company_size: Optional[str] = None
+    company_website: Optional[str] = None
+    company_headquarters: Optional[str] = None
 
 
 class UserLogin(BaseModel):

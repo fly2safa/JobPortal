@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
+import Image from 'next/image';
 import { useAuthStore } from '@/store/authStore';
 import { User, LogOut, Home, FileText, MessageSquare, Calendar } from 'lucide-react';
 import { useState } from 'react';
@@ -27,6 +28,14 @@ export function Navbar() {
           {/* Logo */}
           <div className="flex items-center">
             <Link href="/" className="flex items-center">
+              <Image
+                src="/logo-bird.png"
+                alt="TalentNest bird logo"
+                width={36}
+                height={36}
+                priority
+                className="mr-2"
+              />
               <span className="text-2xl">
                 <span style={{ 
                   fontFamily: 'Playfair Display, serif', 

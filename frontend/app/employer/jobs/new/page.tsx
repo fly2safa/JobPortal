@@ -35,6 +35,7 @@ export default function NewJobPage() {
   const { user } = useAuthStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
 
   const {
     register,
@@ -45,6 +46,7 @@ export default function NewJobPage() {
   const onSubmit = async (data: JobFormData) => {
     setIsSubmitting(true);
     setError('');
+    setSuccess(false);
 
     // Check if user has company_id
     if (!user?.company_id) {
@@ -54,7 +56,13 @@ export default function NewJobPage() {
     }
 
     try {
-      await apiClient.createJob({
+      console.log('=== JOB CREATION DEBUG ===');
+      console.log('Form data:', data);
+      console.log('Location value:', data.location);
+      console.log('Location length:', data.location?.length);
+      console.log('Creating job with company_id:', user.company_id);
+      
+      const jobPayload = {
         title: data.title,
         description: data.description,
         location: data.location,
@@ -68,10 +76,47 @@ export default function NewJobPage() {
         benefits: data.benefits ? data.benefits.split('\n').filter(Boolean) : [],
         company_id: user.company_id,
         status: 'active',
-      });
-      router.push('/employer/jobs');
+      };
+      
+      console.log('Job payload being sent:', jobPayload);
+      
+      const response = await apiClient.createJob(jobPayload);
+      
+      console.log('Job created successfully:', response);
+      setSuccess(true);
+      
+      // Redirect after a brief delay to show success message
+      setTimeout(() => {
+        router.push('/employer/jobs');
+      }, 1500);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to create job. Please try again.');
+      console.error('Job creation error:', err);
+      console.error('Error response:', err.response);
+      console.error('Error response data:', err.response?.data);
+      // Handle rate limit errors specifically
+      if (err.isRateLimit || err.response?.status === 429) {
+        const retryAfter = err.retryAfter || 60;
+        setError(`Too many job postings. Please wait ${retryAfter} seconds before posting another job.`);
+      } else {
+        // Handle validation errors (array of error objects)
+        const errorDetail = err.response?.data?.detail;
+        if (Array.isArray(errorDetail)) {
+          // Extract error messages from validation error array with field names
+          const errorMessages = errorDetail.map((e: any) => {
+            const field = e.loc ? e.loc[e.loc.length - 1] : 'unknown';
+            const msg = e.msg || JSON.stringify(e);
+            return `${field}: ${msg}`;
+          }).join('; ');
+          setError(`Validation error: ${errorMessages}`);
+          console.error('Validation errors:', errorDetail);
+        } else if (typeof errorDetail === 'object' && errorDetail !== null) {
+          // If detail is an object, try to extract meaningful message
+          setError(errorDetail.msg || JSON.stringify(errorDetail));
+        } else {
+          // String error or fallback
+          setError(errorDetail || 'Failed to create job. Please try again.');
+        }
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -88,6 +133,12 @@ export default function NewJobPage() {
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
             {error}
+          </div>
+        )}
+
+        {success && (
+          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
+            ✅ Job posted successfully! Redirecting...
           </div>
         )}
 
@@ -115,7 +166,13 @@ export default function NewJobPage() {
                   <Input
                     label="Location"
                     placeholder="e.g., San Francisco, CA or Remote"
-                    {...register('location', { required: 'Location is required' })}
+                    {...register('location', { 
+                      required: 'Location is required',
+                      minLength: {
+                        value: 2,
+                        message: 'Location must be at least 2 characters'
+                      }
+                    })}
                     error={errors.location?.message}
                   />
 

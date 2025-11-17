@@ -8,11 +8,10 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { useAuth } from '@/hooks/useAuth';
 import { JobRecommendation } from '@/types';
-import { Bookmark, BookmarkCheck, MapPin, Calendar, ChevronDown, Search, Settings, Briefcase } from 'lucide-react';
-import Image from 'next/image';
+import { Bookmark, BookmarkCheck, MapPin, Calendar, ChevronDown, Search, Settings, Briefcase, Filter, X } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import Link from 'next/link';
-import apiClient from '@/lib/api';
+import { apiClient } from '@/lib/api';
 
 export default function RecommendationsPage() {
   useAuth(true);
@@ -20,28 +19,71 @@ export default function RecommendationsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [savedJobs, setSavedJobs] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState('updated');
-  const [salaryRange, setSalaryRange] = useState([1200, 20000]);
+  const [salaryPeriod, setSalaryPeriod] = useState<'year' | 'month' | 'hour'>('year');
+  const [salaryRange, setSalaryRange] = useState([0, 300000]);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   
   // Filter states
-  const [filters, setFilters] = useState({
-    workingSchedule: ['full-time', 'part-time', 'project-work'],
-    employmentType: ['full-day', 'flexible-schedule', 'distant-work'],
+  const [filters, setFilters] = useState<{
+    workingSchedule: string[];
+    employmentType: string[];
+    searchQuery: string;
+    location: string;
+    experience: string;
+  }>({
+    workingSchedule: [],
+    employmentType: [],
     searchQuery: '',
     location: '',
     experience: '',
   });
 
+  const [availableLocations, setAvailableLocations] = useState<string[]>([]);
+
   useEffect(() => {
     fetchRecommendations();
   }, []);
 
+  useEffect(() => {
+    // Extract unique locations from recommendations
+    if (recommendations.length > 0) {
+      const locations = new Set<string>();
+      recommendations.forEach(rec => {
+        if (rec.job?.location) {
+          locations.add(rec.job.location);
+        }
+        if (rec.job?.is_remote) {
+          locations.add('Remote');
+        }
+      });
+      setAvailableLocations(Array.from(locations).sort());
+    }
+  }, [recommendations]);
+
   const fetchRecommendations = async () => {
     setIsLoading(true);
     try {
-      const response = await apiClient.getJobRecommendations();
-      setRecommendations(response.data || []);
+      const recommendations = await apiClient.getJobRecommendations(10);
+      console.log('Fetched recommendations:', recommendations);
+      console.log('Recommendations type:', typeof recommendations);
+      console.log('Recommendations is array:', Array.isArray(recommendations));
+      console.log('Recommendations length:', recommendations?.length);
+      
+      if (!recommendations || recommendations.length === 0) {
+        console.warn('No recommendations returned from API, using mock data');
+        console.warn('API returned:', recommendations);
+        setRecommendations(getMockRecommendations());
+      } else {
+        setRecommendations(recommendations);
+      }
     } catch (error) {
       console.error('Failed to fetch recommendations:', error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : String(error),
+        response: (error as any)?.response?.data,
+        status: (error as any)?.response?.status,
+        statusText: (error as any)?.response?.statusText,
+      });
       setRecommendations(getMockRecommendations());
     } finally {
       setIsLoading(false);
@@ -71,6 +113,65 @@ export default function RecommendationsPage() {
     });
   };
 
+  const handleSalaryPeriodChange = (newPeriod: 'year' | 'month' | 'hour') => {
+    if (newPeriod === salaryPeriod) return;
+
+    // Convert current range to new period
+    let newRange = [...salaryRange];
+    
+    if (salaryPeriod === 'year' && newPeriod === 'month') {
+      // Year to month: divide by 12
+      newRange = [Math.round(salaryRange[0] / 12), Math.round(salaryRange[1] / 12)];
+    } else if (salaryPeriod === 'year' && newPeriod === 'hour') {
+      // Year to hour: divide by 2000 (approximate working hours per year)
+      newRange = [Math.round(salaryRange[0] / 2000), Math.round(salaryRange[1] / 2000)];
+    } else if (salaryPeriod === 'month' && newPeriod === 'year') {
+      // Month to year: multiply by 12
+      newRange = [salaryRange[0] * 12, salaryRange[1] * 12];
+    } else if (salaryPeriod === 'month' && newPeriod === 'hour') {
+      // Month to hour: divide by 173 (approximate working hours per month)
+      newRange = [Math.round(salaryRange[0] / 173), Math.round(salaryRange[1] / 173)];
+    } else if (salaryPeriod === 'hour' && newPeriod === 'year') {
+      // Hour to year: multiply by 2000
+      newRange = [salaryRange[0] * 2000, salaryRange[1] * 2000];
+    } else if (salaryPeriod === 'hour' && newPeriod === 'month') {
+      // Hour to month: multiply by 173
+      newRange = [Math.round(salaryRange[0] * 173), Math.round(salaryRange[1] * 173)];
+    }
+
+    // Cap the range to the new period's maximum
+    const config = getSalaryRangeConfigForPeriod(newPeriod);
+    newRange[0] = Math.max(0, Math.min(newRange[0], config.max));
+    newRange[1] = Math.max(0, Math.min(newRange[1], config.max));
+
+    setSalaryPeriod(newPeriod);
+    setSalaryRange(newRange);
+  };
+
+  const getSalaryRangeConfigForPeriod = (period: 'year' | 'month' | 'hour') => {
+    switch (period) {
+      case 'year':
+        return { max: 300000, step: 1000 };
+      case 'month':
+        return { max: 25000, step: 100 };
+      case 'hour':
+        return { max: 150, step: 5 };
+      default:
+        return { max: 300000, step: 1000 };
+    }
+  };
+
+  const getSalaryRangeConfig = () => {
+    return getSalaryRangeConfigForPeriod(salaryPeriod);
+  };
+
+  const formatSalaryDisplay = (value: number) => {
+    if (salaryPeriod === 'hour') {
+      return `$${value.toFixed(0)}`;
+    }
+    return `$${value.toLocaleString()}`;
+  };
+
   const cardColors = [
     { bg: 'bg-gradient-to-br from-[#04366b] to-[#075299]', company: 'bg-[#5a9ab3]' }, // Amazon
     { bg: 'bg-gradient-to-br from-[#04366b] to-[#075299]', company: 'bg-[#5a9ab3]' }, // Google
@@ -80,7 +181,122 @@ export default function RecommendationsPage() {
     { bg: 'bg-gradient-to-br from-[#04366b] to-[#075299]', company: 'bg-[#5a9ab3]' }, // Apple
   ];
 
-  const filteredRecommendations = recommendations;
+  // Map filter values to database values
+  const mapJobTypeFilter = (filterValue: string): string => {
+    const mapping: Record<string, string> = {
+      'full-time': 'full_time',
+      'part-time': 'part_time',
+      'project-work': 'contract',
+      'internship': 'internship',
+      'volunteering': 'temporary',
+    };
+    return mapping[filterValue] || filterValue;
+  };
+
+  const mapExperienceFilter = (filterValue: string): string => {
+    const mapping: Record<string, string> = {
+      'entry': 'entry',
+      'mid': 'mid',
+      'senior': 'senior',
+    };
+    return mapping[filterValue] || filterValue;
+  };
+
+  // Filter recommendations based on all active filters
+  const filteredRecommendations = recommendations.filter((rec) => {
+    const job = rec.job;
+
+    // Filter by working schedule (job_type)
+    if (filters.workingSchedule.length > 0) {
+      const jobTypes = filters.workingSchedule.map(mapJobTypeFilter);
+      if (!jobTypes.includes(job.job_type)) {
+        return false;
+      }
+    }
+
+    // Filter by experience level
+    if (filters.experience) {
+      const mappedExp = mapExperienceFilter(filters.experience);
+      if (job.experience_level !== mappedExp) {
+        return false;
+      }
+    }
+
+    // Filter by location
+    if (filters.location) {
+      if (filters.location === 'Remote') {
+        if (!job.is_remote) {
+          return false;
+        }
+      } else {
+        // Exact match for location (case-insensitive)
+        if (job.location.toLowerCase() !== filters.location.toLowerCase()) {
+          return false;
+        }
+      }
+    }
+
+    // Filter by search query (title, company, description)
+    if (filters.searchQuery) {
+      const query = filters.searchQuery.toLowerCase();
+      const titleMatch = job.title.toLowerCase().includes(query);
+      const companyMatch = job.company_name.toLowerCase().includes(query);
+      const descriptionMatch = job.description?.toLowerCase().includes(query) || false;
+      const skillsMatch = job.skills?.some(skill => skill.toLowerCase().includes(query)) || false;
+      
+      if (!titleMatch && !companyMatch && !descriptionMatch && !skillsMatch) {
+        return false;
+      }
+    }
+
+    // Filter by salary range
+    if (job.salary_max) {
+      // Convert salary to the current period for comparison
+      let jobSalaryMax = job.salary_max;
+      if (salaryPeriod === 'month') {
+        jobSalaryMax = jobSalaryMax / 12;
+      } else if (salaryPeriod === 'hour') {
+        jobSalaryMax = jobSalaryMax / 2000; // Approximate working hours per year
+      }
+
+      // Check if job salary overlaps with selected range
+      const jobSalaryMin = job.salary_min ? (salaryPeriod === 'month' ? job.salary_min / 12 : salaryPeriod === 'hour' ? job.salary_min / 2000 : job.salary_min) : 0;
+      
+      if (jobSalaryMax < salaryRange[0] || jobSalaryMin > salaryRange[1]) {
+        return false;
+      }
+    }
+
+    // Note: Employment type filters (full-day, flexible-schedule, etc.) are not in the database schema
+    // These would need to be added to the job model or ignored for now
+
+    return true;
+  });
+
+  // Sort filtered recommendations
+  const sortedRecommendations = [...filteredRecommendations].sort((a, b) => {
+    switch (sortBy) {
+      case 'match':
+        // Sort by match score (highest first)
+        return b.match_score - a.match_score;
+      case 'salary':
+        // Sort by maximum salary (highest first)
+        const salaryA = a.job.salary_max || 0;
+        const salaryB = b.job.salary_max || 0;
+        return salaryB - salaryA;
+      case 'date':
+        // Sort by posted date (newest first)
+        const dateA = a.job.posted_date ? new Date(a.job.posted_date).getTime() : 0;
+        const dateB = b.job.posted_date ? new Date(b.job.posted_date).getTime() : 0;
+        return dateB - dateA;
+      case 'updated':
+      default:
+        // Sort by updated date (newest first)
+        const updatedA = a.job.updated_at ? new Date(a.job.updated_at).getTime() : 0;
+        const updatedB = b.job.updated_at ? new Date(b.job.updated_at).getTime() : 0;
+        return updatedB - updatedA;
+    }
+  });
 
   return (
     <div className="min-h-screen bg-white">
@@ -89,8 +305,8 @@ export default function RecommendationsPage() {
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
           {/* Top Search Bar */}
-          <div className="bg-gray-900 text-white rounded-2xl p-6 shadow-xl">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-gray-900 text-white rounded-2xl p-4 sm:p-6 shadow-xl">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               {/* Search Input */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
@@ -111,11 +327,12 @@ export default function RecommendationsPage() {
                   value={filters.location}
                   onChange={(e) => setFilters(prev => ({ ...prev, location: e.target.value }))}
                 >
-                  <option value="">Work location</option>
-                  <option value="remote">Remote</option>
-                  <option value="san-francisco">San Francisco, CA</option>
-                  <option value="new-york">New York, NY</option>
-                  <option value="austin">Austin, TX</option>
+                  <option value="">All locations</option>
+                  {availableLocations.map(location => (
+                    <option key={location} value={location}>
+                      {location}
+                    </option>
+                  ))}
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
               </div>
@@ -141,10 +358,12 @@ export default function RecommendationsPage() {
                 <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                 <select
                   className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white appearance-none focus:outline-none focus:border-primary cursor-pointer"
+                  value={salaryPeriod}
+                  onChange={(e) => handleSalaryPeriodChange(e.target.value as 'year' | 'month' | 'hour')}
                 >
+                  <option value="year">Per year</option>
                   <option value="month">Per month</option>
                   <option value="hour">Per hour</option>
-                  <option value="year">Per year</option>
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
               </div>
@@ -154,14 +373,16 @@ export default function RecommendationsPage() {
             <div>
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm font-medium text-gray-300">Salary range</span>
-                <span className="text-sm font-bold text-white">${salaryRange[0].toLocaleString()} - ${salaryRange[1].toLocaleString()}</span>
+                <span className="text-sm font-bold text-white">
+                  {formatSalaryDisplay(salaryRange[0])} - {formatSalaryDisplay(salaryRange[1])}
+                </span>
               </div>
               <div className="relative">
                 <input
                   type="range"
                   min="0"
-                  max="30000"
-                  step="100"
+                  max={getSalaryRangeConfig().max}
+                  step={getSalaryRangeConfig().step}
                   value={salaryRange[1]}
                   onChange={(e) => setSalaryRange([salaryRange[0], parseInt(e.target.value)])}
                   className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-thumb"
@@ -191,9 +412,82 @@ export default function RecommendationsPage() {
             </div>
           </div>
 
-          <div className="flex gap-6">
-            {/* Sidebar Filters */}
-            <aside className="w-64 flex-shrink-0">
+          <div className="flex flex-col lg:flex-row gap-6">
+            {/* Mobile Filter Button */}
+            <button
+              onClick={() => setIsFiltersOpen(true)}
+              className="lg:hidden flex items-center justify-center gap-2 px-4 py-2 bg-[#075299] text-white rounded-lg font-medium hover:bg-[#04366b] transition-colors"
+            >
+              <Filter size={20} />
+              Filters
+            </button>
+
+            {/* Sidebar Filters - Hidden on mobile, shown as drawer */}
+            {isFiltersOpen && (
+              <div className="lg:hidden fixed inset-0 z-50 bg-black bg-opacity-50" onClick={() => setIsFiltersOpen(false)}>
+                <div className="absolute right-0 top-0 h-full w-80 bg-white shadow-xl overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-lg font-bold text-gray-900" style={{ fontFamily: 'Playfair Display, serif' }}>Filters</h3>
+                      <button onClick={() => setIsFiltersOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                        <X size={20} className="text-gray-600" />
+                      </button>
+                    </div>
+
+                {/* Working Schedule */}
+                <div className="mb-6">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Working schedule</h4>
+                  <div className="space-y-2">
+                    {[
+                      { value: 'full-time', label: 'Full time' },
+                      { value: 'part-time', label: 'Part time' },
+                      { value: 'internship', label: 'Internship' },
+                      { value: 'contract', label: 'Contract' },
+                      { value: 'volunteering', label: 'Volunteering' },
+                    ].map(option => (
+                      <label key={option.value} className="flex items-center cursor-pointer group">
+                        <input
+                          type="checkbox"
+                          checked={filters.workingSchedule.includes(option.value)}
+                          onChange={() => toggleFilter('workingSchedule', option.value)}
+                          className="w-5 h-5 rounded border-gray-300 cursor-pointer checked:bg-[#075299] checked:border-[#075299] hover:border-[#5a9ab3] focus:ring-[#075299] transition-colors"
+                        />
+                        <span className="ml-3 text-sm text-gray-700 group-hover:text-[#075299] transition-colors">{option.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Employment Type */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Employment type</h4>
+                  <div className="space-y-2">
+                    {[
+                      { value: 'full-day', label: 'Full day' },
+                      { value: 'flexible-schedule', label: 'Flexible schedule' },
+                      { value: 'shift-work', label: 'Shift work' },
+                      { value: 'distant-work', label: 'Distant work' },
+                      { value: 'shift-method', label: 'Shift method' },
+                    ].map(option => (
+                      <label key={option.value} className="flex items-center cursor-pointer group">
+                        <input
+                          type="checkbox"
+                          checked={filters.employmentType.includes(option.value)}
+                          onChange={() => toggleFilter('employmentType', option.value)}
+                          className="w-5 h-5 rounded border-gray-300 cursor-pointer checked:bg-[#075299] checked:border-[#075299] hover:border-[#5a9ab3] focus:ring-[#075299] transition-colors"
+                        />
+                        <span className="ml-3 text-sm text-gray-700 group-hover:text-[#075299] transition-colors">{option.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Desktop Sidebar Filters */}
+            <aside className="hidden lg:block w-64 flex-shrink-0">
               <Card className="p-6 sticky top-24">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-lg font-bold text-gray-900" style={{ fontFamily: 'Playfair Display, serif' }}>Filters</h3>
@@ -208,7 +502,7 @@ export default function RecommendationsPage() {
                       { value: 'full-time', label: 'Full time' },
                       { value: 'part-time', label: 'Part time' },
                       { value: 'internship', label: 'Internship' },
-                      { value: 'project-work', label: 'Project work' },
+                      { value: 'contract', label: 'Contract' },
                       { value: 'volunteering', label: 'Volunteering' },
                     ].map(option => (
                       <label key={option.value} className="flex items-center cursor-pointer group">
@@ -251,16 +545,39 @@ export default function RecommendationsPage() {
             </aside>
 
             {/* Main Content */}
-            <div className="flex-1">
+            <div className="flex-1 w-full">
               {/* Header */}
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-3xl font-bold text-white" style={{ fontFamily: 'Playfair Display, serif' }}>
-                  Recommended jobs <span className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 text-primary text-xl font-bold ml-3">{filteredRecommendations.length}</span>
-                </h2>
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-600">Sort by:</span>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+                <div className="flex-1">
+                  <h2 className="text-2xl sm:text-3xl font-bold text-gray-900" style={{ fontFamily: 'Playfair Display, serif' }}>
+                    Recommended jobs
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-1 sm:hidden">
+                    {sortedRecommendations.length} {sortedRecommendations.length === 1 ? 'Recommendation' : 'Recommendations'}
+                  </p>
+                </div>
+                <div className="hidden sm:flex items-center gap-4">
+                  <div className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900">
+                    {sortedRecommendations.length} {sortedRecommendations.length === 1 ? 'Recommendation' : 'Recommendations'}
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-600 hidden md:inline">Sort by:</span>
+                    <select
+                      className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-primary cursor-pointer"
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                    >
+                      <option value="updated">Last updated</option>
+                      <option value="match">Best match</option>
+                      <option value="salary">Highest salary</option>
+                      <option value="date">Most recent</option>
+                    </select>
+                  </div>
+                </div>
+                {/* Mobile: Sort dropdown */}
+                <div className="sm:hidden w-full">
                   <select
-                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-primary cursor-pointer"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-primary cursor-pointer"
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
                   >
@@ -269,7 +586,6 @@ export default function RecommendationsPage() {
                     <option value="salary">Highest salary</option>
                     <option value="date">Most recent</option>
                   </select>
-                  <Settings size={20} className="text-gray-600 cursor-pointer hover:text-primary transition-colors" />
                 </div>
               </div>
 
@@ -284,7 +600,7 @@ export default function RecommendationsPage() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredRecommendations.map((recommendation, index) => {
+                  {sortedRecommendations.map((recommendation, index) => {
                     const isSaved = savedJobs.has(recommendation.job.id);
                     const color = cardColors[index % cardColors.length];
                     const companyInitial = recommendation.job.company_name?.[0] || 'C';
@@ -320,7 +636,10 @@ export default function RecommendationsPage() {
 
                         {/* Bookmark */}
                         <button
-                          onClick={() => toggleSaveJob(recommendation.job.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleSaveJob(recommendation.job.id);
+                          }}
                           className="absolute top-4 right-4 p-2 bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 z-10"
                         >
                           {isSaved ? (
@@ -333,7 +652,7 @@ export default function RecommendationsPage() {
                         {/* Date */}
                         <div className="flex items-center text-sm text-white/90 mb-6">
                           <Calendar size={16} className="mr-2" />
-                          {formatDate(recommendation.job.posted_date)}
+                          {recommendation.job.posted_date ? formatDate(recommendation.job.posted_date) : 'Date not available'}
                         </div>
 
                         {/* Company & Title */}
@@ -353,21 +672,7 @@ export default function RecommendationsPage() {
                               background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.3), transparent 50%), linear-gradient(135deg, #5a9ab3 0%, #3d7a92 100%)'
                             }}
                           >
-                            <Image 
-                              src={`/logos/${recommendation.job.company_name.toLowerCase().replace(/\s+/g, '-')}.png`}
-                              alt={recommendation.job.company_name}
-                              width={32}
-                              height={32}
-                              className="object-contain"
-                              onError={(e) => {
-                                // Fallback to initial if image not found
-                                (e.target as HTMLImageElement).style.display = 'none';
-                                const parent = (e.target as HTMLImageElement).parentElement;
-                                if (parent) {
-                                  parent.innerHTML = `<span class="text-white text-xl font-bold">${companyInitial}</span>`;
-                                }
-                              }}
-                            />
+                            <span className="text-white text-xl font-bold">{companyInitial}</span>
                           </div>
                         </div>
 
@@ -423,14 +728,20 @@ function getMockRecommendations(): JobRecommendation[] {
         company_id: 'company-1',
         company_name: 'Amazon',
         location: 'San Francisco, CA',
-        job_type: 'Part-Time',
-        experience_level: 'Senior-Level',
+        is_remote: false,
+        employer_id: 'employer-1',
+        job_type: 'part_time',
+        experience_level: 'senior',
         salary_min: 200000,
         salary_max: 250000,
         skills: ['UI Design', 'UX Research', 'Figma', 'Adobe XD'],
-        requirements: ['5+ years experience'],
+        requirements: '5+ years experience',
         status: 'active',
         posted_date: '2025-05-20',
+        application_count: 0,
+        view_count: 0,
+        created_at: '2025-05-20T00:00:00Z',
+        updated_at: '2025-05-20T00:00:00Z',
       },
       match_score: 0.92,
       reasons: ['Perfect UI/UX match', 'Senior level experience'],
@@ -443,14 +754,20 @@ function getMockRecommendations(): JobRecommendation[] {
         company_id: 'company-2',
         company_name: 'Google',
         location: 'California, CA',
-        job_type: 'Full-Time',
-        experience_level: 'Junior-Level',
+        is_remote: false,
+        employer_id: 'employer-2',
+        job_type: 'full_time',
+        experience_level: 'junior',
         salary_min: 120000,
         salary_max: 150000,
         skills: ['Figma', 'Sketch'],
-        requirements: ['2+ years experience'],
+        requirements: '2+ years experience',
         status: 'active',
         posted_date: '2025-02-04',
+        application_count: 0,
+        view_count: 0,
+        created_at: '2025-02-04T00:00:00Z',
+        updated_at: '2025-02-04T00:00:00Z',
       },
       match_score: 0.85,
       reasons: ['Great for growth', 'Google culture'],
@@ -463,14 +780,20 @@ function getMockRecommendations(): JobRecommendation[] {
         company_id: 'company-3',
         company_name: 'Dribbble',
         location: 'New York, NY',
-        job_type: 'Part-Time',
-        experience_level: 'Senior-Level',
+        is_remote: false,
+        employer_id: 'employer-3',
+        job_type: 'part_time',
+        experience_level: 'senior',
         salary_min: 220000,
         salary_max: 260000,
         skills: ['After Effects', 'Motion Graphics'],
-        requirements: ['5+ years'],
+        requirements: '5+ years',
         status: 'active',
         posted_date: '2025-01-29',
+        application_count: 0,
+        view_count: 0,
+        created_at: '2025-01-29T00:00:00Z',
+        updated_at: '2025-01-29T00:00:00Z',
       },
       match_score: 0.88,
       reasons: ['Motion expertise', 'Creative freedom'],
@@ -483,14 +806,20 @@ function getMockRecommendations(): JobRecommendation[] {
         company_id: 'company-4',
         company_name: 'X',
         location: 'California, CA',
-        job_type: 'Full-Time',
-        experience_level: 'Middle-Level',
+        is_remote: false,
+        employer_id: 'employer-4',
+        job_type: 'full_time',
+        experience_level: 'mid',
         salary_min: 100000,
         salary_max: 120000,
         skills: ['UX', 'Research'],
-        requirements: ['3+ years'],
+        requirements: '3+ years',
         status: 'active',
         posted_date: '2025-04-11',
+        application_count: 0,
+        view_count: 0,
+        created_at: '2025-04-11T00:00:00Z',
+        updated_at: '2025-04-11T00:00:00Z',
       },
       match_score: 0.78,
       reasons: ['UX focus', 'Growing team'],
@@ -503,14 +832,20 @@ function getMockRecommendations(): JobRecommendation[] {
         company_id: 'company-5',
         company_name: 'Airbnb',
         location: 'New York, NY',
-        job_type: 'Part-Time',
-        experience_level: 'Senior-Level',
+        is_remote: false,
+        employer_id: 'employer-5',
+        job_type: 'part_time',
+        experience_level: 'senior',
         salary_min: 250000,
         salary_max: 300000,
         skills: ['Photoshop', 'Illustrator'],
-        requirements: ['5+ years'],
+        requirements: '5+ years',
         status: 'active',
         posted_date: '2025-04-02',
+        application_count: 0,
+        view_count: 0,
+        created_at: '2025-04-02T00:00:00Z',
+        updated_at: '2025-04-02T00:00:00Z',
       },
       match_score: 0.82,
       reasons: ['Design skills', 'Brand work'],
@@ -523,14 +858,20 @@ function getMockRecommendations(): JobRecommendation[] {
         company_id: 'company-6',
         company_name: 'Apple',
         location: 'San Francisco, CA',
-        job_type: 'Part-Time',
-        experience_level: 'Senior-Level',
+        is_remote: false,
+        employer_id: 'employer-6',
+        job_type: 'part_time',
+        experience_level: 'senior',
         salary_min: 120000,
         salary_max: 140000,
         skills: ['Design', 'Branding'],
-        requirements: ['4+ years'],
+        requirements: '4+ years',
         status: 'active',
         posted_date: '2025-01-18',
+        application_count: 0,
+        view_count: 0,
+        created_at: '2025-01-18T00:00:00Z',
+        updated_at: '2025-01-18T00:00:00Z',
       },
       match_score: 0.75,
       reasons: ['Apple design', 'Premium brand'],

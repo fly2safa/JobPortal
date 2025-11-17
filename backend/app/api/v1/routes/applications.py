@@ -2,7 +2,7 @@
 Application routes for job applications.
 """
 from typing import Optional
-from fastapi import APIRouter, HTTPException, status, Depends, Query
+from fastapi import APIRouter, HTTPException, status, Depends, Query, Request, Response
 from app.schemas.application import (
     ApplicationCreate,
     ApplicationResponse,
@@ -18,13 +18,17 @@ from app.api.dependencies import get_current_user, get_current_job_seeker, get_c
 from app.services.application_service import application_service
 from app.repositories.job_repository import JobRepository
 from app.core.logging import get_logger
+from app.core.rate_limiting import limiter, RATE_LIMIT_APPLICATION
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/applications", tags=["Applications"])
 
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=ApplicationResponse)
+@limiter.limit(RATE_LIMIT_APPLICATION)
 async def apply_to_job(
+    request: Request,
+    response: Response,
     application_data: ApplicationCreate,
     current_user: User = Depends(get_current_job_seeker)
 ):
@@ -369,6 +373,73 @@ async def withdraw_application(
     application = await application_service.withdraw_application(
         application_id=application_id,
         applicant_id=str(current_user.id)
+    )
+    
+    return _application_to_response(application)
+
+
+@router.post("/{application_id}/shortlist", response_model=ApplicationResponse)
+async def shortlist_application(
+    application_id: str,
+    current_user: User = Depends(get_current_employer)
+):
+    """
+    Shortlist an application (Employer only - must own the job).
+    
+    Convenience endpoint for updating status to SHORTLISTED.
+    
+    Args:
+        application_id: Application ID
+        current_user: Current authenticated employer
+        
+    Returns:
+        Updated application object
+        
+    Raises:
+        HTTPException: If application not found or user not authorized
+    """
+    logger.info(f"Shortlisting application {application_id} by employer: {current_user.email}")
+    
+    application = await application_service.update_application_status(
+        application_id=application_id,
+        employer_id=str(current_user.id),
+        new_status=ApplicationStatus.SHORTLISTED,
+        notes="Candidate shortlisted for further review"
+    )
+    
+    return _application_to_response(application)
+
+
+@router.post("/{application_id}/reject", response_model=ApplicationResponse)
+async def reject_application(
+    application_id: str,
+    rejection_reason: Optional[str] = None,
+    current_user: User = Depends(get_current_employer)
+):
+    """
+    Reject an application (Employer only - must own the job).
+    
+    Convenience endpoint for updating status to REJECTED.
+    
+    Args:
+        application_id: Application ID
+        rejection_reason: Optional reason for rejection
+        current_user: Current authenticated employer
+        
+    Returns:
+        Updated application object
+        
+    Raises:
+        HTTPException: If application not found or user not authorized
+    """
+    logger.info(f"Rejecting application {application_id} by employer: {current_user.email}")
+    
+    application = await application_service.update_application_status(
+        application_id=application_id,
+        employer_id=str(current_user.id),
+        new_status=ApplicationStatus.REJECTED,
+        notes="Application rejected",
+        rejection_reason=rejection_reason
     )
     
     return _application_to_response(application)

@@ -96,7 +96,26 @@ export default function EditJobPage() {
       });
       router.push('/employer/jobs');
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to update job. Please try again.');
+      console.error('Job update error:', err);
+      console.error('Error response data:', err.response?.data);
+      // Handle validation errors (array of error objects)
+      const errorDetail = err.response?.data?.detail;
+      if (Array.isArray(errorDetail)) {
+        // Extract error messages from validation error array with field names
+        const errorMessages = errorDetail.map((e: any) => {
+          const field = e.loc ? e.loc[e.loc.length - 1] : 'unknown';
+          const msg = e.msg || JSON.stringify(e);
+          return `${field}: ${msg}`;
+        }).join('; ');
+        setError(`Validation error: ${errorMessages}`);
+        console.error('Validation errors:', errorDetail);
+      } else if (typeof errorDetail === 'object' && errorDetail !== null) {
+        // If detail is an object, try to extract meaningful message
+        setError(errorDetail.msg || JSON.stringify(errorDetail));
+      } else {
+        // String error or fallback
+        setError(errorDetail || 'Failed to update job. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }

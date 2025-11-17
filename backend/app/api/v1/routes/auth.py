@@ -2,12 +2,16 @@
 Authentication routes for user registration and login.
 """
 from datetime import datetime
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Request
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 from app.schemas.auth import UserRegister, UserLogin, Token
 from app.schemas.user import UserResponse
-from app.models.user import User
+from app.models.user import User, UserRole
+from app.models.company import Company
 from app.core.security import verify_password, get_password_hash, create_access_token
 from app.core.logging import get_logger
+from app.core.rate_limiting import limiter, RATE_LIMIT_AUTH
 from app.api.dependencies import get_current_user
 
 logger = get_logger(__name__)
@@ -15,7 +19,8 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
-async def register(user_data: UserRegister):
+@limiter.limit(RATE_LIMIT_AUTH)
+async def register(request: Request, user_data: UserRegister):
     """
     Register a new user account.
     
@@ -39,6 +44,31 @@ async def register(user_data: UserRegister):
             detail="Email already registered. Please fix your email and try again"
         )
     
+    # Validate employer has company information
+    if user_data.role == UserRole.EMPLOYER:
+        if not user_data.company_name:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Company name is required for employer registration"
+            )
+    
+    # Create company for employer
+    company_id = None
+    if user_data.role == UserRole.EMPLOYER and user_data.company_name:
+        logger.info(f"Creating company for employer: {user_data.company_name}")
+        company = Company(
+            name=user_data.company_name,
+            description=user_data.company_description,
+            industry=user_data.company_industry,
+            size=user_data.company_size,
+            website=user_data.company_website,
+            headquarters=user_data.company_headquarters,
+            email=user_data.email,  # Use employer's email for company
+        )
+        await company.insert()
+        company_id = str(company.id)
+        logger.info(f"Company created successfully: {company.name} (ID: {company_id})")
+    
     # Create new user
     user = User(
         email=user_data.email,
@@ -48,6 +78,7 @@ async def register(user_data: UserRegister):
         role=user_data.role,
         phone=user_data.phone,
         location=user_data.location,
+        company_id=company_id,
     )
     
     await user.insert()
@@ -83,15 +114,19 @@ async def register(user_data: UserRegister):
         created_at=user.created_at,
     )
     
-    return {
-        "user": user_response,
-        "access_token": access_token,
-        "token_type": "bearer"
-    }
+    return JSONResponse(
+        status_code=status.HTTP_201_CREATED,
+        content=jsonable_encoder({
+            "user": user_response,
+            "access_token": access_token,
+            "token_type": "bearer"
+        })
+    )
 
 
 @router.post("/login")
-async def login(credentials: UserLogin):
+@limiter.limit(RATE_LIMIT_AUTH)
+async def login(request: Request, credentials: UserLogin):
     """
     Authenticate user and return JWT token and user data.
     
@@ -104,7 +139,9 @@ async def login(credentials: UserLogin):
     Raises:
         HTTPException: If credentials are invalid
     """
-    logger.info(f"Login attempt for email: {credentials.email}")
+    # Log rate limiting check (for debugging)
+    client_ip = request.client.host if request.client else "unknown"
+    logger.info(f"Login attempt for email: {credentials.email} from IP: {client_ip}")
     
     # Find user by email
     user = await User.find_one(User.email == credentials.email)
@@ -167,11 +204,14 @@ async def login(credentials: UserLogin):
     
     logger.info(f"User logged in successfully: {user.email}")
     
-    return {
-        "user": user_response,
-        "access_token": access_token,
-        "token_type": "bearer"
-    }
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content=jsonable_encoder({
+            "user": user_response,
+            "access_token": access_token,
+            "token_type": "bearer"
+        })
+    )
 
 
 @router.get("/me", response_model=UserResponse)

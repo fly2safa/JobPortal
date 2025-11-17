@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { PasswordInput } from '@/components/ui/PasswordInput';
 import { Card } from '@/components/ui/Card';
 import { useAuthStore } from '@/store/authStore';
 import apiClient from '@/lib/api';
@@ -32,45 +33,28 @@ export function LoginForm() {
     setError('');
 
     try {
-      // DEMO MODE: Bypass API call and use mock data
-      // Determine role based on email domain for demo
-      const role = data.email.includes('employer') || data.email.includes('company') ? 'employer' : 'job_seeker';
+      // Call the actual backend API
+      const response = await apiClient.login(data.email, data.password);
       
-      const mockUser = {
-        id: '1',
-        email: data.email,
-        full_name: 'Demo User',
-        role: role,
-        is_active: true,
-        created_at: new Date().toISOString(),
-        profile: role === 'job_seeker' ? {
-          bio: 'Experienced professional',
-          phone: '+1234567890',
-          location: 'New York, NY',
-          skills: ['JavaScript', 'React', 'TypeScript'],
-          experience: [],
-          education: [],
-        } : {
-          company_name: 'Demo Company',
-          company_description: 'A leading tech company',
-          website: 'https://example.com',
-          company_size: '50-100',
-          industry: 'Technology',
-        }
-      };
+      // Store authentication data
+      setAuth(response.user, response.access_token);
       
-      const mockToken = 'demo-token-' + Date.now();
-      
-      setAuth(mockUser, mockToken);
-      
-      // Redirect based on role
-      if (role === 'employer') {
+      // Redirect based on user role
+      if (response.user.role === 'employer') {
         router.push('/employer/dashboard');
       } else {
         router.push('/dashboard');
       }
     } catch (err: any) {
       console.error('Login error:', err);
+      
+      // Handle rate limit errors specifically
+      if (err.isRateLimit || err.response?.status === 429) {
+        const retryAfter = err.retryAfter || 60;
+        setError(`Too many login attempts. Please wait ${retryAfter} seconds before trying again.`);
+        return;
+      }
+      
       // FastAPI returns errors in 'detail' field, not 'error'
       if (err.response?.data?.detail) {
         setError(err.response.data.detail);
@@ -106,7 +90,8 @@ export function LoginForm() {
           transform: translateY(0);
         }
       `}} />
-      <Card className="w-full max-w-md login-form" style={{ fontFamily: 'Playfair Display, serif' }}>
+      <div style={{ fontFamily: 'Playfair Display, serif' }}>
+      <Card className="w-full max-w-md login-form">
         <div className="text-center mb-6" style={{ fontFamily: 'Playfair Display, serif' }}>
           <h2 className="text-3xl text-gray-900" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}>Welcome Back</h2>
           <p className="text-gray-600 mt-2" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}>Sign In To Your TalentNest Account</p>
@@ -137,9 +122,8 @@ export function LoginForm() {
         </div>
 
         <div style={{ fontFamily: 'Playfair Display, serif' }}>
-          <Input
+          <PasswordInput
             label="Password"
-            type="password"
             placeholder="••••••••"
             {...register('password', {
               required: 'Password is required',
@@ -187,6 +171,7 @@ export function LoginForm() {
         </p>
       </div>
     </Card>
+    </div>
     </>
   );
 }
