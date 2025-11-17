@@ -17,9 +17,11 @@ export default function EmployerDashboardPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [upcomingInterviewsCount, setUpcomingInterviewsCount] = useState(0);
 
   useEffect(() => {
     fetchJobs();
+    fetchUpcomingInterviews();
   }, []);
 
   const fetchJobs = async () => {
@@ -33,6 +35,21 @@ export default function EmployerDashboardPage() {
       setJobs([]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchUpcomingInterviews = async () => {
+    try {
+      const response = await apiClient.getInterviews({ employer: true });
+      const interviews = response.interviews || response || [];
+      // Count scheduled and rescheduled interviews
+      const upcoming = interviews.filter((interview: any) => 
+        interview.status === 'scheduled' || interview.status === 'rescheduled'
+      );
+      setUpcomingInterviewsCount(upcoming.length);
+    } catch (err) {
+      console.error('Failed to fetch interviews:', err);
+      setUpcomingInterviewsCount(0);
     }
   };
 
@@ -51,7 +68,7 @@ export default function EmployerDashboardPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card>
             <div className="flex items-center justify-between">
               <div>
@@ -75,7 +92,17 @@ export default function EmployerDashboardPage() {
               </div>
             </div>
           </Card>
-          {/* ...other stats (to review, interviews) can be similarly set up */}
+          <Card>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Upcoming Interviews</p>
+                <p className="text-3xl font-bold text-gray-900">{upcomingInterviewsCount}</p>
+              </div>
+              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                <Calendar className="text-purple-600" size={24} />
+              </div>
+            </div>
+          </Card>
         </div>
 
         {/* Quick Actions */}
@@ -133,7 +160,11 @@ export default function EmployerDashboardPage() {
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Link href={`/employer/jobs/${job.id}/applications`}><Button variant="outline" size="sm">View Applications</Button></Link>
+                      <Link href={`/employer/jobs/${job.id}/applications`}>
+                        <Button variant="outline" size="sm">
+                          View Applications ({job.application_count || 0})
+                        </Button>
+                      </Link>
                       <Link href={`/employer/jobs/${job.id}/edit`}><Button variant="ghost" size="sm">Edit</Button></Link>
                     </div>
                   </div>

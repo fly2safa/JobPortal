@@ -155,10 +155,12 @@ export function CandidateRecommendationCard({
         )}
 
         {/* Actions */}
-        <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-200">
+        <div className="flex flex-wrap gap-2 pt-2 border-gray-200">
           {resume && resume.file_url && (
             <a
-              href={resume.file_url}
+              href={resume.file_url.startsWith('http') 
+                ? resume.file_url 
+                : `http://localhost:8000${resume.file_url}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex"

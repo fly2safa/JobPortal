@@ -150,8 +150,8 @@ export default function JobApplicationsPage() {
   };
 
   const handleScheduleInterview = (applicationId: string) => {
-    // Navigate to interview scheduling or open modal
-    router.push(`/employer/interviews/new?applicationId=${applicationId}`);
+    // Navigate to interview scheduling with application and job ID
+    router.push(`/employer/interviews?schedule=true&applicationId=${applicationId}&jobId=${params.id}`);
   };
 
   const handleViewApplication = (applicationId: string) => {
@@ -393,7 +393,9 @@ export default function JobApplicationsPage() {
               <div>
                 <h3 className="font-semibold mb-2">Resume</h3>
                 <a
-                  href={selectedApplication.resume_url}
+                  href={selectedApplication.resume_url.startsWith('http') 
+                    ? selectedApplication.resume_url 
+                    : `http://localhost:8000${selectedApplication.resume_url}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block"

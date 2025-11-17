@@ -3,15 +3,17 @@ Main FastAPI application entry point.
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from pathlib import Path
 
 from app.core.config import settings
 from app.core.logging import setup_logging, get_logger
 from app.core.rate_limiting import limiter
 from app.db.init_db import connect_to_mongo, close_mongo_connection
-from app.api.v1.routes import auth, jobs, applications, users, resumes, assistant, interviews, recommendations, candidate_matching
+from app.api.v1.routes import auth, jobs, applications, users, resumes, assistant, interviews, recommendations, candidate_matching, companies
 
 # Setup logging from settings
 setup_logging(level=settings.LOG_LEVEL)
@@ -120,10 +122,16 @@ app.include_router(jobs.router, prefix="/api/v1")
 app.include_router(applications.router, prefix="/api/v1")
 app.include_router(users.router, prefix="/api/v1")
 app.include_router(resumes.router, prefix="/api/v1")
+app.include_router(companies.router, prefix="/api/v1")
 app.include_router(assistant.router, prefix="/api/v1")
 app.include_router(interviews.router, prefix="/api/v1")
 app.include_router(recommendations.router, prefix="/api/v1/recommendations", tags=["recommendations"])
 app.include_router(candidate_matching.router, prefix="/api/v1", tags=["candidate-matching"])
+
+# Mount static files for uploads
+UPLOADS_DIR = Path(__file__).parent.parent / "uploads"
+UPLOADS_DIR.mkdir(exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
 
 
 # Health check endpoints

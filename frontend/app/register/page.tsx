@@ -1,7 +1,13 @@
+'use client';
+
 import { RegisterForm } from '@/features/auth/RegisterForm';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
 export default function RegisterPage() {
+  const searchParams = useSearchParams();
+  const roleParam = searchParams.get('role') as 'job_seeker' | 'employer' | null;
+  
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{
       background: 'linear-gradient(135deg, #075299 0%, #5a9ab3 100%)'
@@ -24,7 +30,7 @@ export default function RegisterPage() {
         </Link>
 
         {/* Register Form */}
-        <RegisterForm />
+        <RegisterForm initialRole={roleParam || undefined} />
       </div>
     </div>
   );

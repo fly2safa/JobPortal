@@ -7,7 +7,8 @@ from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from app.schemas.auth import UserRegister, UserLogin, Token
 from app.schemas.user import UserResponse
-from app.models.user import User
+from app.models.user import User, UserRole
+from app.models.company import Company
 from app.core.security import verify_password, get_password_hash, create_access_token
 from app.core.logging import get_logger
 from app.core.rate_limiting import limiter, RATE_LIMIT_AUTH
@@ -43,6 +44,31 @@ async def register(request: Request, user_data: UserRegister):
             detail="Email already registered. Please fix your email and try again"
         )
     
+    # Validate employer has company information
+    if user_data.role == UserRole.EMPLOYER:
+        if not user_data.company_name:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Company name is required for employer registration"
+            )
+    
+    # Create company for employer
+    company_id = None
+    if user_data.role == UserRole.EMPLOYER and user_data.company_name:
+        logger.info(f"Creating company for employer: {user_data.company_name}")
+        company = Company(
+            name=user_data.company_name,
+            description=user_data.company_description,
+            industry=user_data.company_industry,
+            size=user_data.company_size,
+            website=user_data.company_website,
+            headquarters=user_data.company_headquarters,
+            email=user_data.email,  # Use employer's email for company
+        )
+        await company.insert()
+        company_id = str(company.id)
+        logger.info(f"Company created successfully: {company.name} (ID: {company_id})")
+    
     # Create new user
     user = User(
         email=user_data.email,
@@ -52,6 +78,7 @@ async def register(request: Request, user_data: UserRegister):
         role=user_data.role,
         phone=user_data.phone,
         location=user_data.location,
+        company_id=company_id,
     )
     
     await user.insert()

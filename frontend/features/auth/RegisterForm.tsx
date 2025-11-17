@@ -6,6 +6,8 @@ import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { PasswordInput } from '@/components/ui/PasswordInput';
+import { Textarea } from '@/components/ui/Textarea';
+import { Select } from '@/components/ui/Select';
 import { Card } from '@/components/ui/Card';
 import { useAuthStore } from '@/store/authStore';
 import apiClient from '@/lib/api';
@@ -18,13 +20,25 @@ interface RegisterFormData {
   password: string;
   confirmPassword: string;
   role: 'job_seeker' | 'employer';
+  // Company fields for employers
+  company_name?: string;
+  company_description?: string;
+  company_industry?: string;
+  company_size?: string;
+  company_website?: string;
+  company_headquarters?: string;
 }
 
-export function RegisterForm() {
+interface RegisterFormProps {
+  initialRole?: 'job_seeker' | 'employer';
+}
+
+export function RegisterForm({ initialRole }: RegisterFormProps) {
   const router = useRouter();
   const { setAuth } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
@@ -33,11 +47,12 @@ export function RegisterForm() {
     formState: { errors },
   } = useForm<RegisterFormData>({
     defaultValues: {
-      role: 'job_seeker',
+      role: initialRole || 'job_seeker',
     },
   });
 
   const password = watch('password');
+  const selectedRole = watch('role');
 
   const onSubmit = async (data: RegisterFormData) => {
     setIsLoading(true);
@@ -51,6 +66,12 @@ export function RegisterForm() {
         first_name: data.first_name,
         last_name: data.last_name,
         role: data.role,
+        company_name: data.company_name,
+        company_description: data.company_description,
+        company_industry: data.company_industry,
+        company_size: data.company_size,
+        company_website: data.company_website,
+        company_headquarters: data.company_headquarters,
       });
       
       // Store authentication data
@@ -197,6 +218,8 @@ export function RegisterForm() {
             })}
             error={errors.password?.message}
             style={{ fontFamily: 'Playfair Display, serif' }}
+            showPassword={showPassword}
+            onToggleVisibility={() => setShowPassword(!showPassword)}
           />
         </div>
 
@@ -210,6 +233,8 @@ export function RegisterForm() {
             })}
             error={errors.confirmPassword?.message}
             style={{ fontFamily: 'Playfair Display, serif' }}
+            showPassword={showPassword}
+            onToggleVisibility={() => setShowPassword(!showPassword)}
           />
         </div>
 
@@ -272,6 +297,100 @@ export function RegisterForm() {
             </label>
           </div>
         </div>
+
+        {/* Company Fields for Employers */}
+        {selectedRole === 'employer' && (
+          <div className="space-y-4 border-t pt-4 mt-4" style={{ fontFamily: 'Playfair Display, serif' }}>
+            <h3 className="text-lg font-semibold text-gray-900" style={{ fontFamily: 'Playfair Display, serif' }}>
+              Company Information
+            </h3>
+
+            <div style={{ fontFamily: 'Playfair Display, serif' }}>
+              <Input
+                label="Company Name"
+                type="text"
+                placeholder="Acme Corporation"
+                {...register('company_name', {
+                  required: selectedRole === 'employer' ? 'Company name is required' : false,
+                  minLength: {
+                    value: 2,
+                    message: 'Company name must be at least 2 characters',
+                  },
+                })}
+                error={errors.company_name?.message}
+                style={{ fontFamily: 'Playfair Display, serif' }}
+              />
+              {selectedRole === 'employer' && (
+                <span className="text-red-500 text-xs" style={{ fontFamily: 'Playfair Display, serif' }}>*</span>
+              )}
+            </div>
+
+            <div style={{ fontFamily: 'Playfair Display, serif' }}>
+              <Textarea
+                label="Company Description"
+                placeholder="Brief description of your company..."
+                rows={3}
+                {...register('company_description')}
+                error={errors.company_description?.message}
+                style={{ fontFamily: 'Playfair Display, serif' }}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div style={{ fontFamily: 'Playfair Display, serif' }}>
+                <Input
+                  label="Industry"
+                  type="text"
+                  placeholder="Technology, Healthcare, etc."
+                  {...register('company_industry')}
+                  error={errors.company_industry?.message}
+                  style={{ fontFamily: 'Playfair Display, serif' }}
+                />
+              </div>
+
+              <div style={{ fontFamily: 'Playfair Display, serif' }}>
+                <Select
+                  label="Company Size"
+                  options={[
+                    { value: '', label: 'Select company size' },
+                    { value: '1-10', label: '1-10 employees' },
+                    { value: '11-50', label: '11-50 employees' },
+                    { value: '51-200', label: '51-200 employees' },
+                    { value: '201-500', label: '201-500 employees' },
+                    { value: '500+', label: '500+ employees' },
+                  ]}
+                  {...register('company_size')}
+                  error={errors.company_size?.message}
+                  style={{ fontFamily: 'Playfair Display, serif' }}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div style={{ fontFamily: 'Playfair Display, serif' }}>
+                <Input
+                  label="Company Website"
+                  type="text"
+                  placeholder="www.example.com or https://www.example.com"
+                  {...register('company_website')}
+                  error={errors.company_website?.message}
+                  style={{ fontFamily: 'Playfair Display, serif' }}
+                />
+              </div>
+
+              <div style={{ fontFamily: 'Playfair Display, serif' }}>
+                <Input
+                  label="Headquarters Location"
+                  type="text"
+                  placeholder="San Francisco, CA"
+                  {...register('company_headquarters')}
+                  error={errors.company_headquarters?.message}
+                  style={{ fontFamily: 'Playfair Display, serif' }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         <button 
           type="submit" 
