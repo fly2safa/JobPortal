@@ -38,9 +38,27 @@ export default function RecommendationsPage() {
     experience: '',
   });
 
+  const [availableLocations, setAvailableLocations] = useState<string[]>([]);
+
   useEffect(() => {
     fetchRecommendations();
   }, []);
+
+  useEffect(() => {
+    // Extract unique locations from recommendations
+    if (recommendations.length > 0) {
+      const locations = new Set<string>();
+      recommendations.forEach(rec => {
+        if (rec.job?.location) {
+          locations.add(rec.job.location);
+        }
+        if (rec.job?.is_remote) {
+          locations.add('Remote');
+        }
+      });
+      setAvailableLocations(Array.from(locations).sort());
+    }
+  }, [recommendations]);
 
   const fetchRecommendations = async () => {
     setIsLoading(true);
@@ -206,15 +224,13 @@ export default function RecommendationsPage() {
 
     // Filter by location
     if (filters.location) {
-      if (filters.location === 'remote') {
+      if (filters.location === 'Remote') {
         if (!job.is_remote) {
           return false;
         }
       } else {
-        // Check if location contains the filter value (case-insensitive)
-        const jobLocation = job.location.toLowerCase();
-        const filterLocation = filters.location.toLowerCase();
-        if (!jobLocation.includes(filterLocation)) {
+        // Exact match for location (case-insensitive)
+        if (job.location.toLowerCase() !== filters.location.toLowerCase()) {
           return false;
         }
       }
@@ -311,11 +327,12 @@ export default function RecommendationsPage() {
                   value={filters.location}
                   onChange={(e) => setFilters(prev => ({ ...prev, location: e.target.value }))}
                 >
-                  <option value="">Work location</option>
-                  <option value="remote">Remote</option>
-                  <option value="san-francisco">San Francisco, CA</option>
-                  <option value="new-york">New York, NY</option>
-                  <option value="austin">Austin, TX</option>
+                  <option value="">All locations</option>
+                  {availableLocations.map(location => (
+                    <option key={location} value={location}>
+                      {location}
+                    </option>
+                  ))}
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
               </div>
@@ -425,7 +442,7 @@ export default function RecommendationsPage() {
                       { value: 'full-time', label: 'Full time' },
                       { value: 'part-time', label: 'Part time' },
                       { value: 'internship', label: 'Internship' },
-                      { value: 'project-work', label: 'Project work' },
+                      { value: 'contract', label: 'Contract' },
                       { value: 'volunteering', label: 'Volunteering' },
                     ].map(option => (
                       <label key={option.value} className="flex items-center cursor-pointer group">
@@ -485,7 +502,7 @@ export default function RecommendationsPage() {
                       { value: 'full-time', label: 'Full time' },
                       { value: 'part-time', label: 'Part time' },
                       { value: 'internship', label: 'Internship' },
-                      { value: 'project-work', label: 'Project work' },
+                      { value: 'contract', label: 'Contract' },
                       { value: 'volunteering', label: 'Volunteering' },
                     ].map(option => (
                       <label key={option.value} className="flex items-center cursor-pointer group">

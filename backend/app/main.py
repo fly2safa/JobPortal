@@ -3,9 +3,11 @@ Main FastAPI application entry point.
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from pathlib import Path
 
 from app.core.config import settings
 from app.core.logging import setup_logging, get_logger
@@ -125,6 +127,11 @@ app.include_router(assistant.router, prefix="/api/v1")
 app.include_router(interviews.router, prefix="/api/v1")
 app.include_router(recommendations.router, prefix="/api/v1/recommendations", tags=["recommendations"])
 app.include_router(candidate_matching.router, prefix="/api/v1", tags=["candidate-matching"])
+
+# Mount static files for uploads
+UPLOADS_DIR = Path(__file__).parent.parent / "uploads"
+UPLOADS_DIR.mkdir(exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
 
 
 # Health check endpoints

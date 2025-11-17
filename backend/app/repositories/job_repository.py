@@ -62,9 +62,14 @@ class JobRepository:
                 )
             )
         
-        # Location filter
+        # Location filter - match as whole words or phrases with word boundaries
         if location:
-            filters.append(RegEx(Job.location, location, "i"))
+            # Escape special regex characters and add word boundaries
+            import re
+            location_escaped = re.escape(location)
+            # Match location as a word or phrase (case-insensitive)
+            location_pattern = f"\\b{location_escaped}"
+            filters.append(RegEx(Job.location, location_pattern, "i"))
         
         # Skills filter (any of the provided skills should match)
         if skills:

@@ -82,7 +82,9 @@ export function CandidateCard({
             {application.resume_url && (
               <div className="mb-3">
                 <a
-                  href={application.resume_url}
+                  href={application.resume_url.startsWith('http') 
+                    ? application.resume_url 
+                    : `http://localhost:8000${application.resume_url}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm text-primary hover:underline flex items-center"

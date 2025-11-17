@@ -159,20 +159,49 @@ export function ApplyModal({
     setError('');
 
     try {
+      console.log('Submitting application:', {
+        job_id: jobId,
+        resume_url: data.resume_url,
+        cover_letter_length: data.cover_letter?.length || 0,
+      });
+      
       await apiClient.applyToJob({
         job_id: jobId,
         resume_url: data.resume_url,
         cover_letter: data.cover_letter,
       });
+      
+      console.log('Application submitted successfully');
       onSuccess();
       onClose();
     } catch (err: any) {
+      console.error('Application submission error:', err);
+      console.error('Error response:', err.response);
+      console.error('Error response data:', err.response?.data);
+      
       // Handle rate limit errors specifically
       if (err.isRateLimit || err.response?.status === 429) {
         const retryAfter = err.retryAfter || 60;
         setError(`Too many applications submitted. Please wait ${retryAfter} seconds before applying to another job.`);
       } else {
-        setError(err.response?.data?.error || err.response?.data?.detail || 'Failed to submit application. Please try again.');
+        // Handle validation errors (array of error objects)
+        const errorDetail = err.response?.data?.detail;
+        if (Array.isArray(errorDetail)) {
+          // Extract error messages from validation error array with field names
+          const errorMessages = errorDetail.map((e: any) => {
+            const field = e.loc ? e.loc[e.loc.length - 1] : 'unknown';
+            const msg = e.msg || JSON.stringify(e);
+            return `${field}: ${msg}`;
+          }).join('; ');
+          setError(`Validation error: ${errorMessages}`);
+          console.error('Validation errors:', errorDetail);
+        } else if (typeof errorDetail === 'object' && errorDetail !== null) {
+          // If detail is an object, try to extract meaningful message
+          setError(errorDetail.msg || JSON.stringify(errorDetail));
+        } else {
+          // String error or fallback
+          setError(errorDetail || err.response?.data?.error || 'Failed to submit application. Please try again.');
+        }
       }
     } finally {
       setIsSubmitting(false);

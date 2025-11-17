@@ -2,7 +2,7 @@
 Application routes for job applications.
 """
 from typing import Optional
-from fastapi import APIRouter, HTTPException, status, Depends, Query, Request
+from fastapi import APIRouter, HTTPException, status, Depends, Query, Request, Response
 from app.schemas.application import (
     ApplicationCreate,
     ApplicationResponse,
@@ -28,6 +28,7 @@ router = APIRouter(prefix="/applications", tags=["Applications"])
 @limiter.limit(RATE_LIMIT_APPLICATION)
 async def apply_to_job(
     request: Request,
+    response: Response,
     application_data: ApplicationCreate,
     current_user: User = Depends(get_current_job_seeker)
 ):
