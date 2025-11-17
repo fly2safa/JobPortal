@@ -8,6 +8,7 @@ import { useAuthStore } from '@/store/authStore';
 import { User, LogOut, Home, FileText, MessageSquare, Calendar } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import apiClient from '@/lib/api';
+import ThemeToggle from '@/components/ui/ThemeToggle';
 
 export function Navbar() {
   const pathname = usePathname();
@@ -89,6 +90,7 @@ export function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-4">
+            <ThemeToggle />
             <Link
               href="/"
               className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -189,6 +191,7 @@ export function Navbar() {
 
           {/* Mobile menu button */}
           <div className="md:hidden flex items-center space-x-2">
+            <ThemeToggle />
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary-400 p-2"
