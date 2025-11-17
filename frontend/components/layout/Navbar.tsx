@@ -6,13 +6,50 @@ import { Button } from '@/components/ui/Button';
 import Image from 'next/image';
 import { useAuthStore } from '@/store/authStore';
 import { User, LogOut, Home, FileText, MessageSquare, Calendar } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import apiClient from '@/lib/api';
 
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { isAuthenticated, user, logout } = useAuthStore();
+  const { isAuthenticated, user, logout, _hasHydrated, updateUser } = useAuthStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const hasRefreshedUser = useRef(false);
+
+  // Refresh user data if first_name or last_name is missing (only once after hydration)
+  useEffect(() => {
+    const refreshUserData = async () => {
+      if (_hasHydrated && isAuthenticated && user && (!user.first_name || !user.last_name) && !hasRefreshedUser.current) {
+        hasRefreshedUser.current = true;
+        try {
+          const freshUserData = await apiClient.getCurrentUser();
+          updateUser(freshUserData);
+        } catch (error) {
+          console.error('Failed to refresh user data:', error);
+        }
+      }
+    };
+
+    refreshUserData();
+  }, [_hasHydrated, isAuthenticated, user, updateUser]);
+
+  // Get display name for user
+  const getUserDisplayName = () => {
+    if (!user) return 'User';
+    
+    // Try first_name and last_name
+    if (user.first_name && user.last_name) {
+      return `${user.first_name} ${user.last_name}`;
+    }
+    
+    // Try just first_name
+    if (user.first_name) {
+      return user.first_name;
+    }
+    
+    // Fall back to email
+    return user.email || 'User';
+  };
 
   const handleLogout = () => {
     logout();
@@ -22,7 +59,7 @@ export function Navbar() {
   const isActive = (path: string) => pathname === path;
 
   return (
-    <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+    <nav className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-800 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           {/* Logo */}
@@ -45,7 +82,7 @@ export function Navbar() {
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text'
                 }}>TALENT</span>
-                <span style={{ fontFamily: 'Dancing Script, cursive', fontWeight: 700 }} className="text-primary">Nest</span>
+                <span style={{ fontFamily: 'Dancing Script, cursive', fontWeight: 700 }} className="text-primary dark:text-primary-400">Nest</span>
               </span>
             </Link>
           </div>
@@ -53,11 +90,21 @@ export function Navbar() {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-4">
             <Link
+              href="/"
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                isActive('/')
+                  ? 'text-primary bg-primary-50 dark:text-primary-400 dark:bg-primary-900/20'
+                  : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+              }`}
+            >
+              Home
+            </Link>
+            <Link
               href="/jobs"
               className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                 isActive('/jobs')
-                  ? 'text-primary bg-primary-50'
-                  : 'text-gray-700 hover:text-primary hover:bg-gray-50'
+                  ? 'text-primary bg-primary-50 dark:text-primary-400 dark:bg-primary-900/20'
+                  : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-800'
               }`}
             >
               Find Jobs
@@ -71,8 +118,8 @@ export function Navbar() {
                       href="/dashboard"
                       className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                         isActive('/dashboard')
-                          ? 'text-primary bg-primary-50'
-                          : 'text-gray-700 hover:text-primary hover:bg-gray-50'
+                          ? 'text-primary bg-primary-50 dark:text-primary-400 dark:bg-primary-900/20'
+                          : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-800'
                       }`}
                     >
                       Dashboard
@@ -81,8 +128,8 @@ export function Navbar() {
                       href="/dashboard/applications"
                       className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                         isActive('/dashboard/applications')
-                          ? 'text-primary bg-primary-50'
-                          : 'text-gray-700 hover:text-primary hover:bg-gray-50'
+                          ? 'text-primary bg-primary-50 dark:text-primary-400 dark:bg-primary-900/20'
+                          : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-800'
                       }`}
                     >
                       My Applications
@@ -92,20 +139,21 @@ export function Navbar() {
                   <>
                     <Link
                       href="/employer/dashboard"
-                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center ${
                         isActive('/employer/dashboard')
-                          ? 'text-primary bg-primary-50'
-                          : 'text-gray-700 hover:text-primary hover:bg-gray-50'
+                          ? 'text-primary bg-primary-50 dark:text-primary-400 dark:bg-primary-900/20'
+                          : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-800'
                       }`}
                     >
-                      Dashboard
+                      <Home size={16} className="mr-1.5" />
+                      Employer Dashboard
                     </Link>
                     <Link
                       href="/employer/jobs"
                       className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                         isActive('/employer/jobs')
-                          ? 'text-primary bg-primary-50'
-                          : 'text-gray-700 hover:text-primary hover:bg-gray-50'
+                          ? 'text-primary bg-primary-50 dark:text-primary-400 dark:bg-primary-900/20'
+                          : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-800'
                       }`}
                     >
                       My Jobs
@@ -113,11 +161,9 @@ export function Navbar() {
                   </>
                 )}
                 
-                <div className="flex items-center space-x-2 border-l pl-4 ml-2">
-                  <span className="text-sm text-gray-700">
-                    {user?.first_name && user?.last_name 
-                      ? `${user.first_name} ${user.last_name}`
-                      : user?.email || 'User'}
+                <div className="flex items-center space-x-2 border-l dark:border-gray-700 pl-4 ml-2">
+                  <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">
+                    {getUserDisplayName()}
                   </span>
                   <Button variant="ghost" size="sm" onClick={handleLogout}>
                     <LogOut size={16} className="mr-1" />
@@ -142,10 +188,10 @@ export function Navbar() {
           </div>
 
           {/* Mobile menu button */}
-          <div className="md:hidden flex items-center">
+          <div className="md:hidden flex items-center space-x-2">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="text-gray-700 hover:text-primary p-2"
+              className="text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary-400 p-2"
             >
               <svg
                 className="h-6 w-6"
@@ -169,25 +215,35 @@ export function Navbar() {
 
       {/* Mobile menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-gray-200">
+        <div className="md:hidden border-t border-gray-200 dark:border-gray-800">
           <div className="px-2 pt-2 pb-3 space-y-1">
             <Link
+              href="/"
+              className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-800"
+            >
+              Home
+            </Link>
+            <Link
               href="/jobs"
-              className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-gray-50"
+              className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-800"
             >
               Find Jobs
             </Link>
             {isAuthenticated ? (
               <>
+                <div className="px-3 py-2 text-sm font-medium text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700">
+                  {getUserDisplayName()}
+                </div>
                 <Link
                   href={user?.role === 'job_seeker' ? '/dashboard' : '/employer/dashboard'}
-                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-gray-50"
+                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center"
                 >
-                  Dashboard
+                  <Home size={16} className="mr-2" />
+                  {user?.role === 'job_seeker' ? 'Dashboard' : 'Employer Dashboard'}
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-gray-50"
+                  className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
                   Logout
                 </button>
@@ -196,13 +252,13 @@ export function Navbar() {
               <>
                 <Link
                   href="/login"
-                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-gray-50"
+                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
                   Login
                 </Link>
                 <Link
                   href="/register"
-                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-gray-50"
+                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
                   Sign Up
                 </Link>
