@@ -1,0 +1,9 @@
+# Testing Tool Dependencies
+# Install with: pip install -r requirements.txt
+
+# HTTP requests for API communication
+requests>=2.32.0
+
+# Note: tkinter is included with Python standard library (no installation needed)
+# The test_tracker.py uses tkinter for the GUI interface
+
