@@ -8,14 +8,23 @@ interface PasswordInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>,
   label?: string;
   error?: string;
   helperText?: string;
+  showPassword?: boolean;
+  onToggleVisibility?: () => void;
 }
 
 export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
-  ({ label, error, helperText, className, style, ...props }, ref) => {
-    const [showPassword, setShowPassword] = useState(false);
+  ({ label, error, helperText, className, style, showPassword: externalShowPassword, onToggleVisibility, ...props }, ref) => {
+    const [internalShowPassword, setInternalShowPassword] = useState(false);
 
+    // Use external state if provided, otherwise use internal state
+    const showPassword = externalShowPassword !== undefined ? externalShowPassword : internalShowPassword;
+    
     const togglePasswordVisibility = () => {
-      setShowPassword((prev) => !prev);
+      if (onToggleVisibility) {
+        onToggleVisibility();
+      } else {
+        setInternalShowPassword((prev) => !prev);
+      }
     };
 
     return (

@@ -236,6 +236,9 @@ async def generate_cover_letter(
     
     try:
         # Build prompt for cover letter generation
+        from datetime import datetime
+        today_date = datetime.now().strftime("%B %d, %Y")
+        
         prompt = f"""Generate a professional cover letter for the following job application:
 
 Job Title: {cover_letter_request.job_title}
@@ -255,6 +258,17 @@ Instructions:
 - Use a professional but friendly tone
 - Include proper greeting and closing
 - Make it personalized to this specific job
+
+IMPORTANT - Header Format:
+Use this EXACT header format at the top (nothing else):
+
+{today_date}
+
+Hiring Manager
+{cover_letter_request.company_name}
+
+Then start with "Dear Hiring Manager," and continue with the cover letter body.
+DO NOT include applicant's address, phone, email, or company address in the header.
 
 Generate the cover letter now:"""
 

@@ -65,7 +65,19 @@ class ApiClient {
     return response.data;
   }
 
-  async register(data: { email: string; password: string; first_name: string; last_name: string; role: string }) {
+  async register(data: { 
+    email: string; 
+    password: string; 
+    first_name: string; 
+    last_name: string; 
+    role: string;
+    company_name?: string;
+    company_description?: string;
+    company_industry?: string;
+    company_size?: string;
+    company_website?: string;
+    company_headquarters?: string;
+  }) {
     const response = await this.client.post('/auth/register', data);
     return response.data;
   }

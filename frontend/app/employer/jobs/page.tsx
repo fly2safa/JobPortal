@@ -104,11 +104,11 @@ export default function EmployerJobsPage() {
                       </div>
                       <div>
                         <p className="text-sm text-gray-500">Applications</p>
-                        <p className="font-medium text-gray-900">24</p>
+                        <p className="font-medium text-gray-900">{job.application_count || 0}</p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-500">Views</p>
-                        <p className="font-medium text-gray-900">342</p>
+                        <p className="font-medium text-gray-900">{job.view_count || 0}</p>
                       </div>
                     </div>
 
@@ -124,7 +124,7 @@ export default function EmployerJobsPage() {
                       <Link href={`/employer/jobs/${job.id}/applications`}>
                         <Button variant="primary" size="sm">
                           <Users size={14} className="mr-1" />
-                          View Applications (24)
+                          View Applications ({job.application_count || 0})
                         </Button>
                       </Link>
                       <Link href={`/jobs/${job.id}`} target="_blank">

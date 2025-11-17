@@ -11,7 +11,7 @@ from app.core.config import settings
 from app.core.logging import setup_logging, get_logger
 from app.core.rate_limiting import limiter
 from app.db.init_db import connect_to_mongo, close_mongo_connection
-from app.api.v1.routes import auth, jobs, applications, users, resumes, assistant, interviews, recommendations, candidate_matching
+from app.api.v1.routes import auth, jobs, applications, users, resumes, assistant, interviews, recommendations, candidate_matching, companies
 
 # Setup logging from settings
 setup_logging(level=settings.LOG_LEVEL)
@@ -120,6 +120,7 @@ app.include_router(jobs.router, prefix="/api/v1")
 app.include_router(applications.router, prefix="/api/v1")
 app.include_router(users.router, prefix="/api/v1")
 app.include_router(resumes.router, prefix="/api/v1")
+app.include_router(companies.router, prefix="/api/v1")
 app.include_router(assistant.router, prefix="/api/v1")
 app.include_router(interviews.router, prefix="/api/v1")
 app.include_router(recommendations.router, prefix="/api/v1/recommendations", tags=["recommendations"])

@@ -156,12 +156,12 @@ export default function DashboardPage() {
                 recentApplications.map((app) => (
                   <div key={app.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                     <div>
-                      <h4 className="font-semibold text-gray-900">{app.job?.title || 'Unknown Position'}</h4>
+                      <h4 className="font-semibold text-gray-900">{app.job_title || 'Unknown Position'}</h4>
                       <p className="text-sm text-gray-600">
-                        {app.job?.company?.name || 'Unknown Company'} • {app.job?.location || 'Location N/A'}
+                        {app.company_name || 'Unknown Company'}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
-                        Applied {new Date(app.created_at).toLocaleDateString()}
+                        Applied {new Date(app.applied_date || app.created_at).toLocaleDateString()}
                       </p>
                     </div>
                     <div className="text-right">
