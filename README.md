@@ -604,7 +604,7 @@ Think of the frontend as a **restaurant experience**:
 The following ERD shows the MongoDB collections and their relationships in the TalentNest Job Portal:
 
 ```mermaid
-%%{init: {'theme':'default', 'themeVariables': { 'lineColor':'#333333'}}}%%
+%%{init: {'theme':'default', 'themeVariables': { 'lineColor':'#000000', 'primaryBorderColor':'#000000', 'tertiaryColor':'#ffffff'}}}%%
 erDiagram
     User ||--o{ Resume : "has"
     User ||--o{ Application : "submits"
