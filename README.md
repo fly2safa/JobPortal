@@ -1,12 +1,34 @@
 # TalentNest Job Portal
 
-A modern, AI-powered job portal connecting job seekers with employers. Built with FastAPI, Next.js 14, MongoDB, and OpenAI GPT-4o.
+A production-ready, AI-powered job portal connecting job seekers with employers. Built with **FastAPI**, **Next.js 14**, **MongoDB Atlas**, **ChromaDB**, **LangChain**, and **OpenAI GPT-4o** (with Anthropic Claude fallback). Fully containerized with **Docker** and **docker-compose**. Features include AI-powered job recommendations, intelligent candidate matching, RAG-based career assistant, resume parsing, interview scheduling, rate limiting, dark mode, and n8n workflow automation.
+
+---
+
+## 👥 Development Team
+
+**Course:** AI Vibe Coding  |  Fall 2025  
+**Offered by:** Arizona State University (https://www.asu.edu)  
+**Taught through:** Revature (https://www.revature.com)
+
+**Project:** Greenfield  |  Job Portal  
+**Timeline:** 2 Weeks | Team: 5 Developers  
+**Branch Strategy (GitHub):** Feature branches → dev → main  
+**Company/Product name chosen by Contributors:** <span style="color: #075299; font-weight: bold; font-size: 1.1em;">TalentNest</span>
+
+**Project Contributors (Alphabetical Order):**
+- Darimar C.
+- Erica H.
+- Jason M.
+- Keith S.
+- Safa M.
+
+---
 
 ## 📊 Project Status
 
 **Current Phase:** ✅ **ALL PHASES COMPLETE - PRODUCTION READY** 🚀
 
-**Version:** 1.0.0 | **Status:** Production Ready | **Completion:** 100%
+**Version:** 2.0.0 | **Status:** Production Ready | **Completion:** 100%
 
 ### ✅ All Features Implemented
 
@@ -43,7 +65,7 @@ A modern, AI-powered job portal connecting job seekers with employers. Built wit
 - ✅ **Dark mode** - Full theme system with system preference detection
 - ✅ **Responsive design** - Mobile-first with Tailwind CSS
 - ✅ **Rate limiting** - Configurable protection on all critical endpoints
-- ✅ **Comprehensive testing** - Manual tests, GUI testing tool, test documentation
+- ✅ **Comprehensive testing** - Manual tests with GUI testing tracker tool (`test_tracker.py`)
 - ✅ **Architecture diagrams** - ERD, System Architecture, Frontend Architecture, Flow diagrams (Mermaid)
 - ✅ **Production optimization** - Docker multi-stage builds, health checks, logging
 - ✅ **Error handling** - Comprehensive validation and user-friendly error messages
@@ -55,7 +77,7 @@ A modern, AI-powered job portal connecting job seekers with employers. Built wit
 - ✅ **Colored Console Output** - Enhanced developer experience with visual feedback
 - ✅ **Password Visibility Toggle** - Enhanced security UX with eye icon
 - ✅ **Enhanced Navigation** - Clear "Employer Dashboard" labeling
-- ✅ **GUI Testing Tool** - MongoDB-integrated testing tracker for team collaboration
+- ✅ **Independent GUI Testing Tool** - Standalone `test_tracker.py` application for manual test tracking with progress saving, team collaboration, and comprehensive test coverage
 - ✅ **Database Seeding Tools** - Comprehensive content generation for testing
 - ✅ **Configurable Server Settings** - HOST and PORT environment variables
 - ✅ **ChromaDB Vector Store** - Semantic search with text-embedding-3-small
@@ -76,9 +98,10 @@ graph LR
     Client[👤 Web Browser]
     
     %% Frontend Layer
-    Frontend["⚛️ Next.js 14 Frontend<br/>- App Router<br/>- TypeScript<br/>- Tailwind CSS"]
+    Frontend["⚛️ Next.js 14 Frontend<br/>- App Router<br/>- TypeScript<br/>- Tailwind CSS<br/>- Dark Mode"]
     
-    %% API Gateway
+    %% API Gateway with Rate Limiting
+    RateLimit["⚡ Rate Limiter<br/>slowapi<br/>Configurable Limits"]
     API["🚀 FastAPI Backend<br/>- REST API<br/>- JWT Auth<br/>- Async/Await"]
     
     %% Service Layer
@@ -88,20 +111,26 @@ graph LR
     ResumeSvc["📄 Resume Service<br/>AI Parsing"]
     EmailSvc["📧 Email Service<br/>SMTP"]
     
-    %% AI Layer
-    AISvc["🤖 AI Services<br/>- Cover Letters<br/>- Recommendations<br/>- RAG Assistant"]
+    %% AI Layer with Provider Abstraction
+    AIProvider["🤖 AI Provider Layer<br/>- Provider Factory<br/>- Auto Fallback"]
+    AISvc["🎯 AI Services<br/>- Cover Letters<br/>- Recommendations<br/>- RAG Assistant<br/>- ChromaDB Vector Store<br/>- LangChain Chains"]
     
     %% Data Layer
     DB[("🗄️ MongoDB Atlas<br/>- Users<br/>- Jobs<br/>- Applications<br/>- Resumes")]
+    VectorDB[("🔍 ChromaDB<br/>- Job Embeddings<br/>- Profile Embeddings")]
     
     %% External Services
-    OpenAI["🧠 OpenAI GPT-4o"]
+    OpenAI["🧠 OpenAI GPT-4o<br/>Primary Provider"]
+    Anthropic["🤖 Anthropic Claude<br/>Fallback Provider"]
     SMTP["📮 SMTP Server"]
     Storage["💾 File Storage"]
+    n8n["🔗 n8n Workflows<br/>Optional Automation"]
     
-    %% Main Flow
+    %% Main Flow with Rate Limiting
     Client ==>|"HTTP Requests"| Frontend
-    Frontend ==>|"REST API + JWT"| API
+    Frontend ==>|"REST API + JWT"| RateLimit
+    RateLimit ==>|"Rate Check Pass"| API
+    RateLimit -.->|"429 Too Many Requests"| Frontend
     
     %% API to Services
     API ==> AuthSvc
@@ -116,12 +145,18 @@ graph LR
     AppSvc ==> DB
     ResumeSvc ==> DB
     
-    %% Services to AI
+    %% Services to AI with Provider Layer
     ResumeSvc ==> AISvc
     JobSvc ==> AISvc
+    AISvc ==> AIProvider
+    AISvc ==> VectorDB
     
-    %% AI to External
-    AISvc ==> OpenAI
+    %% AI Provider Fallback Logic
+    AIProvider ==>|"Primary"| OpenAI
+    AIProvider -.->|"Fallback on Error"| Anthropic
+    
+    %% Optional n8n Integration
+    AISvc -.->|"Optional"| n8n
     
     %% Email Flow
     AppSvc -.->|"Async Trigger"| EmailSvc
@@ -133,20 +168,22 @@ graph LR
     %% Styling
     classDef frontend fill:#61dafb,stroke:#333,stroke-width:3px,color:#000
     classDef backend fill:#009688,stroke:#333,stroke-width:3px,color:#fff
+    classDef ratelimit fill:#f44336,stroke:#333,stroke-width:3px,color:#fff
     classDef service fill:#4caf50,stroke:#333,stroke-width:3px,color:#fff
     classDef ai fill:#ff9800,stroke:#333,stroke-width:3px,color:#fff
     classDef data fill:#2196f3,stroke:#333,stroke-width:3px,color:#fff
     classDef external fill:#9c27b0,stroke:#333,stroke-width:3px,color:#fff
     
     class Client,Frontend frontend
+    class RateLimit ratelimit
     class API backend
     class AuthSvc,JobSvc,AppSvc,ResumeSvc,EmailSvc service
-    class AISvc ai
-    class DB data
-    class OpenAI,SMTP,Storage external
+    class AISvc,AIProvider ai
+    class DB,VectorDB data
+    class OpenAI,Anthropic,SMTP,Storage,n8n external
     
     %% Link styling for better visibility
-    linkStyle default stroke:#333,stroke-width:3px
+    linkStyle default stroke:#666,stroke-width:2px
 ```
 
 **Simplified Architecture Overview:**
@@ -167,112 +204,177 @@ For a more detailed view, here's the complete architecture broken down by layers
 %%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#ffffff','primaryTextColor':'#000000','primaryBorderColor':'#000000','lineColor':'#333333','secondaryColor':'#f4f4f4','tertiaryColor':'#ffffff','clusterBkg':'#f9f9f9','clusterBorder':'#333333','titleColor':'#000000','edgeLabelBackground':'#ffffff'}}}%%
 graph TB
     subgraph Client["<b>👥 CLIENT LAYER</b>"]
-        Browser["Web Browser"]
-        Mobile["Mobile Browser"]
+        Browser["🌐 Web Browser<br/>Desktop"]
+        Mobile["📱 Mobile Browser<br/>Responsive"]
     end
     
     subgraph Frontend["<b>⚛️ FRONTEND LAYER - Next.js 14</b>"]
         Pages["📄 Pages<br/>Public & Protected Routes"]
-        Components["🧩 Components<br/>UI & Features"]
-        Store["💾 State Management<br/>Zustand"]
-        APIClient["🔌 API Client<br/>Axios + JWT"]
+        Components["🧩 Components<br/>UI & Features<br/>Dark Mode Support"]
+        Store["💾 State Management<br/>Zustand<br/>Auth & User State"]
+        APIClient["🔌 API Client<br/>Axios + JWT<br/>429 Error Handling"]
+    end
+    
+    subgraph Security["<b>🛡️ SECURITY & RATE LIMITING</b>"]
+        RateLimit["⚡ Rate Limiter<br/>slowapi<br/>Auth: 5/min<br/>Jobs: 10/min<br/>Apps: 20/min<br/>AI: 30/min"]
+        JWT["🔐 JWT Auth<br/>Token Validation<br/>Role-Based Access"]
     end
     
     subgraph Backend["<b>🚀 BACKEND LAYER - FastAPI</b>"]
-        Routes["🛣️ API Routes<br/>/api/v1/*"]
-        Services["⚙️ Business Services"]
-        AI["🤖 AI Layer<br/>OpenAI Integration"]
+        Routes["🛣️ API Routes<br/>/api/v1/*<br/>Async Endpoints"]
+        Services["⚙️ Business Services<br/>Auth, Jobs, Apps,<br/>Resume, Email"]
+        AIServices["🎯 AI Services<br/>Recommendations<br/>Candidate Matching<br/>RAG Assistant<br/>Cover Letters"]
+    end
+    
+    subgraph AILayer["<b>🤖 AI ORCHESTRATION LAYER</b>"]
+        AIProvider["🔄 AI Provider Factory<br/>Auto Fallback Logic"]
+        LangChain["⛓️ LangChain<br/>Recommendation Chain<br/>Matching Chain"]
+        VectorStore["🔍 ChromaDB<br/>Vector Embeddings<br/>Semantic Search"]
     end
     
     subgraph Data["<b>🗄️ DATA LAYER</b>"]
-        MongoDB[("MongoDB Atlas<br/>Collections:<br/>Users, Jobs,<br/>Applications,<br/>Resumes")]
+        MongoDB[("💾 MongoDB Atlas<br/>Collections:<br/>Users, Jobs,<br/>Applications,<br/>Resumes, Interviews,<br/>Conversations")]
+        ChromaDB[("🔍 ChromaDB<br/>Vector Store:<br/>Job Embeddings<br/>Profile Embeddings")]
     end
     
     subgraph External["<b>🌐 EXTERNAL SERVICES</b>"]
-        OpenAI["OpenAI GPT-4o"]
-        SMTP["SMTP Email"]
-        Files["File Storage"]
+        OpenAI["🧠 OpenAI GPT-4o<br/>text-embedding-3-small<br/>Primary Provider"]
+        Anthropic["🤖 Anthropic Claude<br/>Fallback Provider"]
+        SMTP["📮 SMTP Email<br/>Notifications"]
+        Files["💾 File Storage<br/>Resume PDFs"]
+        n8n["🔗 n8n Workflows<br/>Optional Automation"]
     end
     
-    %% Connections
+    %% Connections - Client to Frontend
     Browser ==> Pages
     Mobile ==> Pages
     Pages ==> Components
     Components ==> Store
     Store ==> APIClient
-    APIClient ==>|REST + JWT| Routes
+    
+    %% Frontend to Security Layer
+    APIClient ==>|REST + JWT| RateLimit
+    RateLimit ==>|Rate Check| JWT
+    RateLimit -.->|429 Error| APIClient
+    
+    %% Security to Backend
+    JWT ==>|Validated| Routes
     Routes ==> Services
-    Services ==> AI
+    Routes ==> AIServices
+    
+    %% Services to Data
     Services ==> MongoDB
-    AI ==> OpenAI
+    
+    %% AI Services to AI Layer
+    AIServices ==> AIProvider
+    AIServices ==> LangChain
+    AIServices ==> VectorStore
+    
+    %% AI Layer to External
+    AIProvider ==>|Primary| OpenAI
+    AIProvider -.->|Fallback| Anthropic
+    LangChain ==> AIProvider
+    VectorStore ==> ChromaDB
+    
+    %% Optional n8n Integration
+    AIServices -.->|Optional| n8n
+    
+    %% Services to External
     Services ==> SMTP
     Services ==> Files
     
     %% Styling
     classDef clientStyle fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
     classDef frontendStyle fill:#e8f5e9,stroke:#388e3c,stroke-width:3px
+    classDef securityStyle fill:#ffebee,stroke:#c62828,stroke-width:3px
     classDef backendStyle fill:#fff3e0,stroke:#f57c00,stroke-width:3px
+    classDef aiStyle fill:#fff9c4,stroke:#f57f17,stroke-width:3px
     classDef dataStyle fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px
     classDef externalStyle fill:#fce4ec,stroke:#c2185b,stroke-width:3px
     
     class Client clientStyle
     class Frontend frontendStyle
+    class Security securityStyle
     class Backend backendStyle
+    class AILayer aiStyle
     class Data dataStyle
     class External externalStyle
     
     %% Link styling for better visibility
-    linkStyle default stroke:#333,stroke-width:3px
+    linkStyle default stroke:#666,stroke-width:2px
 ```
 
 ### Key Architectural Highlights
 
 #### 🎯 **Separation of Concerns**
-- **Frontend (Next.js 14)**: Handles UI/UX, client-side routing, and state management
-- **Backend (FastAPI)**: Manages business logic, data validation, and API endpoints
-- **Database (MongoDB)**: Stores all application data with flexible schema
-- **AI Layer**: Isolated AI services for resume parsing, recommendations, and chat
+- **Frontend (Next.js 14)**: Handles UI/UX, client-side routing, state management, and dark mode theming
+- **Backend (FastAPI)**: Manages business logic, data validation, API endpoints, and rate limiting
+- **Security Layer**: Dedicated rate limiting and JWT authentication middleware
+- **AI Orchestration Layer**: Isolated AI provider abstraction with automatic fallback
+- **Database (MongoDB + ChromaDB)**: Dual database architecture for structured data and vector embeddings
+- **AI Services**: Separated services for resume parsing, recommendations, candidate matching, and RAG assistant
 
 #### 🔐 **Security Architecture**
-- **JWT Authentication**: Stateless authentication with Bearer tokens
+- **JWT Authentication**: Stateless authentication with Bearer tokens and httpOnly cookies
 - **Password Hashing**: Bcrypt with salt rounds for secure password storage
 - **Role-Based Access Control (RBAC)**: Separate permissions for Job Seekers and Employers
-- **CORS Configuration**: Controlled cross-origin resource sharing
+- **Rate Limiting**: slowapi integration with configurable limits per endpoint (Auth: 5/min, Jobs: 10/min, Apps: 20/min, AI: 30/min)
+- **CORS Configuration**: Controlled cross-origin resource sharing with whitelist
 - **Environment Variables**: Sensitive credentials isolated in `.env` files
+- **Input Validation**: Pydantic models for comprehensive request/response validation
 
 #### 🚀 **Performance Optimizations**
 - **Async/Await**: FastAPI uses async operations for non-blocking I/O
 - **Connection Pooling**: MongoDB connection pooling for efficient database access
 - **Next.js App Router**: Automatic code splitting and optimized loading
-- **Docker Multi-Stage Builds**: Minimal production image sizes
+- **Docker Multi-Stage Builds**: Minimal production image sizes with layer caching
+- **Vector Search**: ChromaDB for fast semantic similarity search (70% vector + 30% AI scoring)
 - **Caching**: API client caching for repeated requests
+- **Background Tasks**: Email and AI processing run asynchronously
 
-#### 🤖 **AI Integration**
-- **OpenAI GPT-4o**: Powers resume parsing, cover letter generation, and recommendations
-- **RAG Pipeline**: Retrieval-Augmented Generation for context-aware AI assistant
-- **Graceful Degradation**: AI features optional; app works without OpenAI API key
-- **Background Processing**: AI tasks run asynchronously to avoid blocking
+#### 🤖 **AI Integration & Orchestration**
+- **AI Provider Abstraction**: Factory pattern with automatic fallback between OpenAI and Anthropic Claude
+- **OpenAI GPT-4o**: Primary provider for resume parsing, cover letter generation, and recommendations
+- **Anthropic Claude**: Automatic fallback provider for resilience
+- **ChromaDB Vector Store**: Semantic search with OpenAI text-embedding-3-small embeddings
+- **LangChain Integration**: Structured AI workflows with recommendation and candidate matching chains
+- **RAG Pipeline**: Retrieval-Augmented Generation for context-aware AI career assistant
+- **n8n Workflow Automation**: Optional AI orchestration backend for complex workflows
+- **Graceful Degradation**: AI features optional; app works without AI providers
+- **Blended Scoring**: 70% vector similarity + 30% AI scoring for optimal matching accuracy
 
 #### 📧 **Communication Layer**
-- **SMTP Email Service**: Automated notifications for application events
+- **SMTP Email Service**: Automated notifications for application events and interview scheduling
 - **HTML Email Templates**: Professional, responsive email designs
-- **Background Tasks**: Email sending happens asynchronously
+- **Background Tasks**: Email sending happens asynchronously via FastAPI background tasks
 - **Error Handling**: Graceful fallback if email service unavailable
+- **Event-Driven**: Triggered on application status changes, interview scheduling, and shortlisting
 
-#### 📊 **Data Flow**
-1. **User Action** → Frontend captures input
-2. **API Request** → Axios sends HTTP request with JWT
-3. **Backend Processing** → FastAPI validates, processes, and applies business logic
-4. **Database Operation** → MongoDB stores/retrieves data via Beanie ODM
-5. **AI Processing** (if needed) → OpenAI API called for AI features
-6. **Response** → Backend returns structured JSON response
-7. **UI Update** → Frontend updates state and re-renders components
+#### 📊 **Enhanced Data Flow**
+1. **User Action** → Frontend captures input with validation
+2. **API Request** → Axios sends HTTP request with JWT token
+3. **Rate Limiting** → slowapi checks request rate limits (429 if exceeded)
+4. **JWT Validation** → Token verified and user role extracted
+5. **Backend Processing** → FastAPI validates, processes, and applies business logic
+6. **Database Operation** → MongoDB stores/retrieves data via Beanie ODM
+7. **Vector Search** (if needed) → ChromaDB performs semantic similarity search
+8. **AI Processing** (if needed) → AI Provider Layer calls OpenAI (or Anthropic fallback)
+9. **Response** → Backend returns structured JSON response
+10. **UI Update** → Frontend updates state and re-renders components with dark mode support
 
 #### 🔄 **State Management**
-- **Zustand Store**: Lightweight global state for authentication
+- **Zustand Store**: Lightweight global state for authentication and user data
 - **React Hook Form**: Local form state with validation
+- **Theme Context**: Dark mode state with localStorage persistence and system preference detection
 - **Server State**: API responses cached and managed by React Query patterns
-- **LocalStorage**: Persistent JWT token storage
+- **LocalStorage**: Persistent JWT token and theme preference storage
+
+#### 🐳 **Containerization & Deployment**
+- **Docker Compose**: Multi-container orchestration for backend, frontend, and optional MongoDB
+- **Multi-Stage Builds**: Optimized Docker images with minimal production footprint
+- **Health Checks**: Container health monitoring for automatic restarts
+- **Environment Configuration**: Centralized `.env` management with validation
+- **Production Ready**: Configured for cloud deployment (AWS, GCP, Azure)
 
 ---
 
@@ -292,10 +394,10 @@ graph LR
     Components["🧩 Components<br/>- Layout (Navbar, Footer)<br/>- UI (Button, Input, Card)<br/>- Features (Forms, Cards)"]
     
     %% State Management
-    State["💾 State Management<br/>Zustand Store<br/>- Auth State<br/>- User Data"]
+    State["💾 State Management<br/>Zustand Store<br/>- Auth State<br/>- User Data<br/>- Theme Context<br/>- Dark Mode"]
     
     %% API Client
-    API["🔌 API Client<br/>Axios + JWT<br/>- Auth API<br/>- Jobs API<br/>- Applications API"]
+    API["🔌 API Client<br/>Axios + JWT<br/>- Auth API<br/>- Jobs API<br/>- Applications API<br/>- 429 Error Handling"]
     
     %% Utilities
     Utils["🛠️ Utilities<br/>- Hooks<br/>- Types<br/>- Helpers"]
@@ -337,11 +439,11 @@ graph LR
 
 1. **App Router** → File-based routing system manages all pages
 2. **Pages Layer** → Public, Job Seeker, and Employer routes
-3. **Components** → Reusable UI and feature components
-4. **State Management** → Zustand store for auth and global state
-5. **API Client** → Axios instance with JWT for backend communication
+3. **Components** → Reusable UI and feature components with dark mode support
+4. **State Management** → Zustand store for auth, Theme Context for dark mode
+5. **API Client** → Axios instance with JWT and 429 rate limit error handling
 6. **Utilities** → Hooks, types, and helper functions
-7. **Backend** → FastAPI REST API integration
+7. **Backend** → FastAPI REST API integration with rate limiting
 
 ### Detailed Frontend Architecture Diagram
 
@@ -364,6 +466,7 @@ graph TB
     
     subgraph State["<b>💾 STATE MANAGEMENT</b>"]
         AuthStore["🔐 Zustand Auth Store<br/>user, token, isAuthenticated<br/>login(), logout(), setUser()"]
+        ThemeContext["🎨 Theme Context<br/>theme, toggleTheme()<br/>Dark Mode State<br/>System Preference Detection"]
     end
     
     subgraph API["<b>🔌 API LAYER</b>"]
@@ -395,9 +498,11 @@ graph TB
     
     Features ==> AuthStore
     Layout ==> AuthStore
+    Layout ==> ThemeContext
     
     Features ==> APIClient
     AuthStore ==> APIClient
+    ThemeContext -.->|"Theme Preference"| Layout
     
     APIClient ==> APIMethods
     APIMethods ==> FastAPI
@@ -531,24 +636,29 @@ Think of the frontend as a **restaurant experience**:
 
 #### 📦 **State Management Strategy**
 - **Global State (Zustand)**: Authentication state (user, token, isAuthenticated)
+- **Theme State (Context API)**: Dark mode theme with system preference detection
 - **Local State (useState)**: Component-specific UI state (modals, dropdowns)
 - **Form State (React Hook Form)**: Form data with validation
 - **Server State**: API responses managed with React patterns
-- **Persistent State**: JWT token stored in localStorage for session persistence
+- **Persistent State**: JWT token and theme preference stored in localStorage
 
 #### 🔌 **API Integration**
 - **Centralized Client**: Single `api.ts` file with all API methods
 - **Axios Instance**: Configured with base URL and JWT interceptor
 - **Automatic Auth**: JWT token automatically attached to all requests
-- **Error Handling**: Consistent error handling across all API calls
+- **Rate Limit Handling**: 429 error detection with user-friendly messages
+- **Error Handling**: Consistent error handling across all API calls with specific messages for rate limits
 - **Type Safety**: All API methods have TypeScript return types
+- **Retry Logic**: Graceful handling of temporary failures
 
 #### 🎨 **Styling System**
-- **Tailwind CSS**: Utility-first CSS framework
+- **Tailwind CSS**: Utility-first CSS framework with dark mode support
 - **Custom Design System**: Consistent colors, spacing, and typography
 - **TalentNest Branding**: Primary blue (#075299) used throughout
 - **Responsive Design**: Mobile-first approach with breakpoints
-- **Dark Mode Ready**: Tailwind dark mode classes prepared (not yet activated)
+- **Dark Mode**: Fully implemented with Theme Context, localStorage persistence, and system preference detection
+- **CSS Variables**: Dynamic theme colors for seamless light/dark transitions
+- **Smooth Transitions**: Theme switching with fade animations
 
 #### 🔐 **Authentication Flow**
 1. **User Registration/Login** → Form submission
@@ -589,11 +699,23 @@ Think of the frontend as a **restaurant experience**:
 
 #### 🎭 **User Experience**
 - **Loading States**: Skeleton screens and spinners during data fetch
-- **Error Handling**: User-friendly error messages
+- **Error Handling**: User-friendly error messages including rate limit notifications
 - **Form Validation**: Real-time validation with helpful messages
 - **Success Feedback**: Toast notifications for successful actions
 - **Empty States**: Helpful messages when no data available
 - **Smooth Transitions**: CSS transitions for better feel
+- **Password Visibility Toggle**: Eye icon for secure password entry
+- **Enhanced Navigation**: Clear labeling for Employer Dashboard
+
+#### 🌓 **Dark Mode Implementation**
+- **Theme Context**: React Context API for global theme state management
+- **System Preference Detection**: Automatically detects user's OS theme preference
+- **Manual Toggle**: Theme switcher in Navbar (desktop and mobile)
+- **LocalStorage Persistence**: Theme preference saved across sessions
+- **Smooth Transitions**: Fade animations when switching themes
+- **CSS Variables**: Dynamic color variables for seamless theme switching
+- **Component Support**: All UI components styled for both light and dark modes
+- **Accessibility**: Maintains WCAG contrast ratios in both themes
 
 ---
 
@@ -604,7 +726,7 @@ Think of the frontend as a **restaurant experience**:
 The following ERD shows the MongoDB collections and their relationships in the TalentNest Job Portal:
 
 ```mermaid
-%%{init: {'theme':'default', 'themeVariables': { 'lineColor':'#000000', 'primaryBorderColor':'#000000', 'tertiaryColor':'#ffffff'}}}%%
+%%{init: {'theme':'default', 'themeVariables': { 'lineColor':'#999999', 'primaryBorderColor':'#999999'}}}%%
 erDiagram
     User ||--o{ Resume : "has"
     User ||--o{ Application : "submits"
@@ -871,6 +993,8 @@ erDiagram
 - Node.js 20 or higher
 - MongoDB Atlas account (or local MongoDB)
 - Docker & Docker Compose (for containerized deployment)
+- OpenAI API key (required for AI features) or Anthropic API key (fallback option)
+- SMTP credentials (optional, for email notifications)
 
 ### Option 1: Docker Setup (Recommended)
 
@@ -1032,6 +1156,31 @@ Once the backend is running, visit:
 
 ## 🧪 Testing
 
+### Manual Testing with GUI Test Tracker
+
+The project includes an independent GUI testing tool for comprehensive manual test tracking:
+
+```bash
+cd testing_tool
+
+# Install dependencies (if not already installed)
+pip install -r requirements.txt
+
+# Run the testing tool
+python test_tracker.py
+```
+
+**Features:**
+- 📊 **Comprehensive Test Coverage**: 100+ test cases covering all features
+- 💾 **Progress Saving**: Save and resume test sessions
+- 👥 **Team Collaboration**: Merge results from multiple testers
+- 🎯 **Quick Navigation**: Jump to specific test sections
+- 📈 **Real-time Progress**: Track pass/fail/block statistics
+- 📝 **Detailed Reporting**: Generate markdown test reports
+- 🔄 **Browser Mode Selection**: Test across different browsers
+
+For detailed documentation, see [testing_tool/README.md](./testing_tool/README.md)
+
 ### Backend Testing
 ```bash
 cd backend
@@ -1086,69 +1235,107 @@ For more Docker commands and troubleshooting, see [docker/README.md](./docker/RE
 JobPortal/
 ├── backend/                    # FastAPI backend
 │   ├── app/
-│   │   ├── ai/                # AI features
+│   │   ├── ai/                # AI features & orchestration
 │   │   │   ├── agents/        # AI agents
-│   │   │   ├── chains/        # LangChain chains
-│   │   │   ├── prompts/       # AI prompts
-│   │   │   ├── providers/     # OpenAI client
-│   │   │   └── rag/           # RAG pipeline (loader, splitter, retriever, QA)
-│   │   ├── api/               # API routes
-│   │   │   └── v1/routes/     # Auth, jobs, applications, assistant, etc.
-│   │   ├── core/              # Core configuration
+│   │   │   ├── chains/        # LangChain recommendation & matching chains
+│   │   │   ├── prompts/       # AI prompt templates
+│   │   │   ├── providers/     # AI provider abstraction (OpenAI, Anthropic)
+│   │   │   │   ├── base.py    # Abstract base provider
+│   │   │   │   ├── openai_provider.py   # OpenAI implementation
+│   │   │   │   ├── anthropic_provider.py # Anthropic implementation
+│   │   │   │   └── factory.py # Provider factory with auto-fallback
+│   │   │   └── rag/           # RAG pipeline (embeddings, vectorstore, QA chain)
+│   │   ├── api/               # API routes with rate limiting
+│   │   │   └── v1/routes/     # Auth, jobs, applications, assistant, interviews, etc.
+│   │   ├── core/              # Core configuration (settings, security, logging)
 │   │   ├── db/                # Database initialization
-│   │   ├── models/            # Beanie ODM models (User, Job, Application, etc.)
+│   │   ├── integrations/      # External integrations (n8n client)
+│   │   ├── models/            # Beanie ODM models (User, Job, Application, Interview, etc.)
+│   │   ├── repositories/      # Data access layer
 │   │   ├── schemas/           # Pydantic request/response schemas
-│   │   ├── services/          # Business logic (email, resume parser, search)
+│   │   ├── services/          # Business logic (email, resume parser, recommendations, matching)
 │   │   ├── templates/         # Email templates
 │   │   ├── workers/tasks/     # Background tasks
 │   │   └── main.py            # FastAPI application entry point
 │   ├── uploads/resumes/       # Uploaded resume files
-│   ├── .env.example           # Environment template
-│   ├── requirements.txt       # Python dependencies
+│   ├── chroma_db/             # ChromaDB persistent vector store
+│   ├── .env.example           # Environment template with all config options
+│   ├── requirements.txt       # Python dependencies (FastAPI, LangChain, ChromaDB, etc.)
 │   ├── TESTING_BACKEND.md     # Backend testing guide
-│   └── README.md              # Backend documentation
-├── frontend/                  # Next.js 14 frontend
+│   └── README.md              # Backend documentation with setup instructions
+├── frontend/                  # Next.js 14 frontend with dark mode
 │   ├── app/                   # App Router pages
-│   │   ├── dashboard/         # Job seeker pages
-│   │   ├── employer/          # Employer pages
+│   │   ├── dashboard/         # Job seeker pages (profile, applications, recommendations, assistant, interviews)
+│   │   ├── employer/          # Employer pages (dashboard, jobs, applications, interviews)
 │   │   ├── jobs/              # Job listings and details
-│   │   ├── login/             # Login page
-│   │   └── register/          # Registration page
+│   │   ├── login/             # Login page with password visibility toggle
+│   │   ├── register/          # Registration page
+│   │   └── layout.tsx         # Root layout with theme provider
 │   ├── components/            # Reusable UI components
-│   │   ├── layout/            # Navbar, Footer, DashboardLayout
-│   │   └── ui/                # Button, Input, Card, Modal, etc.
+│   │   ├── layout/            # Navbar (with theme toggle), Footer, DashboardLayout
+│   │   └── ui/                # Button, Input, Card, Modal, Badge, etc.
+│   ├── context/               # React Context providers
+│   │   └── ThemeContext.tsx   # Dark mode theme context
 │   ├── features/              # Feature-specific components
 │   │   ├── auth/              # Login/Register forms
 │   │   ├── jobs/              # Job cards, filters, apply modal
 │   │   ├── profile/           # Profile forms
+│   │   ├── recommendations/   # AI job recommendations
 │   │   ├── assistant/         # AI chat interface, cover letter generator
-│   │   └── employer/          # Employer-specific components
-│   ├── hooks/                 # Custom React hooks
-│   ├── lib/                   # API client and utilities
-│   ├── store/                 # Zustand state management
+│   │   └── employer/          # Employer-specific components (candidate recommendations)
+│   ├── hooks/                 # Custom React hooks (useAuth, useTheme, etc.)
+│   ├── lib/                   # API client with JWT & rate limit handling
+│   ├── public/                # Static assets (logo-bird.png, etc.)
+│   ├── store/                 # Zustand state management (auth store)
+│   ├── styles/                # Global styles with dark mode support
 │   ├── types/                 # TypeScript type definitions
+│   ├── constants/             # Application constants (status mappings, etc.)
 │   ├── .env.example           # Environment template
 │   ├── package.json           # Node dependencies
+│   ├── tailwind.config.ts     # Tailwind CSS configuration with dark mode
 │   ├── FRONTEND_GUIDE.md      # Frontend guide
-│   └── README.md              # Frontend documentation
+│   └── README.md              # Frontend documentation with cross-platform instructions
 ├── docker/                    # Docker configuration
-│   ├── backend.Dockerfile     # Backend Docker image
-│   ├── frontend.Dockerfile    # Frontend Docker image
+│   ├── backend.Dockerfile     # Backend Docker image (multi-stage build)
+│   ├── frontend.Dockerfile    # Frontend Docker image (multi-stage build)
 │   ├── docker-compose.yml     # Multi-container orchestration
+│   ├── env.example            # Docker environment template
+│   ├── .dockerignore          # Docker ignore files
 │   └── README.md              # Docker setup guide with OS-specific instructions
+├── testing_tool/              # GUI testing tracker
+│   ├── test_tracker.py        # MongoDB-integrated testing tool (v2.1.3)
+│   ├── requirements.txt       # Testing tool dependencies
+│   ├── results/               # Test results and reports
+│   └── README.md              # Testing tool documentation
 ├── DB_ContentGen/             # Database seeding utilities
 │   ├── candidate_generator.py # Generate test candidates
 │   ├── employer_generator.py  # Generate test employers
 │   ├── job_generator.py       # Generate test jobs
 │   ├── application_generator.py # Generate test applications
 │   └── README.md              # Database seeding documentation
+├── docs/                      # Project documentation
+│   ├── SPECIFICATION_COMPLIANCE_REVIEW.md  # Spec compliance verification
+│   ├── IMPLEMENTATION_VERIFICATION.md      # Implementation verification
+│   ├── SPEC_TO_IMPLEMENTATION_ANALYSIS.md  # Detailed analysis
+│   ├── PROJECT_IMPLEMENTATION_VERIFICATION.md # Project verification
+│   ├── N8N_COMPLIANCE_VERIFICATION.md      # n8n integration verification
+│   ├── DOCKER_SETUP_VERIFICATION.md        # Docker setup verification
+│   ├── TEST_TRACKER_COMPLIANCE_REVIEW.md   # Testing tool compliance
+│   └── N8N_WORKFLOWS.md        # n8n workflow documentation
 ├── project-spec/              # Project specifications
+│   ├── Presentation/          # Presentation guidelines
 │   └── *.md                   # Detailed project specs and walkthroughs
+├── images/                    # Project images and assets
+│   └── TalentNest.png         # Original logo
+├── scripts/                   # Utility scripts
+│   ├── shrink_hat.py          # Image processing script
+│   └── crop_bird_hat.py       # Logo generation script
 ├── JobPortal Implementation Plan.md  # Complete implementation roadmap
 ├── TESTING_REPORT.md          # Phase 1 testing report
 ├── FRONTEND_GUIDE.md          # Complete frontend guide
 ├── FRONTEND_COMPLETION_SUMMARY.md  # Frontend feature checklist
-└── README.md                  # This file
+├── CONTRIBUTING.md            # Contribution guidelines
+└── README.md                  # This file (comprehensive project documentation)
 ```
 
 ## 🤝 Contributing

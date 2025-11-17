@@ -2,12 +2,12 @@
 
 ## 👥 Development Team
 
-**Course:** AI Vibe Coding  
+**Course:** AI Vibe Coding  |  Fall 2025  
 **Offered by:** Arizona State University (https://www.asu.edu)  
 **Taught through:** Revature (https://www.revature.com)
 
-**Project:** Greenfield / Job Portal  
-**Timeline:** 2 Weeks | Team: 6 Developers  
+**Project:** Greenfield  |  Job Portal  
+**Timeline:** 2 Weeks | Team: 5 Developers  
 **Branch Strategy (GitHub):** Feature branches → dev → main  
 **Company/Product name chosen by Contributors:** TalentNest
 
