@@ -1,0 +1,716 @@
+{
+  "team_file": true,
+  "last_updated_by": "Dave",
+  "last_updated_date": "2025-11-13 09:11:13",
+  "bug_counter": 2,
+  "test_cases": [
+    {
+      "id": "1.1",
+      "section": "Authentication",
+      "title": "User Registration (Job Seeker)",
+      "description": "Verify job seeker can register successfully",
+      "steps": [
+        "Navigate to signup",
+        "Select Job Seeker role",
+        "Fill form",
+        "Submit"
+      ],
+      "status": "Pass",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Dave",
+      "tested_date": "2025-11-13 09:09:52",
+      "bugs": []
+    },
+    {
+      "id": "1.2",
+      "section": "Authentication",
+      "title": "User Registration (Employer)",
+      "description": "Verify employer can register successfully",
+      "steps": [
+        "Navigate to signup",
+        "Select Employer role",
+        "Fill form",
+        "Submit"
+      ],
+      "status": "Fail",
+      "actual_results": "It breaks.",
+      "notes": "Test it Joe.",
+      "tested_by": "Dave",
+      "tested_date": "2025-11-13 09:09:53",
+      "bugs": []
+    },
+    {
+      "id": "1.3",
+      "section": "Authentication",
+      "title": "User Login",
+      "description": "Verify users can log in with valid credentials",
+      "steps": [
+        "Navigate to login",
+        "Enter credentials",
+        "Click login"
+      ],
+      "status": "Blocked",
+      "actual_results": "Blocked here.",
+      "notes": "I think due to previous Auth test...",
+      "tested_by": "Dave",
+      "tested_date": "2025-11-13 09:09:53",
+      "bugs": []
+    },
+    {
+      "id": "1.4",
+      "section": "Authentication",
+      "title": "Login with Invalid Credentials",
+      "description": "Verify proper error handling for invalid login",
+      "steps": [
+        "Navigate to login",
+        "Enter invalid credentials",
+        "Click login"
+      ],
+      "status": "Fail",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Dave",
+      "tested_date": "2025-11-13 09:11:10",
+      "bugs": []
+    },
+    {
+      "id": "1.5",
+      "section": "Authentication",
+      "title": "Logout",
+      "description": "Verify users can log out successfully",
+      "steps": [
+        "Log in",
+        "Click logout",
+        "Verify redirect"
+      ],
+      "status": "Pass",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Dave",
+      "tested_date": "2025-11-13 09:04:43",
+      "bugs": []
+    },
+    {
+      "id": "1.6",
+      "section": "Authentication",
+      "title": "Protected Routes",
+      "description": "Verify unauthorized users cannot access protected routes",
+      "steps": [
+        "Log out",
+        "Try to access protected URLs",
+        "Verify redirect"
+      ],
+      "status": "Pass",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Dave",
+      "tested_date": "2025-11-13 09:04:54",
+      "bugs": []
+    },
+    {
+      "id": "2.1",
+      "section": "Job Seeker",
+      "title": "Browse Jobs (Unauthenticated)",
+      "description": "Verify anyone can browse job listings",
+      "steps": [
+        "Navigate to jobs page",
+        "View job listings"
+      ],
+      "status": "Not Started",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Dave",
+      "tested_date": "2025-11-13 08:58:44",
+      "bugs": []
+    },
+    {
+      "id": "2.2",
+      "section": "Job Seeker",
+      "title": "Job Search and Filters",
+      "description": "Verify job search and filtering functionality",
+      "steps": [
+        "Search by keyword",
+        "Filter by location",
+        "Filter by type"
+      ],
+      "status": "Pass",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Dave",
+      "tested_date": "2025-11-13 08:59:32",
+      "bugs": []
+    },
+    {
+      "id": "2.3",
+      "section": "Job Seeker",
+      "title": "View Job Details",
+      "description": "Verify job detail page displays all information",
+      "steps": [
+        "Click on job listing",
+        "Review all details"
+      ],
+      "status": "Not Started",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Chris",
+      "tested_date": "2025-11-13 08:36:51",
+      "bugs": []
+    },
+    {
+      "id": "2.4",
+      "section": "Job Seeker",
+      "title": "Apply for a Job",
+      "description": "Verify job seeker can apply for a job",
+      "steps": [
+        "Log in",
+        "Navigate to job",
+        "Click Apply",
+        "Fill form",
+        "Submit"
+      ],
+      "status": "Not Started",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Chris",
+      "tested_date": "2025-11-13 08:36:51",
+      "bugs": []
+    },
+    {
+      "id": "2.5",
+      "section": "Job Seeker",
+      "title": "Upload Resume",
+      "description": "Verify resume upload and parsing functionality",
+      "steps": [
+        "Log in",
+        "Navigate to profile",
+        "Upload resume",
+        "Verify parsing"
+      ],
+      "status": "Not Started",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Chris",
+      "tested_date": "2025-11-13 08:36:52",
+      "bugs": []
+    },
+    {
+      "id": "2.6",
+      "section": "Job Seeker",
+      "title": "View My Applications",
+      "description": "Verify job seeker can view their application history",
+      "steps": [
+        "Log in",
+        "Navigate to My Applications",
+        "Review list"
+      ],
+      "status": "Not Started",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Chris",
+      "tested_date": "2025-11-13 08:36:52",
+      "bugs": []
+    },
+    {
+      "id": "2.7",
+      "section": "Job Seeker",
+      "title": "Update Profile",
+      "description": "Verify job seeker can update their profile",
+      "steps": [
+        "Log in",
+        "Navigate to profile",
+        "Update fields",
+        "Save"
+      ],
+      "status": "Not Started",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Chris",
+      "tested_date": "2025-11-13 08:36:52",
+      "bugs": []
+    },
+    {
+      "id": "3.1",
+      "section": "Employer",
+      "title": "View Employer Dashboard",
+      "description": "Verify employer dashboard displays relevant information",
+      "steps": [
+        "Log in as employer",
+        "View dashboard metrics"
+      ],
+      "status": "Not Started",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Chris",
+      "tested_date": "2025-11-13 08:36:53",
+      "bugs": []
+    },
+    {
+      "id": "3.2",
+      "section": "Employer",
+      "title": "Create Job Posting",
+      "description": "Verify employer can create a new job posting",
+      "steps": [
+        "Log in",
+        "Navigate to Post Job",
+        "Fill form",
+        "Publish"
+      ],
+      "status": "Not Started",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Chris",
+      "tested_date": "2025-11-13 08:36:53",
+      "bugs": []
+    },
+    {
+      "id": "3.3",
+      "section": "Employer",
+      "title": "Edit Job Posting",
+      "description": "Verify employer can edit existing job postings",
+      "steps": [
+        "Log in",
+        "Navigate to My Jobs",
+        "Click Edit",
+        "Modify",
+        "Save"
+      ],
+      "status": "Not Started",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Chris",
+      "tested_date": "2025-11-13 08:36:53",
+      "bugs": []
+    },
+    {
+      "id": "3.4",
+      "section": "Employer",
+      "title": "Close/Archive Job Posting",
+      "description": "Verify employer can close or archive job postings",
+      "steps": [
+        "Log in",
+        "Navigate to My Jobs",
+        "Click Close",
+        "Confirm"
+      ],
+      "status": "Not Started",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Chris",
+      "tested_date": "2025-11-13 08:36:53",
+      "bugs": []
+    },
+    {
+      "id": "3.5",
+      "section": "Employer",
+      "title": "View Applications for a Job",
+      "description": "Verify employer can view all applications for a specific job",
+      "steps": [
+        "Log in",
+        "Navigate to job",
+        "Click View Applications"
+      ],
+      "status": "Not Started",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Chris",
+      "tested_date": "2025-11-13 08:36:54",
+      "bugs": []
+    },
+    {
+      "id": "3.6",
+      "section": "Employer",
+      "title": "Review Application Details",
+      "description": "Verify employer can view detailed application information",
+      "steps": [
+        "Log in",
+        "Navigate to applications",
+        "Click on application"
+      ],
+      "status": "Not Started",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Chris",
+      "tested_date": "2025-11-13 08:36:54",
+      "bugs": []
+    },
+    {
+      "id": "3.7",
+      "section": "Employer",
+      "title": "Shortlist Candidate",
+      "description": "Verify employer can shortlist candidates",
+      "steps": [
+        "Log in",
+        "Navigate to application",
+        "Click Shortlist"
+      ],
+      "status": "Not Started",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Chris",
+      "tested_date": "2025-11-13 08:36:54",
+      "bugs": []
+    },
+    {
+      "id": "3.8",
+      "section": "Employer",
+      "title": "Reject Candidate",
+      "description": "Verify employer can reject candidates with reason",
+      "steps": [
+        "Log in",
+        "Navigate to application",
+        "Click Reject",
+        "Enter reason"
+      ],
+      "status": "Not Started",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Chris",
+      "tested_date": "2025-11-13 08:36:54",
+      "bugs": []
+    },
+    {
+      "id": "3.9",
+      "section": "Employer",
+      "title": "Add Employer Notes",
+      "description": "Verify employer can add private notes to applications",
+      "steps": [
+        "Log in",
+        "Navigate to application",
+        "Add note",
+        "Save"
+      ],
+      "status": "Not Started",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Chris",
+      "tested_date": "2025-11-13 08:36:55",
+      "bugs": []
+    },
+    {
+      "id": "3.10",
+      "section": "Employer",
+      "title": "Update Company Profile",
+      "description": "Verify employer can update company information",
+      "steps": [
+        "Log in",
+        "Navigate to company profile",
+        "Update fields",
+        "Save"
+      ],
+      "status": "Not Started",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Chris",
+      "tested_date": "2025-11-13 08:36:55",
+      "bugs": []
+    },
+    {
+      "id": "4.1",
+      "section": "AI Features",
+      "title": "AI Resume Parsing",
+      "description": "Verify AI can parse uploaded resumes",
+      "steps": [
+        "Log in",
+        "Upload resume",
+        "Wait for parsing",
+        "Review extracted data"
+      ],
+      "status": "Not Started",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Chris",
+      "tested_date": "2025-11-13 08:36:55",
+      "bugs": []
+    },
+    {
+      "id": "4.2",
+      "section": "AI Features",
+      "title": "AI Assistant Chat",
+      "description": "Verify AI assistant provides helpful responses",
+      "steps": [
+        "Log in",
+        "Navigate to AI Assistant",
+        "Ask questions",
+        "Review responses"
+      ],
+      "status": "Not Started",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Chris",
+      "tested_date": "2025-11-13 08:36:55",
+      "bugs": []
+    },
+    {
+      "id": "4.3",
+      "section": "AI Features",
+      "title": "AI Cover Letter Generation",
+      "description": "Verify AI can generate personalized cover letters",
+      "steps": [
+        "Log in",
+        "Apply to job",
+        "Click Generate Cover Letter",
+        "Review"
+      ],
+      "status": "Not Started",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Chris",
+      "tested_date": "2025-11-13 08:36:56",
+      "bugs": []
+    },
+    {
+      "id": "4.4",
+      "section": "AI Features",
+      "title": "AI Job Recommendations",
+      "description": "Verify AI recommends relevant jobs to job seekers",
+      "steps": [
+        "Log in",
+        "View dashboard",
+        "Review recommended jobs"
+      ],
+      "status": "Not Started",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Chris",
+      "tested_date": "2025-11-13 08:36:56",
+      "bugs": []
+    },
+    {
+      "id": "5.1",
+      "section": "Edge Cases",
+      "title": "Form Validation",
+      "description": "Verify all forms have proper validation",
+      "steps": [
+        "Test empty fields",
+        "Test invalid formats",
+        "Test mismatches"
+      ],
+      "status": "Fail",
+      "actual_results": "Failed",
+      "notes": "????",
+      "tested_by": "Chris",
+      "tested_date": "2025-11-13 08:37:05",
+      "bugs": []
+    },
+    {
+      "id": "5.2",
+      "section": "Edge Cases",
+      "title": "Network Error Handling",
+      "description": "Verify app handles network errors gracefully",
+      "steps": [
+        "Go offline",
+        "Try actions",
+        "Go online",
+        "Retry"
+      ],
+      "status": "Blocked",
+      "actual_results": "Bloked here.",
+      "notes": "Previous result.",
+      "tested_by": "Chris",
+      "tested_date": "2025-11-13 08:37:07",
+      "bugs": []
+    },
+    {
+      "id": "5.3",
+      "section": "Edge Cases",
+      "title": "Session Expiration",
+      "description": "Verify app handles expired JWT tokens properly",
+      "steps": [
+        "Wait for token expiry",
+        "Try action",
+        "Verify redirect"
+      ],
+      "status": "Pass",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Chris",
+      "tested_date": "2025-11-13 08:37:09",
+      "bugs": []
+    },
+    {
+      "id": "5.4",
+      "section": "Edge Cases",
+      "title": "Large File Upload",
+      "description": "Verify file upload handles large files appropriately",
+      "steps": [
+        "Try uploading large file",
+        "Verify error message"
+      ],
+      "status": "Not Started",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Chris",
+      "tested_date": "2025-11-13 08:37:09",
+      "bugs": []
+    },
+    {
+      "id": "5.5",
+      "section": "Edge Cases",
+      "title": "SQL Injection / XSS Prevention",
+      "description": "Verify app is protected against common security vulnerabilities",
+      "steps": [
+        "Try malicious input",
+        "Verify sanitization"
+      ],
+      "status": "Pass",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Chris",
+      "tested_date": "2025-11-13 08:37:10",
+      "bugs": []
+    },
+    {
+      "id": "5.6",
+      "section": "Edge Cases",
+      "title": "Concurrent Actions",
+      "description": "Verify app handles concurrent user actions",
+      "steps": [
+        "Open two tabs",
+        "Perform same action",
+        "Verify no conflicts"
+      ],
+      "status": "Not Started",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Chris",
+      "tested_date": "2025-11-13 08:37:51",
+      "bugs": []
+    },
+    {
+      "id": "5.7",
+      "section": "Edge Cases",
+      "title": "Duplicate Application Prevention",
+      "description": "Verify users cannot apply to the same job twice",
+      "steps": [
+        "Apply to job",
+        "Try to apply again",
+        "Verify prevention"
+      ],
+      "status": "Not Started",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Chris",
+      "tested_date": "2025-11-13 08:23:42",
+      "bugs": []
+    },
+    {
+      "id": "6.1",
+      "section": "Responsive",
+      "title": "Mobile Responsiveness (375px)",
+      "description": "Verify app works well on mobile devices",
+      "steps": [
+        "Set width to 375px",
+        "Navigate through pages",
+        "Test functionality"
+      ],
+      "status": "Not Started",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Chris",
+      "tested_date": "2025-11-13 08:23:42",
+      "bugs": []
+    },
+    {
+      "id": "6.2",
+      "section": "Responsive",
+      "title": "Tablet Responsiveness (768px)",
+      "description": "Verify app works well on tablet devices",
+      "steps": [
+        "Set width to 768px",
+        "Navigate through pages",
+        "Test functionality"
+      ],
+      "status": "Not Started",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Chris",
+      "tested_date": "2025-11-13 08:23:43",
+      "bugs": []
+    },
+    {
+      "id": "6.3",
+      "section": "Responsive",
+      "title": "Desktop Responsiveness (1920px)",
+      "description": "Verify app looks good on large screens",
+      "steps": [
+        "Set to full screen",
+        "Navigate through pages",
+        "Check layout"
+      ],
+      "status": "Not Started",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Chris",
+      "tested_date": "2025-11-13 08:23:43",
+      "bugs": []
+    },
+    {
+      "id": "7.1",
+      "section": "Performance",
+      "title": "Page Load Time",
+      "description": "Verify pages load within acceptable time",
+      "steps": [
+        "Clear cache",
+        "Navigate to pages",
+        "Measure load times"
+      ],
+      "status": "Not Started",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Chris",
+      "tested_date": "2025-11-13 08:23:43",
+      "bugs": []
+    },
+    {
+      "id": "7.2",
+      "section": "Performance",
+      "title": "Search Performance",
+      "description": "Verify search returns results quickly",
+      "steps": [
+        "Perform various searches",
+        "Measure response time"
+      ],
+      "status": "Not Started",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Chris",
+      "tested_date": "2025-11-13 08:26:30",
+      "bugs": []
+    },
+    {
+      "id": "7.3",
+      "section": "Performance",
+      "title": "Large Dataset Handling",
+      "description": "Verify app handles large amounts of data",
+      "steps": [
+        "Test with 1000+ jobs",
+        "Test pagination",
+        "Test filtering"
+      ],
+      "status": "Not Started",
+      "actual_results": "",
+      "notes": "",
+      "tested_by": "Chris",
+      "tested_date": "2025-11-13 08:23:47",
+      "bugs": []
+    }
+  ],
+  "bugs": [
+    {
+      "bug_id": "BUG-001",
+      "test_id": "7.3",
+      "title": "bad detect handl",
+      "severity": "Critical",
+      "priority": "P1",
+      "description": "breaks the app.",
+      "steps_to_reproduce": "1. Test with 1000+ jobs\n2. Test pagination\n3. Test filtering",
+      "expected_behavior": "haven't seen",
+      "actual_behavior": "something here...",
+      "environment": "Browser: Edge",
+      "screenshot": "file location?",
+      "reported_by": "jack",
+      "reported_date": "2025-11-13 06:06:55"
+    }
+  ]
+}

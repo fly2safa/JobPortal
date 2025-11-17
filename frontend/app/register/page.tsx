@@ -1,0 +1,47 @@
+'use client';
+
+import { RegisterForm } from '@/features/auth/RegisterForm';
+import Link from 'next/link';
+import Image from 'next/image';
+import { useSearchParams } from 'next/navigation';
+
+export default function RegisterPage() {
+  const searchParams = useSearchParams();
+  const roleParam = searchParams.get('role') as 'job_seeker' | 'employer' | null;
+  
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4" style={{
+      background: 'linear-gradient(135deg, #075299 0%, #5a9ab3 100%)'
+    }}>
+      <div className="w-full max-w-md">
+        {/* Logo */}
+        <Link href="/" className="flex items-center justify-center mb-8">
+          <Image
+            src="/logo-bird.png"
+            alt="TalentNest bird logo"
+            width={44}
+            height={44}
+            priority
+            className="mr-2"
+          />
+          <span className="text-4xl">
+            <span style={{ 
+              fontFamily: 'Playfair Display, serif', 
+              fontWeight: 700,
+              background: 'linear-gradient(135deg, #a8d5e2 0%, #ffffff 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              textShadow: 'none'
+            }}>TALENT</span>
+            <span style={{ fontFamily: 'Dancing Script, cursive', fontWeight: 700, color: '#a8d5e2' }}>Nest</span>
+          </span>
+        </Link>
+
+        {/* Register Form */}
+        <RegisterForm initialRole={roleParam || undefined} />
+      </div>
+    </div>
+  );
+}
+

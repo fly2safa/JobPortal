@@ -1,0 +1,66 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Next.js
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# Production
+/build
+
+# Misc
+.DS_Store
+*.pem
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local env files
+.env
+.env*.local
+*.env
+
+# Vercel
+.vercel
+
+# Testing
+coverage/
+.nyc_output
+playwright-report/
+test-results/
+
+# IDE
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# Data and logs
+packages/backend/data/sessions/*.json
+packages/backend/data/chroma_db/
+packages/backend/logs/*.jsonl
+packages/backend/logs/*.log
+
+# OS
+Thumbs.db

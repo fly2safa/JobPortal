@@ -1,0 +1,430 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { PasswordInput } from '@/components/ui/PasswordInput';
+import { Textarea } from '@/components/ui/Textarea';
+import { Select } from '@/components/ui/Select';
+import { Card } from '@/components/ui/Card';
+import { useAuthStore } from '@/store/authStore';
+import apiClient from '@/lib/api';
+import Link from 'next/link';
+
+interface RegisterFormData {
+  first_name: string;
+  last_name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  role: 'job_seeker' | 'employer';
+  // Company fields for employers
+  company_name?: string;
+  company_description?: string;
+  company_industry?: string;
+  company_size?: string;
+  company_website?: string;
+  company_headquarters?: string;
+}
+
+interface RegisterFormProps {
+  initialRole?: 'job_seeker' | 'employer';
+}
+
+export function RegisterForm({ initialRole }: RegisterFormProps) {
+  const router = useRouter();
+  const { setAuth } = useAuthStore();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm<RegisterFormData>({
+    defaultValues: {
+      role: initialRole || 'job_seeker',
+    },
+  });
+
+  const password = watch('password');
+  const selectedRole = watch('role');
+
+  const onSubmit = async (data: RegisterFormData) => {
+    setIsLoading(true);
+    setError('');
+
+    try {
+      // Call the actual backend API
+      const response = await apiClient.register({
+        email: data.email,
+        password: data.password,
+        first_name: data.first_name,
+        last_name: data.last_name,
+        role: data.role,
+        company_name: data.company_name,
+        company_description: data.company_description,
+        company_industry: data.company_industry,
+        company_size: data.company_size,
+        company_website: data.company_website,
+        company_headquarters: data.company_headquarters,
+      });
+      
+      // Store authentication data
+      setAuth(response.user, response.access_token);
+      
+      // Redirect based on user role
+      if (response.user.role === 'employer') {
+        router.push('/employer/dashboard');
+      } else {
+        router.push('/dashboard');
+      }
+    } catch (err: any) {
+      console.error('Registration error:', err);
+      
+      // Handle rate limit errors specifically
+      if (err.isRateLimit || err.response?.status === 429) {
+        const retryAfter = err.retryAfter || 60;
+        setError(`Too many registration attempts. Please wait ${retryAfter} seconds before trying again.`);
+        return;
+      }
+      
+      // FastAPI returns errors in 'detail' field
+      if (err.response?.data?.detail) {
+        setError(err.response.data.detail);
+      } else if (err.response?.data?.error) {
+        setError(err.response.data.error);
+      } else if (!err.response) {
+        setError('Unable to connect to server. Please check if the backend is running.');
+      } else {
+        setError('Registration failed. Please try again.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <style dangerouslySetInnerHTML={{__html: `
+        .register-form input::placeholder {
+          font-size: 0.875rem !important;
+          font-weight: 400 !important;
+        }
+        .create-account-btn {
+          background: linear-gradient(135deg, #075299 0%, #5a9ab3 100%);
+          transition: all 0.3s ease;
+        }
+        .create-account-btn:hover:not(:disabled) {
+          background: linear-gradient(135deg, #5a9ab3 0%, #075299 100%);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(7, 82, 153, 0.3);
+        }
+        .create-account-btn:active:not(:disabled) {
+          transform: translateY(0);
+        }
+      `}} />
+      <div style={{ fontFamily: 'Playfair Display, serif' }}>
+      <Card className="w-full max-w-md register-form">
+        <div className="text-center mb-6" style={{ fontFamily: 'Playfair Display, serif' }}>
+          <h2 className="text-3xl font-bold text-gray-900" style={{ fontFamily: 'Playfair Display, serif' }}>Create Account</h2>
+          <p className="text-gray-600 mt-2" style={{ fontFamily: 'Playfair Display, serif' }}>
+            Join{' '}
+            <span style={{
+              fontFamily: 'Playfair Display, serif',
+              fontWeight: 700,
+              background: 'linear-gradient(135deg, #075299 0%, #5a9ab3 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text'
+            }}>TALENT</span>
+            <span style={{ fontFamily: 'Dancing Script, cursive', fontWeight: 700, color: '#075299' }}>Nest</span>
+            {' '}and Start Your Journey
+          </p>
+        </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4" style={{ fontFamily: 'Playfair Display, serif' }}>
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" style={{ fontFamily: 'Playfair Display, serif' }}>
+        <div style={{ fontFamily: 'Playfair Display, serif' }}>
+          <Input
+            label="First Name"
+            type="text"
+            placeholder="Talent"
+            {...register('first_name', {
+              required: 'First name is required',
+              minLength: {
+                value: 2,
+                message: 'Name must be at least 2 characters',
+              },
+            })}
+            error={errors.first_name?.message}
+            style={{ fontFamily: 'Playfair Display, serif' }}
+          />
+        </div>
+
+        <div style={{ fontFamily: 'Playfair Display, serif' }}>
+          <Input
+            label="Last Name"
+            type="text"
+            placeholder="Nest"
+            {...register('last_name', {
+              required: 'Last name is required',
+              minLength: {
+                value: 2,
+                message: 'Name must be at least 2 characters',
+              },
+            })}
+            error={errors.last_name?.message}
+            style={{ fontFamily: 'Playfair Display, serif' }}
+          />
+        </div>
+
+        <div style={{ fontFamily: 'Playfair Display, serif' }}>
+          <Input
+            label="Email"
+            type="email"
+            placeholder="Talent@example.com"
+            {...register('email', {
+              required: 'Email is required',
+              pattern: {
+                value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                message: 'Invalid email address',
+              },
+            })}
+            error={errors.email?.message}
+            style={{ fontFamily: 'Playfair Display, serif' }}
+          />
+        </div>
+
+        <div style={{ fontFamily: 'Playfair Display, serif' }}>
+          <PasswordInput
+            label="Password"
+            placeholder="••••••••"
+            {...register('password', {
+              required: 'Password is required',
+              minLength: {
+                value: 6,
+                message: 'Password must be at least 6 characters',
+              },
+            })}
+            error={errors.password?.message}
+            style={{ fontFamily: 'Playfair Display, serif' }}
+            showPassword={showPassword}
+            onToggleVisibility={() => setShowPassword(!showPassword)}
+          />
+        </div>
+
+        <div style={{ fontFamily: 'Playfair Display, serif' }}>
+          <PasswordInput
+            label="Confirm Password"
+            placeholder="••••••••"
+            {...register('confirmPassword', {
+              required: 'Please confirm your password',
+              validate: (value) => value === password || 'Passwords do not match',
+            })}
+            error={errors.confirmPassword?.message}
+            style={{ fontFamily: 'Playfair Display, serif' }}
+            showPassword={showPassword}
+            onToggleVisibility={() => setShowPassword(!showPassword)}
+          />
+        </div>
+
+        <div className="space-y-2" style={{ fontFamily: 'Playfair Display, serif' }}>
+          <label className="block text-sm font-medium text-gray-700" style={{ fontFamily: 'Playfair Display, serif' }}>
+            I am a <span className="text-red-500">*</span>
+          </label>
+          <div className="grid grid-cols-2 gap-4">
+            <label 
+              className="flex items-center justify-center space-x-2 cursor-pointer px-4 py-3 rounded-lg border border-gray-300 transition-all duration-200"
+              style={{
+                fontFamily: 'Playfair Display, serif'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#5a9ab3';
+                e.currentTarget.style.backgroundColor = '#5a9ab3';
+                e.currentTarget.style.color = 'white';
+                e.currentTarget.style.fontFamily = 'Playfair Display, serif';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#d1d5db';
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = 'inherit';
+                e.currentTarget.style.fontFamily = 'Playfair Display, serif';
+              }}
+            >
+              <input
+                type="radio"
+                value="job_seeker"
+                {...register('role', { required: true })}
+                className="text-primary focus:ring-primary"
+              />
+              <span className="text-sm font-medium" style={{ fontFamily: 'Playfair Display, serif' }}>Job Seeker</span>
+            </label>
+            <label 
+              className="flex items-center justify-center space-x-2 cursor-pointer px-4 py-3 rounded-lg border border-gray-300 transition-all duration-200"
+              style={{
+                fontFamily: 'Playfair Display, serif'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#5a9ab3';
+                e.currentTarget.style.backgroundColor = '#5a9ab3';
+                e.currentTarget.style.color = 'white';
+                e.currentTarget.style.fontFamily = 'Playfair Display, serif';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#d1d5db';
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = 'inherit';
+                e.currentTarget.style.fontFamily = 'Playfair Display, serif';
+              }}
+            >
+              <input
+                type="radio"
+                value="employer"
+                {...register('role', { required: true })}
+                className="text-primary focus:ring-primary"
+              />
+              <span className="text-sm font-medium" style={{ fontFamily: 'Playfair Display, serif' }}>Employer</span>
+            </label>
+          </div>
+        </div>
+
+        {/* Company Fields for Employers */}
+        {selectedRole === 'employer' && (
+          <div className="space-y-4 border-t pt-4 mt-4" style={{ fontFamily: 'Playfair Display, serif' }}>
+            <h3 className="text-lg font-semibold text-gray-900" style={{ fontFamily: 'Playfair Display, serif' }}>
+              Company Information
+            </h3>
+
+            <div style={{ fontFamily: 'Playfair Display, serif' }}>
+              <Input
+                label="Company Name"
+                type="text"
+                placeholder="Acme Corporation"
+                {...register('company_name', {
+                  required: selectedRole === 'employer' ? 'Company name is required' : false,
+                  minLength: {
+                    value: 2,
+                    message: 'Company name must be at least 2 characters',
+                  },
+                })}
+                error={errors.company_name?.message}
+                style={{ fontFamily: 'Playfair Display, serif' }}
+              />
+              {selectedRole === 'employer' && (
+                <span className="text-red-500 text-xs" style={{ fontFamily: 'Playfair Display, serif' }}>*</span>
+              )}
+            </div>
+
+            <div style={{ fontFamily: 'Playfair Display, serif' }}>
+              <Textarea
+                label="Company Description"
+                placeholder="Brief description of your company..."
+                rows={3}
+                {...register('company_description')}
+                error={errors.company_description?.message}
+                style={{ fontFamily: 'Playfair Display, serif' }}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div style={{ fontFamily: 'Playfair Display, serif' }}>
+                <Input
+                  label="Industry"
+                  type="text"
+                  placeholder="Technology, Healthcare, etc."
+                  {...register('company_industry')}
+                  error={errors.company_industry?.message}
+                  style={{ fontFamily: 'Playfair Display, serif' }}
+                />
+              </div>
+
+              <div style={{ fontFamily: 'Playfair Display, serif' }}>
+                <Select
+                  label="Company Size"
+                  options={[
+                    { value: '', label: 'Select company size' },
+                    { value: '1-10', label: '1-10 employees' },
+                    { value: '11-50', label: '11-50 employees' },
+                    { value: '51-200', label: '51-200 employees' },
+                    { value: '201-500', label: '201-500 employees' },
+                    { value: '500+', label: '500+ employees' },
+                  ]}
+                  {...register('company_size')}
+                  error={errors.company_size?.message}
+                  style={{ fontFamily: 'Playfair Display, serif' }}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div style={{ fontFamily: 'Playfair Display, serif' }}>
+                <Input
+                  label="Company Website"
+                  type="text"
+                  placeholder="www.example.com or https://www.example.com"
+                  {...register('company_website')}
+                  error={errors.company_website?.message}
+                  style={{ fontFamily: 'Playfair Display, serif' }}
+                />
+              </div>
+
+              <div style={{ fontFamily: 'Playfair Display, serif' }}>
+                <Input
+                  label="Headquarters Location"
+                  type="text"
+                  placeholder="San Francisco, CA"
+                  {...register('company_headquarters')}
+                  error={errors.company_headquarters?.message}
+                  style={{ fontFamily: 'Playfair Display, serif' }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        <button 
+          type="submit" 
+          disabled={isLoading}
+          className="create-account-btn w-full px-4 py-2 rounded-lg font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{
+            fontFamily: 'Playfair Display, serif'
+          }}
+        >
+          {isLoading ? (
+            <span className="flex items-center justify-center" style={{ fontFamily: 'Playfair Display, serif' }}>
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Loading...
+            </span>
+          ) : (
+            'Create Account'
+          )}
+        </button>
+      </form>
+
+      <div className="mt-6 text-center" style={{ fontFamily: 'Playfair Display, serif' }}>
+        <p className="text-sm text-gray-600" style={{ fontFamily: 'Playfair Display, serif' }}>
+          Already have an account?{' '}
+          <Link href="/login" className="text-primary font-medium hover:underline" style={{ fontFamily: 'Playfair Display, serif' }}>
+            Sign in
+          </Link>
+        </p>
+      </div>
+    </Card>
+    </div>
+    </>
+  );
+}
+
