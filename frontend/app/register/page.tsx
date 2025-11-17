@@ -2,6 +2,7 @@
 
 import { RegisterForm } from '@/features/auth/RegisterForm';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 
 export default function RegisterPage() {
@@ -15,6 +16,14 @@ export default function RegisterPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <Link href="/" className="flex items-center justify-center mb-8">
+          <Image
+            src="/logo-bird.png"
+            alt="TalentNest bird logo"
+            width={44}
+            height={44}
+            priority
+            className="mr-2"
+          />
           <span className="text-4xl">
             <span style={{ 
               fontFamily: 'Playfair Display, serif', 
