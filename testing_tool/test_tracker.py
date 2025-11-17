@@ -562,9 +562,8 @@ class TestingTrackerApp:
         banner_inner = tk.Frame(banner_frame, bg=self.colors['info'])
         banner_inner.pack(fill=tk.X, padx=15, pady=8)
         
-        # Get the current working directory and results path
-        current_dir = Path.cwd()
-        results_path = (current_dir / "results").resolve()
+        # Use the correct results path (testing_tool/results/)
+        results_path = RESULTS_DIR.resolve()
         
         # Create results directory if it doesn't exist
         results_path.mkdir(exist_ok=True)
@@ -2070,11 +2069,9 @@ class TestingTrackerApp:
             with open(filename, 'r') as f:
                 data = json.load(f)
             
-            # Load tester info
-            self.tester_info = data.get("tester_info", {})
-            self.tester_entry.delete(0, tk.END)
-            self.tester_entry.insert(0, self.tester_info.get("name", ""))
-            self.browser_combo.set(self.tester_info.get("browser", "Chrome"))
+            # Preserve current tester info (don't overwrite with loaded file's tester)
+            current_tester_name = self.tester_entry.get()
+            current_browser = self.browser_combo.get()
             
             # Load bug counter
             self.bug_counter = data.get("bug_counter", 1)
@@ -2117,6 +2114,12 @@ class TestingTrackerApp:
             
             if self.current_test:
                 self.display_test(self.current_test)
+            
+            # Restore current session's tester info (don't use loaded file's tester)
+            self.tester_info = {
+                'name': current_tester_name,
+                'browser': current_browser
+            }
             
             # Reset unsaved changes flag since we just loaded
             self.has_unsaved_changes = False
