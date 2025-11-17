@@ -7,7 +7,7 @@ import { Search, Briefcase, Users, Zap, Target, TrendingUp, Award, Clock } from 
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-gray-900">
       <Navbar />
 
       {/* Hero Section */}
@@ -77,13 +77,13 @@ export default function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-gray-50 dark:bg-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">
               Why Choose TalentNest?
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
               We combine cutting-edge AI technology with a user-friendly platform to revolutionize job hunting.
             </p>
           </div>
@@ -153,13 +153,13 @@ export default function HomePage() {
       </section>
 
       {/* How It Works Section */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-white dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">
               How It Works
             </h2>
-            <p className="text-xl text-gray-600">
+            <p className="text-xl text-gray-600 dark:text-gray-300">
               Get started in 3 simple steps
             </p>
           </div>
@@ -169,8 +169,8 @@ export default function HomePage() {
               <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center text-white text-3xl font-bold mx-auto mb-4">
                 1
               </div>
-              <h3 className="text-xl font-semibold mb-2">Create Your Profile</h3>
-              <p className="text-gray-600">
+              <h3 className="text-xl font-semibold mb-2 dark:text-gray-100">Create Your Profile</h3>
+              <p className="text-gray-600 dark:text-gray-300">
                 Sign up and build your professional profile. Upload your resume and let our AI parse your skills.
               </p>
             </div>
@@ -179,8 +179,8 @@ export default function HomePage() {
               <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center text-white text-3xl font-bold mx-auto mb-4">
                 2
               </div>
-              <h3 className="text-xl font-semibold mb-2">Get Matched</h3>
-              <p className="text-gray-600">
+              <h3 className="text-xl font-semibold mb-2 dark:text-gray-100">Get Matched</h3>
+              <p className="text-gray-600 dark:text-gray-300">
                 Our AI analyzes your profile and recommends the best job opportunities that match your qualifications.
               </p>
             </div>
@@ -189,8 +189,8 @@ export default function HomePage() {
               <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center text-white text-3xl font-bold mx-auto mb-4">
                 3
               </div>
-              <h3 className="text-xl font-semibold mb-2">Apply & Connect</h3>
-              <p className="text-gray-600">
+              <h3 className="text-xl font-semibold mb-2 dark:text-gray-100">Apply & Connect</h3>
+              <p className="text-gray-600 dark:text-gray-300">
                 Apply to jobs with one click and track your applications. Get interview invites and land your dream job.
               </p>
             </div>
