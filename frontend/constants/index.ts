@@ -1,3 +1,6 @@
+export const APP_VERSION = '2.0.1';
+export const APP_NAME = 'TalentNest';
+
 export const BRAND_COLORS = {
   primary: '#075299',
   primaryLight: '#3387CF',
@@ -53,6 +56,7 @@ export const POPULAR_SKILLS = [
 
 export const ROUTES = {
   HOME: '/',
+  ABOUT: '/about',
   LOGIN: '/login',
   REGISTER: '/register',
   JOBS: '/jobs',

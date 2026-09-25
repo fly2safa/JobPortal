@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     
     # Application
     APP_NAME: str = "JobPortal"
-    APP_VERSION: str = "1.0.0"
+    APP_VERSION: str = "2.0.1"
     DEBUG: bool = False
     LOG_LEVEL: str = "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
     UVICORN_LOG_LEVEL: str = "info"  # Uvicorn's own log level (lowercase: debug, info, warning, error, critical)

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Mail, MapPin, Phone } from 'lucide-react';
+import { APP_VERSION } from '@/constants';
 
 export function Footer() {
   return (
@@ -24,6 +25,9 @@ export function Footer() {
             <p className="text-gray-400 text-sm">
               Connecting talented professionals with their dream careers through AI-powered matching.
             </p>
+            <Link href="/about" className="inline-block mt-3 text-sm text-gray-400 hover:text-white transition-colors">
+              About
+            </Link>
           </div>
 
           {/* Quick Links */}
@@ -101,7 +105,7 @@ export function Footer() {
         </div>
 
         <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400 text-sm">
-          <p>&copy; {new Date().getFullYear()} TalentNest. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} TalentNest. All rights reserved. · v{APP_VERSION}</p>
         </div>
       </div>
     </footer>

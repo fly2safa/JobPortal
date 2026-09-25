@@ -135,7 +135,7 @@ curl http://127.0.0.1:8000/health
 {
   "status": "healthy",
   "app": "JobPortal",
-  "version": "1.0.0"
+  "version": "2.0.1"
 }
 ```
 

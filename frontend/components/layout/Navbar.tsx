@@ -111,6 +111,16 @@ export function Navbar() {
             >
               Find Jobs
             </Link>
+            <Link
+              href="/about"
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                isActive('/about')
+                  ? 'text-primary bg-primary-50 dark:text-primary-400 dark:bg-primary-900/20'
+                  : 'text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+              }`}
+            >
+              About
+            </Link>
 
             {isAuthenticated ? (
               <>
@@ -231,6 +241,12 @@ export function Navbar() {
               className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-800"
             >
               Find Jobs
+            </Link>
+            <Link
+              href="/about"
+              className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-800"
+            >
+              About
             </Link>
             {isAuthenticated ? (
               <>
