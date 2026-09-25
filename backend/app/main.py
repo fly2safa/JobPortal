@@ -1,6 +1,11 @@
 """
 Main FastAPI application entry point.
 """
+try:
+    import pip_system_certs.wrapt_requests  # Windows/Norton TLS interception
+except ImportError:
+    pass
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles

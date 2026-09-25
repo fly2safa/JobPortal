@@ -20,7 +20,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         <input
           ref={ref}
           className={cn(
-            'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent hover:border-primary hover:shadow-sm transition-all duration-200',
+            'w-full px-4 py-2 border rounded-lg text-gray-900 bg-white placeholder:text-gray-400 focus:ring-2 focus:ring-primary focus:border-transparent hover:border-primary hover:shadow-sm transition-all duration-200',
             error ? 'border-red-500' : 'border-gray-300',
             props.disabled && 'bg-gray-100 cursor-not-allowed',
             className
